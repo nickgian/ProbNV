@@ -16,16 +16,16 @@ let node_ty = TNode
 let edge_ty = TEdge
 
 let init_ty aty = concrete (TArrow (concrete node_ty, aty))
-let merge_ty aty = concrete (TArrow (node_ty, TArrow (aty, TArrow (aty, aty))))
-let trans_ty aty = concrete (TArrow (edge_ty, TArrow (aty, aty)))
+let merge_ty aty = concrete (TArrow (concrete node_ty, concrete (TArrow (aty, concrete (TArrow (aty, aty))))))
+let trans_ty aty = concrete (TArrow (concrete edge_ty, concrete (TArrow (aty, aty))))
 
-let solve_ty aty =
+(* let solve_ty aty =
   TRecord
     (StringMap.add "init" (init_ty aty)
     @@ StringMap.add "trans" (trans_ty aty)
     @@ StringMap.add "merge" (merge_ty aty)
     @@ StringMap.empty)
-;;
+;; *)
 
 (* TODO: do we want a special partition ID type? is i8 a sensible number? *)
 (* partitioning *)
