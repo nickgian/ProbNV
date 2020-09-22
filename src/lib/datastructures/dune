@@ -1,0 +1,12 @@
+(library
+ (name probNv_datastructures)
+ (public_name probNv.datastructures)
+ (libraries
+    probNv_utils
+    integers
+    ocamlgraph
+    batteries
+    zarith)
+  (preprocess
+    (pps ppx_deriving.std ppx_deriving_argparse))
+)

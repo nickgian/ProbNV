@@ -1,0 +1,10 @@
+(library
+  (name probNv_transformations)
+  (public_name probNv.transformations)
+  (libraries
+    probNv_datastructures
+    probNv_lang
+    probNv_solution
+    probNv_utils))
+
+(include_subdirs unqualified)

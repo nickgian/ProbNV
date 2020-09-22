@@ -1,0 +1,19 @@
+(library
+  (name probNv)
+  (public_name probNv)
+  (modes native)
+  (libraries
+    probNv_lang
+    probNv_datastructures
+    probNv_utils
+    probNv_transformations
+    integers
+    str
+    batteries
+    lru-cache
+    zarith)
+  (preprocess
+    (pps ppx_deriving.std ppx_deriving_argparse))
+)
+
+(include_subdirs no)

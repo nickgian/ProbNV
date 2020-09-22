@@ -1,0 +1,26 @@
+opam-version: "2.0"
+name: "probNv"
+version: "~dev"
+authors:
+  "Nick Giannarakis <nick.giannarakis@princeton.edu>"
+license: "MIT"
+depends: [
+  "dune" { build }
+  "odoc"
+  "integers"
+  "ANSITerminal"
+  "batteries"
+  "lru-cache"
+  "zarith"
+  "mlcuddidl" { <= "3.0.4" }
+  "ocamlgraph"
+  "fileutils"
+  "ppx_deriving"
+  "ppx_deriving_argparse"
+  "menhir"
+]
+build: [
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "runtest" "-p" name "-f" "--no-buffer" "-j" jobs] {with-test}
+  ["dune" "build" "@doc" "-p" name "-j" jobs] {with-doc}
+]

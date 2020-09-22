@@ -1,0 +1,7 @@
+(library
+  (name probNv_solution)
+  (public_name probNv.solution)
+  (libraries
+    ANSITerminal
+    probNv_datastructures
+    probNv_lang))
