@@ -114,8 +114,12 @@ let rec base_ty_to_string t =
     in
     leftside ^ " -> " ^ ty_to_string t2
 
-and ty_to_string ty = 
-  Printf.sprintf "[%s]%s" (mode_to_string ty.mode) (base_ty_to_string ty.typ)
+and ty_to_string ty =
+  match ty.mode with
+  | None ->
+    base_ty_to_string ty.typ
+  | Some m ->
+    Printf.sprintf "[%s]%s" (mode_to_string m) (base_ty_to_string ty.typ)
 
 and tyvar_to_string tv =
   match tv with

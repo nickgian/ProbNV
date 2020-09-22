@@ -15,9 +15,9 @@ let if_debug s = if debug then print_endline s else ()
 let node_ty = TNode
 let edge_ty = TEdge
 
-let init_ty aty = TArrow (node_ty, aty)
-let merge_ty aty = TArrow (node_ty, TArrow (aty, TArrow (aty, aty)))
-let trans_ty aty = TArrow (edge_ty, TArrow (aty, aty))
+let init_ty aty = concrete (TArrow (concrete node_ty, aty))
+let merge_ty aty = concrete (TArrow (node_ty, TArrow (aty, TArrow (aty, aty))))
+let trans_ty aty = concrete (TArrow (edge_ty, TArrow (aty, aty)))
 
 let solve_ty aty =
   TRecord

@@ -141,8 +141,8 @@ bty:
 ;
 
 ty:
-  | LBRACKET mode RBRACKET ty ARROW ty     { {typ=TArrow ($4,$6); mode=$2} }
-  | LBRACKET mode RBRACKET bty             { {typ=$4; mode=$2} }
+  | ty ARROW ty     { {typ=TArrow ($1,$3); mode= Some Concrete} }
+  | LBRACKET mode RBRACKET bty             { {typ=$4; mode= Some $2} }
 
 /* tys:
   | ty                                  { [Syntax.typ $1] }
@@ -178,7 +178,7 @@ component:
     /* | LET letvars EQ SOLUTION expr      { make_dsolve (fst $2) $5 } */
     | LET letvars EQ SOLUTION expr COMMA expr COMMA expr      { make_dsolve (fst $2) $5 $7 $9 }
     | LET letvars EQ expr               { global_let $2 $4 $4.espan (Span.extend $1 $4.espan) }
-    | SYMBOLIC ID COLON bty             { DSymbolic (snd $2, {typ = $4; mode=Symbolic}) }
+    | SYMBOLIC ID COLON bty             { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}) }
     | ASSERT expr                       { DAssert $2 }
     | LET EDGES EQ LBRACE RBRACE        { DEdges [] }
     | LET EDGES EQ LBRACE edges RBRACE  { DEdges $5 }

@@ -44,7 +44,7 @@ type baseTy =
   | TArrow of ty * ty
 [@@deriving ord, eq]
 
-and ty = {typ : baseTy; mode: mode}
+and ty = {typ : baseTy; mode: mode option}
 
 and tyvar = Unbound of tyname * level | Link of ty
 
@@ -370,6 +370,10 @@ let avalue (v, t, span) = {v with vty= t; vspan= span}
 
 let wrap exp e = {e with ety= exp.ety; espan= exp.espan}
 
+let concrete typ = {typ = typ; mode = Some Concrete}
+let symbolic typ = {typ = typ; mode = Some Symbolic}
+let multivalue typ = {typ = typ; mode = Some Multivalue}
+
 (* Constructors *)
 
 let vbool b = (value (VBool b))
@@ -443,7 +447,7 @@ let funcFull x argty resty fmode body = {arg = x; argty; resty; body; fmode}
 let efunc f =
   match f.argty, f.resty, f.fmode with
   | Some argty, Some resty, Some m ->
-    aexp (exp (EFun f), Some ({typ = TArrow (argty, resty); mode=m}), Span.default)
+    aexp (exp (EFun f), Some ({typ = TArrow (argty, resty); mode=Some m}), Span.default)
   | _, _, _ ->
     exp (EFun f)
 
