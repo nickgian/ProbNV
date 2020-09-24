@@ -87,6 +87,69 @@ let mode_to_string m =
   | Symbolic -> "S"
   | Multivalue -> "M"
 
+  open ProbNv_datastructures
+include ProbNv_utils.PrimitiveCollections
+
+module VarMap = BetterMap.Make(Var)
+
+  let canonicalize_type (ty : ty) : ty =
+    let rec aux ty map count =
+      match ty.typ with
+      | TBool | TInt _ | TNode | TEdge -> ty, map, count
+      | TArrow (t1, t2) ->
+        let t1', map, count = aux t1 map count in
+        let t2', map, count = aux t2 map count in
+        {ty with typ= TArrow (t1', t2')}, map, count
+      (* | TTuple tys ->
+        let tys', map, count =
+          BatList.fold_left
+            (fun (lst, map, count) t ->
+              let t', map, count = aux t map count in
+              t' :: lst, map, count)
+            ([], map, count)
+            tys
+        in
+        TTuple (BatList.rev tys'), map, count
+      | TRecord tmap ->
+        let open RecordUtils in
+        let tmap', map, count =
+          List.fold_left2
+            (fun (tmap, map, count) l t ->
+              let t', map, count = aux t map count in
+              StringMap.add l t' tmap, map, count)
+            (StringMap.empty, map, count)
+            (get_record_labels tmap)
+            (get_record_entries tmap)
+        in
+        TRecord tmap', map, count
+      | TOption t ->
+        let t', map, count = aux t map count in
+        TOption t', map, count
+      | TMap (t1, t2) ->
+        let t1', map, count = aux t1 map count in
+        let t2', map, count = aux t2 map count in
+        TMap (t1', t2'), map, count *)
+      | QVar tyname ->
+        begin
+          match VarMap.Exceptionless.find tyname map with
+          | None ->
+            let new_var = Var.to_var ("a", count) in
+            {ty with typ = QVar new_var}, VarMap.add tyname new_var map, count + 1
+          | Some v -> {ty with typ = QVar v}, map, count
+        end
+      | TVar r ->
+        begin
+          match !r with
+          | Link t -> 
+            aux {t with mode = join_opts t.mode ty.mode} map count
+          | Unbound _ -> {ty with typ=TBool}, map, count
+        end
+    in
+    let result, _, _ = aux ty VarMap.empty 0 in
+    result
+  ;;
+  
+
 (* The way we print our types means that we don't really need precedence rules.
    The only type which isn't totally self-contained is TArrow *)
 let rec base_ty_to_string t =
@@ -115,6 +178,7 @@ let rec base_ty_to_string t =
     leftside ^ " -> " ^ ty_to_string t2
 
 and ty_to_string ty =
+  let ty = canonicalize_type ty in
   match ty.mode with
   | None ->
     base_ty_to_string ty.typ

@@ -33,6 +33,32 @@ type mode =
   (* | MVar  *)
 [@@deriving ord, eq]
 
+(* Join operations on modes *)
+let join_opt m1 m2 =
+  match m1 with
+  | Concrete -> Some m2
+  | Symbolic -> 
+    (match m2 with
+     | Concrete | Symbolic -> Some Symbolic
+     | Multivalue -> None
+     )
+  | Multivalue ->
+    (match m2 with
+     | Concrete | Multivalue -> Some Multivalue
+     | Symbolic -> None)
+
+let join m1 m2 = 
+  match join_opt m1 m2 with
+  | Some m -> m
+  | None -> failwith "Cannot join these modes"
+
+let join_opts m1 m2 =
+  match m1, m2 with
+  | None, _ -> m2
+  | _, None -> m1
+  | Some m1, Some m2 ->
+    join_opt m1 m2
+
 (** Base types in probNV include an execution mode *)
 type baseTy = 
   | TVar of tyvar ref
@@ -358,6 +384,9 @@ let arity op =
 
 (* Useful constructors *)
 
+let tint_of_size n = TInt n
+let tint_of_value n = TInt (Integer.size n)
+
 let exp e =
   {e; ety= None; espan= Span.default;}
 
@@ -373,6 +402,7 @@ let wrap exp e = {e with ety= exp.ety; espan= exp.espan}
 let concrete typ = {typ = typ; mode = Some Concrete}
 let symbolic typ = {typ = typ; mode = Some Symbolic}
 let multivalue typ = {typ = typ; mode = Some Multivalue}
+let mty m typ = {typ; mode = m}
 
 (* Constructors *)
 

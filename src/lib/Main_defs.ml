@@ -58,6 +58,7 @@ let parse_input (args : string array) =
   let ds, info = Input.parse file in (* Parse probNV file *)
   let decls = ds in
   let fs = () in
+  let decls = Typing.infer_declarations info decls in
   (cfg, info, file, decls, fs)
 
   (* print_endline @@ Printing.declarations_to_string decls ; *)

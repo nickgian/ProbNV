@@ -176,7 +176,7 @@ letvars:
 
 component:
     /* | LET letvars EQ SOLUTION expr      { make_dsolve (fst $2) $5 } */
-    | LET letvars EQ SOLUTION expr COMMA expr COMMA expr      { make_dsolve (fst $2) $5 $7 $9 }
+    | LET letvars EQ SOLUTION LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (fst $2) $6 $8 $10 }
     | LET letvars EQ expr               { global_let $2 $4 $4.espan (Span.extend $1 $4.espan) }
     | SYMBOLIC ID COLON bty             { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}) }
     | ASSERT expr                       { DAssert $2 }
@@ -240,6 +240,7 @@ expr:
     | expr NLEQ expr                    { exp (eop NLeq [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr NGEQ expr                    { exp (eop NLeq [$3;$1]) (Span.extend $1.espan $3.espan) } */
     | LPAREN expr COLON ty RPAREN       { exp ~ty:(Some $4) $2 (Span.extend $1 $5) }
+    | LPAREN expr RPAREN                { exp $2 (Span.extend $1 $3) }
     /* | expr DOT ID                       { exp (eproject $1 (Var.name (snd $3))) (Span.extend ($1.espan) (fst $3)) }
     | LBRACE record_entry_exprs RBRACE  { exp (erecord (make_record_map $2)) (Span.extend $1 $3) }
     | LBRACE expr WITH record_entry_exprs RBRACE {

@@ -1,0 +1,16 @@
+symbolic x:int
+symbolic y:int
+
+let nodes = 2
+let edges = {0=1;}
+
+let init u = 0
+
+let trans e v = 
+    if (if y = 10 then x = 10 else false) then v + 1 else v
+
+let merge u v1 v2 = if v1 < v2 then v1 else v2
+
+let s = solution(init, trans, merge)
+
+assert (0 < (s 0n))
