@@ -80,12 +80,15 @@ type op =
   | Eq
   | UAdd of bitwidth
   | ULess of bitwidth
+  (* Low-Level Language BDD operations *)
+  | BddAnd
+  | BddNot
+  | BddEq
+  | BddAdd
+  | BddLess
 [@@deriving ord, eq, show]
 
-
-(*TODO: Add closure values *)
-
-(** probNV values *)
+(** HLL values *)
 type v =
   | VBool of bool
   | VInt of Integer.t
@@ -112,7 +115,7 @@ and env =
   ; value : value Env.t
   }
 
-(** probNV expressions *)
+(** Expression Language for both HLL + LLL combined *)
 and e =
   | EVar of var
   | EVal of value
@@ -121,6 +124,11 @@ and e =
   | EApp of exp * exp
   | EIf of exp * exp * exp
   | ELet of var * exp * exp
+  (* Low-Level Language expressions *)
+  | EBddIf of exp * exp * exp
+  | EToBdd of exp
+  | EToMap of exp
+  | EApplyN of exp * exp list
 [@@deriving ord]
 
 and exp =
@@ -525,6 +533,14 @@ let get_symbolics ds =
        match d with DSymbolic (x, e) -> (x, e) :: acc | _ -> acc )
     [] ds
   |> List.rev
+
+(* Getting the mode of a type is a bit trickier because of Links. We need to search through
+all the links and make sure their modes are compatible and return the most specific one *)
+let rec get_mode ty =
+  match ty.typ with 
+  | TVar {contents = Link ty2} ->
+    join_opts (get_mode ty2) ty.mode
+  | _ -> ty.mode
 
 let bool_of_val (v : value) : bool option =
   match v.v with
