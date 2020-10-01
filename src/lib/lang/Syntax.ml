@@ -436,6 +436,16 @@ let eif e1 e2 e3 = exp (EIf (e1, e2, e3))
 
 let elet x e1 e2 = exp (ELet (x, e1, e2))
 
+(** BDD expressions constructors*)
+
+let ebddIf e1 e2 e3 = exp (EBddIf (e1, e2, e3))
+
+let etoBdd e1 = exp (EToBdd e1)
+
+let etoMap e1 = exp (EToMap e1)
+
+let eApplyN e1 es = exp (EApplyN (e1, es))
+
 let deconstructFun exp =
   match exp.e with
   | EFun f ->
