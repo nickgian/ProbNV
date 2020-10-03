@@ -1454,7 +1454,7 @@ module LLLTypeInf = struct
           let e1, ty1 = infer_exp e1 |> textract in
           match get_mode ty1 with
           | Some Concrete ->
-              texp (eToBdd e1, mty (Some Symbolic) ty1.typ, e.espan)
+              texp (etoBdd e1, mty (Some Symbolic) ty1.typ, e.espan)
           | _ ->
               Console.error_position info e.espan
                 "ToBdd applied to non concrete expression" )
@@ -1463,7 +1463,7 @@ module LLLTypeInf = struct
           let e1, ty1 = infer_exp e1 |> textract in
           match get_mode ty1 with
           | Some Concrete ->
-              texp (eToMap e1, mty (Some Multivalue) ty1.typ, e.espan)
+              texp (etoMap e1, mty (Some Multivalue) ty1.typ, e.espan)
           | _ ->
               Console.error_position info e.espan
                 "ToBdd applied to non concrete expression" )
