@@ -24,6 +24,10 @@ module BddBinds = struct
 
   let union rho1 rho2 =
     VarMap.fold (fun k v acc -> VarMap.add k v acc) rho1 rho2
+
+  let isEmpty rho1 = VarMap.is_empty rho1
+
+  let fold = VarMap.fold
 end
 
 let fty_mode m =
@@ -152,11 +156,151 @@ let rec translate (e : exp) : exp * BddBinds.t =
       (* We assume we have inlined functions returning multi-values so we can
          assume the set generated will be empty. *)
       let el1, _ = translate e1 in
-      let f' = { arg = x; body = el1; argty; resty; fmode } in
-      let el = aexp (efun f', e.ety, e.espan) in
-      (* TODO: I might need to change the types here, think of symbolic tuple as an argument *)
+      let argty' = fty (OCamlUtils.oget argty) in
+      let resty' = fty (OCamlUtils.oget resty) in
+      let ty' = fty (OCamlUtils.oget e.ety) in
+      let f' =
+        {
+          arg = x;
+          body = el1;
+          argty = Some argty';
+          resty = Some resty';
+          fmode = get_mode ty';
+        }
+      in
+      let el = aexp (efun f', Some (fty (OCamlUtils.oget e.ety)), e.espan) in
       (el, BddBinds.empty ())
-  | EApp (e1, e2) | ELet (x, e1, e2) -> failwith "todo"
+  | EApp (e1, e2) -> (
+      let el1, r1 = translate e1 in
+      let el2, r2 = translate e2 in
+      let ty1 = OCamlUtils.oget e1.ety in
+      let ty2 = OCamlUtils.oget e2.ety in
+      let ty = OCamlUtils.oget e.ety in
+      let argty =
+        match (OCamlUtils.oget e1.ety).typ with
+        | TArrow (argty, _) -> argty
+        | _ -> failwith "Expected an arrow type"
+      in
+      match (get_mode argty, get_mode ty2, get_mode ty) with
+      | Some Concrete, Some Concrete, Some Concrete ->
+          (* C-App-C*)
+          ( {
+              e with
+              e = (eapp el1 el2).e;
+              ety = Some (fty (OCamlUtils.oget e.ety));
+            },
+            BddBinds.empty () )
+      | Some Concrete, Some Concrete, Some Symbolic ->
+          (* C-App-S1*)
+          ( {
+              e with
+              e = (eapp el1 el2).e;
+              ety = Some (fty (OCamlUtils.oget e.ety));
+            },
+            BddBinds.empty () )
+      | Some Symbolic, Some Symbolic, Some Symbolic ->
+          (* C-App-S2 *)
+          ( {
+              e with
+              e = (eapp el1 el2).e;
+              ety = Some (fty (OCamlUtils.oget e.ety));
+            },
+            BddBinds.empty () )
+      | Some Symbolic, Some Concrete, Some Symbolic ->
+          (* C-App-S3 *)
+          ( {
+              e with
+              e = (eapp el1 (liftBdd el2)).e;
+              ety = Some (fty (OCamlUtils.oget e.ety));
+            },
+            BddBinds.empty () )
+      | Some Concrete, Some Multivalue, Some Multivalue ->
+          (* C-App-M1 *)
+          ( {
+              e with
+              e = (eapp el1 el2).e;
+              ety = Some (fty (OCamlUtils.oget e.ety));
+            },
+            r2 )
+      | Some Symbolic, Some Symbolic, Some Multivalue ->
+          (* C-App-M2 *)
+          ( {
+              e with
+              e = (eapp el1 el2).e;
+              ety = Some (fty (OCamlUtils.oget e.ety));
+            },
+            r1 )
+      | Some Symbolic, Some Concrete, Some Multivalue ->
+          (* C-App-M3 *)
+          ( {
+              e with
+              e = (eapp el1 (liftBdd el2)).e;
+              ety = Some (fty (OCamlUtils.oget e.ety));
+            },
+            r1 )
+      | Some Concrete, Some Concrete, Some Multivalue ->
+          (* C-App-M3 *)
+          ( {
+              e with
+              e = (eapp el1 el2).e;
+              ety = Some (fty (OCamlUtils.oget e.ety));
+            },
+            BddBinds.union r1 r2 )
+      | _ -> failwith "This case cannot occur per the type system" )
+  | ELet (x, e1, e2) ->
+      let el1, r1 = translate e1 in
+      let el2, r2 = translate e2 in
+      ( {
+          e with
+          e = (elet x el1 el2).e;
+          ety = Some (fty (OCamlUtils.oget e.ety));
+        },
+        BddBinds.union r1 r2 )
+  | EBddIf _ | EToBdd _ | EToMap _ | EApplyN _ ->
+      failwith "Cannot translate LLL expressions"
+
+(* todo: need to add FV too *)
+let buildApply e r =
+  let argty = { typ = TBool; mode = Some Concrete } in
+  let e', es =
+    BddBinds.fold
+      (fun x e1 (acc, es) ->
+        let resty = acc.ety in
+        let f =
+          {
+            arg = x;
+            argty = Some argty;
+            resty;
+            body = acc;
+            fmode = Some Concrete;
+          }
+        in
+        let e' =
+          aexp
+            ( efun f,
+              Some
+                {
+                  typ = TArrow (argty, OCamlUtils.oget resty);
+                  mode = Some Concrete;
+                },
+              acc.espan )
+        in
+        (e', e1 :: es))
+      r (e, [])
+  in
+  aexp
+    ( eApplyN e' es,
+      Some { (OCamlUtils.oget e.ety) with mode = Some Multivalue },
+      e.espan )
+
+let translateDecl d =
+  match d with
+  | DLet (x, e) ->
+      let e', r = translate e in
+      if BddBinds.isEmpty r then DLet (x, e') else DLet (x, buildApply e' r)
+  | DSolve s -> failwith "todo"
+  | DAssert e -> failwith "todo"
+  | DNodes _ | DEdges _ | DSymbolic _ -> d
 
 (* List.fold_right (fun (_,rho) acc -> BddBinds.merge rho acc) esl *)
 
