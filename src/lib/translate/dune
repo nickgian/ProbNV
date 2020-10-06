@@ -1,0 +1,9 @@
+(library
+  (name probNv_translate)
+  (public_name probNv.tranlate)
+  (libraries
+    probNv_datastructures
+    probNv_lang
+    probNv_utils))
+
+(include_subdirs unqualified)

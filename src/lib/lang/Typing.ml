@@ -1135,147 +1135,6 @@ module LLLTypeInf = struct
           texp (e_val v, t, e.espan)
       | EOp (o, es) -> (
           match (o, es) with
-          (* | MGet, [e1; e2] ->
-             let e1, mapty = infer_exp e1 |> textract in
-             let e2, keyty = infer_exp e2 |> textract in
-             let valty = fresh_tyvar () in
-             unify info e mapty (TMap (keyty, valty));
-             texp (eop o [e1; e2], valty, e.espan)
-             | MSet, [e1; e2; e3] ->
-             let e1, mapty = infer_exp e1 |> textract in
-             let e2, keyty = infer_exp e2 |> textract in
-             let e3, valty = infer_exp e3 |> textract in
-             let ty = TMap (keyty, valty) in
-             unify info e mapty ty;
-             texp (eop o [e1; e2; e3], ty, e.espan)
-             | MCreate, [e1] ->
-             let e1, valty = infer_exp e1 |> textract in
-             let keyty = fresh_tyvar () in
-             texp (eop o [e1], TMap (keyty, valty), e.espan)
-             | MMap, [e1; e2] ->
-             let e1, fty = infer_exp e1 |> textract in
-             let e2, mapty = infer_exp e2 |> textract in
-             let keyty = fresh_tyvar () in
-             let valty = fresh_tyvar () in
-             unify info e mapty (TMap (keyty, valty));
-             unify info e fty (TArrow (valty, valty));
-             texp (eop o [e1; e2], mapty, e.espan)
-             | MMapFilter, [e1; e2; e3] ->
-             let e1, kty = infer_exp e1 |> textract in
-             let e2, vty = infer_exp e2 |> textract in
-             let e3, mapty = infer_exp e3 |> textract in
-             let keyty = fresh_tyvar () in
-             let valty = fresh_tyvar () in
-             unify info e mapty (TMap (keyty, valty));
-             unify info e kty (TArrow (keyty, TBool));
-             unify info e vty (TArrow (valty, valty));
-             texp (eop o [e1; e2; e3], mapty, e.espan)
-             | MMapIte, [e1; e2; e3; e4] ->
-             let e1, kty = infer_exp e1 |> textract in
-             let e2, vty1 = infer_exp e2 |> textract in
-             let e3, vty2 = infer_exp e3 |> textract in
-             let e4, mapty = infer_exp e4 |> textract in
-             let keyty = fresh_tyvar () in
-             let valty = fresh_tyvar () in
-             unify info e mapty (TMap (keyty, valty));
-             unify info e kty (TArrow (keyty, TBool));
-             unify info e vty1 (TArrow (valty, valty));
-             unify info e vty2 (TArrow (valty, valty));
-             texp (eop o [e1; e2; e3; e4], mapty, e.espan)
-             | MForAll, [e1; e2; e3] ->
-             let e1, kty = infer_exp e1 |> textract in
-             let e2, vty = infer_exp e2 |> textract in
-             let e3, mapty = infer_exp e3 |> textract in
-             let keyty = fresh_tyvar () in
-             let valty = fresh_tyvar () in
-             unify info e mapty (TMap (keyty, valty));
-             unify info e kty (TArrow (keyty, TBool));
-             unify info e vty (TArrow (valty, TBool));
-             texp (eop o [e1; e2; e3], TBool, e.espan)
-             | MMerge, _ ->
-             let (e1, e2, e3), rest =
-              match es with
-              | [e1; e2; e3] -> (e1, e2, e3), None
-              | [e1; e2; e3; el0; el1; er0; er1] -> (e1, e2, e3), Some (el0, el1, er0, er1)
-              | _ ->
-                Console.error_position
-                  info
-                  e.espan
-                  (Printf.sprintf "invalid number of parameters")
-             in
-             let e1, fty = infer_exp e1 |> textract in
-             let e2, mapty1 = infer_exp e2 |> textract in
-             let e3, mapty2 = infer_exp e3 |> textract in
-             let keyty = fresh_tyvar () in
-             let valty = fresh_tyvar () in
-             unify info e mapty1 (TMap (keyty, valty));
-             unify info e mapty2 (TMap (keyty, valty));
-             unify info e fty (TArrow (valty, TArrow (valty, valty)));
-             let es =
-              match rest with
-              | None -> []
-              | Some (el0, el1, er0, er1) ->
-                let el0, tyl0 = infer_exp el0 |> textract in
-                let el1, tyl1 = infer_exp el1 |> textract in
-                let er0, tyr0 = infer_exp er0 |> textract in
-                let er1, tyr1 = infer_exp er1 |> textract in
-                unify info e tyl0 (TOption valty);
-                unify info e tyl1 (TOption valty);
-                unify info e tyr0 (TOption valty);
-                unify info e tyr1 (TOption valty);
-                [el0; el1; er0; er1]
-             in
-             texp (eop o (e1 :: e2 :: e3 :: es), mapty1, e.espan)
-             | MFoldNode, [e1; e2; e3] ->
-             let e1, fty = infer_exp e1 |> textract in
-             let e2, mapty = infer_exp e2 |> textract in
-             let e3, accty = infer_exp e3 |> textract in
-             let keyty = TNode in
-             let valty = fresh_tyvar () in
-             unify info e mapty (TMap (keyty, valty));
-             unify info e fty (TArrow (keyty, TArrow (valty, TArrow (accty, accty))));
-             texp (eop o [e1; e2; e3], accty, e.espan)
-             | MFoldEdge, [e1; e2; e3] ->
-             let e1, fty = infer_exp e1 |> textract in
-             let e2, mapty = infer_exp e2 |> textract in
-             let e3, accty = infer_exp e3 |> textract in
-             let keyty = TEdge in
-             let valty = fresh_tyvar () in
-             unify info e mapty (TMap (keyty, valty));
-             unify info e fty (TArrow (keyty, TArrow (valty, TArrow (accty, accty))));
-             texp (eop o [e1; e2; e3], accty, e.espan) *)
-          (* | TGet (size, lo, hi), [e1] ->
-             let e1, tty = infer_exp e1 |> textract in
-             let elt_tyvars = List.map (fun _ -> fresh_tyvar ()) (List.make size ()) in
-             unify info e tty (TTuple elt_tyvars);
-             let ret_ty =
-              if lo = hi
-              then List.nth elt_tyvars lo
-              else TTuple (List.drop lo elt_tyvars |> List.take (hi - lo + 1))
-             in
-             texp (eop o [e1], ret_ty, e.espan)
-             | TSet (size, lo, hi), [e1; e2] ->
-             let e1, tty = infer_exp e1 |> textract in
-             let e2, vty = infer_exp e2 |> textract in
-             let elt_tyvars = List.map (fun _ -> fresh_tyvar ()) (List.make size ()) in
-             unify info e tty (TTuple elt_tyvars);
-             if lo = hi
-             then unify info e vty (List.nth elt_tyvars lo)
-             else
-              unify info e vty (TTuple (List.drop lo elt_tyvars |> List.take (hi - lo + 1)));
-             texp (eop o [e1; e2], tty, e.espan)
-             | MGet, _
-             | MSet, _
-             | MCreate, _
-             | MMap, _
-             | MFoldNode, _
-             | MFoldEdge, _
-             | TGet _, _
-             | TSet _, _ ->
-             Console.error_position
-              info
-              e.espan
-              (Printf.sprintf "invalid number of parameters") *)
           | Eq, [ e1; e2 ] ->
               let e1, ty1 = infer_exp e1 |> textract in
               let e2, ty2 = infer_exp e2 |> textract in
@@ -1454,7 +1313,7 @@ module LLLTypeInf = struct
           let e1, ty1 = infer_exp e1 |> textract in
           match get_mode ty1 with
           | Some Concrete ->
-              texp (eToBdd e1, mty (Some Symbolic) ty1.typ, e.espan)
+              texp (etoBdd e1, mty (Some Symbolic) ty1.typ, e.espan)
           | _ ->
               Console.error_position info e.espan
                 "ToBdd applied to non concrete expression" )
@@ -1463,7 +1322,7 @@ module LLLTypeInf = struct
           let e1, ty1 = infer_exp e1 |> textract in
           match get_mode ty1 with
           | Some Concrete ->
-              texp (eToMap e1, mty (Some Multivalue) ty1.typ, e.espan)
+              texp (etoMap e1, mty (Some Multivalue) ty1.typ, e.espan)
           | _ ->
               Console.error_position info e.espan
                 "ToBdd applied to non concrete expression" )
