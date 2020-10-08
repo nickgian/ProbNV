@@ -20,27 +20,17 @@ type var = Var.t [@@deriving ord, eq]
 type tyname = Var.t [@@deriving ord, eq]
 
 (** Execution modes *)
-type mode = Symbolic | Concrete | Multivalue | MVar of mode option ref [@@deriving ord, eq]
+type mode = Symbolic | Concrete | Multivalue [@@deriving ord, eq]
 
 (* Join operations on modes *)
-let join_opt m1 m2 =
+let rec join_opt m1 m2 =
   match m1 with
   | Concrete -> Some m2
-  | Symbolic -> (
-      match m2 with
-      | Concrete | Symbolic -> Some Symbolic
-      | Multivalue -> None
-      | MVar r -> (
-          match !r with
-          | None ->
-              r := Some Symbolic;
-              Some Symbolic
-          | Some Concrete | Some Symbolic -> Some Symbolic
-          | Some Multivalue -> None ) )
+  | Symbolic -> ( match m2 with Concrete | Symbolic -> Some Symbolic | Multivalue -> None )
   | Multivalue -> ( match m2 with Concrete | Multivalue -> Some Multivalue | Symbolic -> None )
 
 let join m1 m2 =
-  match join_opt m1 m2 with Some m -> m | None -> failwith "Cannot join these modes"
+  match join_opt m1 m2 with Some m -> m | None -> failwith "Failed to join the given modes"
 
 let join_opts m1 m2 =
   match (m1, m2) with None, _ -> m2 | _, None -> m1 | Some m1, Some m2 -> join_opt m1 m2

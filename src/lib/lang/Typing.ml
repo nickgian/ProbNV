@@ -1070,6 +1070,18 @@ module LLLTypeInf = struct
                 Console.error_position info e.espan
                   (Printf.sprintf "Mode mismatch in operation: %s and %s"
                      (Printing.mode_to_string m1) (Printing.mode_to_string m2))
+          | BddEq, [e1; e2] ->
+              let e1, ty1 = infer_exp e1 |> textract in
+              let e2, ty2 = infer_exp e2 |> textract in
+              unify info e ty1 ty2;
+              (*ensure the modes match and are symbolic*)
+              let m1 = OCamlUtils.oget (get_mode ty1) in
+              let m2 = OCamlUtils.oget (get_mode ty2) in
+              if m1 = m2 && m1 = Symbolic then texp (eop o [e1; e2], mty (Some m1) TBool, e.espan)
+              else
+                Console.error_position info e.espan
+                  (Printf.sprintf "Mode mismatch in operation: %s and %s"
+                     (Printing.mode_to_string m1) (Printing.mode_to_string m2))
           | _ ->
               let argtys, resty = op_typ o in
               let es, tys = infer_exps (i + 1) info env record_types es in
@@ -1243,14 +1255,18 @@ module LLLTypeInf = struct
           let es, tys = infer_exps (i + 1) info env record_types es in
 
           (* get the types of the function e1*)
-          let rec func_tys ty =
+          let rec func_tys ty acc =
             match ty.typ with
-            | TArrow (t1, t2) -> t1 :: func_tys t2
-            | TVar { contents = Link t } -> func_tys t
-            | _ -> [ty]
+            | TArrow (t1, t2) -> func_tys t2 (t1 :: acc)
+            | TVar { contents = Link t } -> func_tys t acc
+            | _ -> ty :: acc
           in
-          let ftys = func_tys ty1 in
-          let resty = List.last ftys in
+
+          let resty, ftys =
+            match func_tys ty1 [] with
+            | resty :: ftys -> (resty, List.rev ftys)
+            | _ -> failwith "expected a list with at least one element"
+          in
 
           (* Make sure the types match and the modes are correct according to the rule of applyN *)
           let () =

@@ -163,13 +163,21 @@ let rec translate (e : exp) : exp * BddBinds.t =
 let rec free (seen : VarSet.t) (e : exp) : BddBinds.t =
   match e.e with
   | EVar v ->
-      if VarSet.mem v seen || get_mode @@ OCamlUtils.oget e.ety != Some Multivalue then
+      if VarSet.mem v seen || get_mode @@ OCamlUtils.oget e.ety <> Some Multivalue then
         BddBinds.empty ()
       else BddBinds.singleton v e
   | EVal _ -> BddBinds.empty ()
   | EOp (_, es) ->
       (* | ETuple es -> *)
-      List.fold_left (fun set e -> BddBinds.union set (free seen e)) (BddBinds.empty ()) es
+      let acc =
+        List.fold_left (fun set e -> BddBinds.union set (free seen e)) (BddBinds.empty ()) es
+      in
+      BddBinds.fold
+        (fun k v () ->
+          Printf.printf "Printing free var: %s\n" (Var.to_string k);
+          ())
+        acc ();
+      acc
   (* | ERecord map ->
      StringMap.fold
        (fun _ e set -> VarSet.union set (free seen e))
@@ -276,6 +284,7 @@ let translateTrans trans m =
           (* translate the internal expression, i.e. without the arguments *)
           let el2, r = translate eh2 in
           let fv = free eh2 in
+
           (* combine the bindings from the free variables and any bindings produced by the translation *)
           let rho = BddBinds.union r fv in
           if BddBinds.isEmpty rho then
