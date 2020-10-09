@@ -1,0 +1,12 @@
+(library
+ (name probNv_compile)
+ (public_name probNv.compile)
+ (libraries
+   probNv_lang
+   probNv_solution
+   probNv_datastructures
+   probNv_utils
+   findlib.dynload
+   fix
+ )
+)

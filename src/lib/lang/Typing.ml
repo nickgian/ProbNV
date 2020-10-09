@@ -1087,8 +1087,6 @@ module LLLTypeInf = struct
               let es, tys = infer_exps (i + 1) info env record_types es in
               unifies info e argtys tys;
               (* See binop rule from paper *)
-              Printf.printf "%s\n\n" (Printing.exp_to_string ~show_types:true e);
-              List.iter (fun ty -> Printf.printf "%s\n\n" (Printing.ty_to_string ty)) tys;
               let m1 = get_mode (List.hd tys) in
               if
                 List.for_all

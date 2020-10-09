@@ -8,6 +8,7 @@
     probNv_utils
     probNv_transformations
     probNv_translate
+    probNv_compile
     integers
     str
     batteries

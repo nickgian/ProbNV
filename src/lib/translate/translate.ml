@@ -97,7 +97,7 @@ let rec translate (e : exp) : exp * BddBinds.t =
           ( { e with e = (ebddIf el1 el2 el3).e; ety = Some (fty (OCamlUtils.oget e.ety)) },
             BddBinds.empty () )
       | _ -> failwith "This case cannot occur per the type system" )
-  | EFun { arg = x; body = e1; argty; resty; fmode } ->
+  | EFun { arg = x; body = e1; argty; resty; _ } ->
       (* C-Lambda *)
       (* We assume we have inlined functions returning multi-values so we can
            assume the set generated will be empty. *)
@@ -117,9 +117,7 @@ let rec translate (e : exp) : exp * BddBinds.t =
       let ty2 = OCamlUtils.oget e2.ety in
       let ty = OCamlUtils.oget e.ety in
       let argty =
-        match (OCamlUtils.oget e1.ety).typ with
-        | TArrow (argty, _) -> argty
-        | _ -> failwith "Expected an arrow type"
+        match ty1.typ with TArrow (argty, _) -> argty | _ -> failwith "Expected an arrow type"
       in
       match (get_mode argty, get_mode ty2, get_mode ty) with
       | Some Concrete, Some Concrete, Some Concrete ->
@@ -172,11 +170,6 @@ let rec free (seen : VarSet.t) (e : exp) : BddBinds.t =
       let acc =
         List.fold_left (fun set e -> BddBinds.union set (free seen e)) (BddBinds.empty ()) es
       in
-      BddBinds.fold
-        (fun k v () ->
-          Printf.printf "Printing free var: %s\n" (Var.to_string k);
-          ())
-        acc ();
       acc
   (* | ERecord map ->
      StringMap.fold
@@ -189,6 +182,8 @@ let rec free (seen : VarSet.t) (e : exp) : BddBinds.t =
   | ELet (x, e1, e2) ->
       let seen = VarSet.add x seen in
       BddBinds.union (free seen e1) (free seen e2)
+  | EBddIf _ | EToBdd _ | EToMap _ | EApplyN _ ->
+      failwith "This function is intented to be used with HLL expressions. This is a logic error."
 
 (* | ESome e | ETy (e, _) | EProject (e, _) -> free seen e
    | EMatch (e, bs) ->

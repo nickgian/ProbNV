@@ -39,3 +39,4 @@ nv
 
 # Native install files
 *.install
+node_modules/.lsp/debug.log
