@@ -16,8 +16,9 @@ type 'a t =
   | BBool of Bdd.vt (* Boolean BDD *)
   | BInt of Bdd.vt array (* Integer as an array of booleans *)
   | BOption of Bdd.vt * 'a t (* Option of BDD *)
-  | Tuple of 'a t list (* Tuple of elements *)
-  | BMap of 'a CompileBDDs.t
+  | Tuple of 'a t list
+
+(* Tuple of elements *)
 
 (* MTBDD map *)
 
@@ -27,7 +28,6 @@ let rec print (x : 'a t) =
   | BInt _ -> "BInt"
   | BOption (_, x) -> Printf.sprintf "BOption[%s]" (print x)
   | Tuple xs -> Collections.printList print xs "[" ";" "]"
-  | BMap _ -> "BMap"
 
 let rec equal_t x y =
   match (x, y) with
@@ -35,7 +35,6 @@ let rec equal_t x y =
   | BInt i1, BInt i2 -> Array.for_all2 Bdd.is_equal i1 i2
   | BOption (t1, x), BOption (t2, y) -> Bdd.is_equal t1 t2 && equal_t x y
   | Tuple ts1, Tuple ts2 -> List.for_all2 equal_t ts1 ts2
-  | BMap m1, BMap m2 -> Mtbdd.is_equal m1.bdd m2.bdd
   | _, _ -> false
 
 let bdd_of_bool b = if b then Bdd.dtrue B.mgr else Bdd.dfalse B.mgr
@@ -199,3 +198,25 @@ let band x y =
   match (x, y) with
   | BBool x, BBool y -> BBool (Bdd.dand x y)
   | _, _ -> failwith "Expected booleans"
+
+(** ** Multivalue operations *)
+
+let toMap ~value ~vty_id = { bdd = Mtbdd.cst B.mgr B.tbl (Obj.magic value); val_ty_id = vty_id }
+
+(* applyN takes as argument an OCaml function over concrete OCaml values and a nu*)
+let applyN ~f ~args ~vty_id : 'a CompileBDDs.t =
+  let g _ (arr : 'a Cudd.Mtbdd.unique Cudd.Vdd.t array) : 'a Cudd.Mtbdd.unique Cudd.Vdd.t option =
+    let cst = Array.fold_left (fun res add -> res && Mtbdd.is_cst add) true arr in
+    if cst then
+      let res =
+        Array.fold_left
+          (fun facc add -> Obj.magic (facc (Obj.magic (Mtbdd.dval add))))
+          (Obj.magic f) arr
+      in
+      Some (Mtbdd.cst B.mgr B.tbl (Obj.magic res))
+    else None
+  in
+  let op =
+    User.make_opN ~memo:Cudd.(Cache (Cache.create (Array.length args))) 0 (Array.length args) g
+  in
+  { bdd = User.apply_opN op [||] args; val_ty_id = vty_id }

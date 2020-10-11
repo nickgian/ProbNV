@@ -239,8 +239,15 @@ and exp_to_ocaml_string e =
       Printf.sprintf "(BddFunc.ite %s %s %s)" (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
         (exp_to_ocaml_string e3)
   | EToBdd e1 -> Printf.sprintf "(BddFunc.toBdd record_fns %s)" (exp_to_ocaml_string e1)
-  | EToMap e1 -> failwith "todo"
-  | EApplyN (e1, es) -> failwith "todo"
+  | EToMap e1 ->
+      Printf.sprintf "(BddFunc.toMap ~value:%s ~vty_id:%d)" (exp_to_ocaml_string e1)
+        (get_fresh_type_id type_store (OCamlUtils.oget e1.ety))
+  | EApplyN (e1, es) ->
+      let el1 = exp_to_ocaml_string e1 in
+      let esl = List.map exp_to_ocaml_string es in
+      let esl_array = Collections.printList (fun el -> el) esl "[|" "; " "|]" in
+      Printf.sprintf "(BddFunc.applyN ~f:%s ~args:(%s) ~vty_id:%d)" el1 esl_array
+        (get_fresh_type_id type_store (OCamlUtils.oget e.ety))
 
 (* | ETuple es ->
        let n = BatList.length es in
@@ -280,7 +287,8 @@ and prefix_op_to_ocaml_string op es =
           Printf.sprintf "(BddFunc.less %s %s)" (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
       | BddEq ->
           Printf.sprintf "(BddFunc.eq %s %s)" (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
-      | Eq | UAdd _ | ULess _ | And | Not -> failwith "not applicable" )
+      | Eq | UAdd _ | ULess _ | And | Not | BddNot -> failwith "not applicable" )
+  | _ -> failwith "too many arguments to operation"
 
 and func_to_ocaml_string f =
   Printf.sprintf "(fun %s -> %s)" (varname f.arg) (exp_to_ocaml_string f.body)
@@ -481,8 +489,6 @@ and func_to_ocaml_string f =
   | _ -> failwith "Not yet implemented" *)
 
 (** Translate a declaration to an OCaml program*)
-let symbolic_counter = ref 0
-
 let compile_decl decl =
   match decl with
   (* | DUserTy (x, ty) -> Printf.sprintf "type %s = %s" (varname x) (ty_to_ocaml_string ty) *)
