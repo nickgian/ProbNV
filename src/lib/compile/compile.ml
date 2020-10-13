@@ -23,7 +23,7 @@ let proj_rec i n =
   record_table := IntSet.add n !record_table;
   Printf.sprintf "p%d__%d" i n
 
-(* don't call with a negative n...*)
+(* don't call with a negative n... *)
 let rec fold_int (f : int -> 'a -> 'a) acc n = if n = 0 then acc else fold_int f (f n acc) (n - 1)
 
 (** For each tuple of size n creates a corresponding record*)
@@ -37,7 +37,9 @@ let build_record_type n =
 
 let build_record_types () =
   let lst = IntSet.to_list !record_table in
-  Collections.printList (fun n -> build_record_type n) lst "type " "\n and " "\n"
+  match lst with
+  | [] -> ""
+  | _ -> Collections.printList (fun n -> build_record_type n) lst "type " "\n and " "\n"
 
 let build_proj_func n =
   let lst = BatList.init n (fun i -> i) in
@@ -52,7 +54,8 @@ let build_proj_funcs () =
   let branches =
     IntSet.fold (fun n acc -> Printf.sprintf "%s%s" (build_proj_func n) acc) !record_table ""
   in
-  Printf.sprintf "let record_fns s = match s with \n%s" branches
+  if String.equal "" branches then "let record_fns s = failwith \"Should not execute\""
+  else Printf.sprintf "let record_fns s = match s with \n%s" branches
 
 let build_constructor n =
   let lst = BatList.init n (fun i -> i) in
@@ -68,7 +71,8 @@ let build_constructors () =
   let branches =
     IntSet.fold (fun n acc -> Printf.sprintf "%s%s" (build_constructor n) acc) !record_table ""
   in
-  Printf.sprintf "let record_cnstrs s = match s with \n%s" branches
+  if String.equal "" branches then "let record_cnstrs s = failwith \"Should not execute\""
+  else Printf.sprintf "let record_cnstrs s = match s with \n%s" branches
 
 let is_prefix_op op =
   match op with
@@ -534,12 +538,11 @@ let set_entry (name : string) =
 let generate_ocaml (name : string) decls =
   let header =
     Printf.sprintf
-      "open Nv_datastructures\n\
-      \ open Nv_lang\n\
+      "open ProbNv_datastructures\n\
+      \ open ProbNv_lang\n\
        open Syntax\n\
-       open Nv_compile\n\n\
-       module %s (S: Symbolics.PackedSymbolics) (SIM:SrpNative.SrpSimulationSig): \
-       SrpNative.NATIVE_SRP = struct\n"
+       open ProbNv_compile\n\n\
+       module %s (SIM:SrpNative.SrpSimulationSig): SrpNative.NATIVE_SRP = struct\n"
       name
   in
   let ocaml_decls = Profile.time_profile "Compilation Time" (fun () -> compile_decls decls) in
@@ -553,7 +556,7 @@ let build_dune_file name =
     \ (name %s_plugin) \n\
     \ (public_name %s.plugin)\n\
     \ (modes native)\n\
-    \ (libraries nv))\n\
+    \ (libraries probNv))\n\
     \ (env\n\
     \ (dev\n\
     \ (flags (:standard -warn-error -A -w -a -opaque))))" name name
@@ -585,10 +588,10 @@ let compile_ocaml name net =
   let basename = Filename.basename name in
   let program = generate_ocaml basename net in
   let src_dir =
-    try Sys.getenv "NV_BUILD" ^ name
+    try Sys.getenv "PROBNV_BUILD" ^ name
     with Not_found ->
       failwith
-        "To use compiler, please set environment variable NV_BUILD to a directory in which to \
+        "To use compiler, please set environment variable PROBNV_BUILD to a directory in which to \
          generate build files. Use something outside the nv directory."
   in
   (try Unix.mkdir src_dir 0o777 with _ -> ());

@@ -1112,6 +1112,7 @@ module LLLTypeInf = struct
           (* Type check e1 and e2 *)
           let e1, ty_fun = infer_exp e1 |> textract in
           let e2, ty_arg = infer_exp e2 |> textract in
+          Printf.printf "APP(%s,%s)\n" (Printing.exp_to_string e1) (Printing.exp_to_string e2);
           let fun_arg, fun_res =
             match ty_fun.typ with
             | TArrow (fun_arg, fun_res) -> (fun_arg, fun_res)

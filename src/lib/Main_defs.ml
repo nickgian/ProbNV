@@ -6,48 +6,26 @@ open ProbNv_lang.Syntax
 open ProbNv_transformations
 open ProbNv_utils
 open ProbNv_translate
+open ProbNv_compile
+open ProbNv_solution
 open OCamlUtils
 
-(* type answer =
-  | Success of (Solution.t option)
-  | CounterExample of Solution.t
+type answer = Success of Solution.t option | CounterExample of Solution.t
 
-let rec apply_all (s : Solution.t) fs =
-  match fs with
-  | [] -> s
-  | f :: fs -> apply_all (f s) fs *)
+let rec apply_all (s : Solution.t) fs = match fs with [] -> s | f :: fs -> apply_all (f s) fs
 
-(* let run_simulator cfg _ decls fs =
-  let decls, _ = OptimizeBranches.optimize_declarations decls in
-  try
-    let solution, q =
-      match cfg.bound with
-      | None ->
-        (Profile.time_profile "Interpreted simulation"
-           (fun () -> Simulator.simulate_declarations ~throw_requires:true decls)
-        , QueueSet.empty Pervasives.compare )
-      | Some b -> ignore b; failwith "Don't know what this means" (* Srp.simulate_net_bound net b *)
-    in
-    ( match QueueSet.pop q with
-      | None -> ()
-      | Some _ ->
-        print_string [] "non-quiescent nodes:" ;
-        QueueSet.iter
-          (fun q ->
-             print_string [] (string_of_int q ^ ";") )
-          q ;
-        print_newline () ;
-        print_newline () ;
-    );
-    match solution.assertions with
-    | [] -> Success (Some solution), fs
-    | lst ->
-      if List.for_all (fun b -> b) lst then
-        Success (Some solution), fs
-      else
-        CounterExample solution, fs
-  with Srp.Require_false ->
-    Console.error "required conditions not satisfied" *)
+(** Native simulator - compiles SRP to OCaml *)
+let run_compiled file _ _ decls fs =
+  let path = Filename.remove_extension file in
+  let name = Filename.basename path in
+  let name = String.mapi (fun i c -> if i = 0 then Char.uppercase_ascii c else c) name in
+  let newpath = name in
+  let solution = Loader.simulate newpath decls in
+  match solution.assertions with
+  | [] -> (Success (Some solution), fs)
+  | lst ->
+      if List.for_all (fun b -> b) lst then (Success (Some solution), fs)
+      else (CounterExample solution, fs)
 
 let parse_input (args : string array) =
   let cfg, rest = argparse default "probNV" args in
@@ -76,6 +54,8 @@ let parse_input (args : string array) =
     (ProbNv_lang.Printing.declarations_to_string ~show_types:true decls);
   (* Translate the program to LLL *)
   let decls = Translate.translate_declarations decls in
+  Printf.printf "Printing compiled program\n\n%s"
+    (ProbNv_lang.Printing.declarations_to_string ~show_types:true decls);
   (* Type check the LLL program *)
   let decls = Typing.LLLTypeInf.infer_declarations info decls in
   (cfg, info, file, decls, fs)
