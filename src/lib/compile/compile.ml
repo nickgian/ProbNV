@@ -7,12 +7,15 @@ open Syntax
 open ProbNv_datastructures
 open CompileBDDs
 
-let varname x = Var.to_string_delim "___" x
+let varname x = Var.to_string_delim "_" x
 
 (** Translating probNV records to OCaml records (type or values depending on f)*)
-let record_to_ocaml_record (sep : string) (f : 'a -> string) (map : 'a StringMap.t) : string =
+let record_to_ocaml_record (sep : string) (f : 'a -> string)
+    (map : 'a StringMap.t) : string =
   let entries =
-    StringMap.fold (fun l e acc -> Printf.sprintf "%s%s %s %s;" acc l sep (f e)) map ""
+    StringMap.fold
+      (fun l e acc -> Printf.sprintf "%s%s %s %s;" acc l sep (f e))
+      map ""
   in
   Printf.sprintf "{ %s }" entries
 
@@ -24,14 +27,19 @@ let proj_rec i n =
   Printf.sprintf "p%d__%d" i n
 
 (* don't call with a negative n... *)
-let rec fold_int (f : int -> 'a -> 'a) acc n = if n = 0 then acc else fold_int f (f n acc) (n - 1)
+let rec fold_int (f : int -> 'a -> 'a) acc n =
+  if n = 0 then acc else fold_int f (f n acc) (n - 1)
 
 (** For each tuple of size n creates a corresponding record*)
 let build_record_type n =
   let lst = BatList.init n (fun i -> i) in
-  let type_vars = Collections.printList (fun i -> Printf.sprintf "'a%d" i) lst "(" ", " ")" in
+  let type_vars =
+    Collections.printList (fun i -> Printf.sprintf "'a%d" i) lst "(" ", " ")"
+  in
   let proj_vars =
-    Collections.printList (fun i -> Printf.sprintf "p%d__%d : 'a%d" i n i) lst "{" "; " "}"
+    Collections.printList
+      (fun i -> Printf.sprintf "p%d__%d : 'a%d" i n i)
+      lst "{" "; " "}"
   in
   Printf.sprintf "%s tup__%d = %s" type_vars n proj_vars
 
@@ -39,39 +47,55 @@ let build_record_types () =
   let lst = IntSet.to_list !record_table in
   match lst with
   | [] -> ""
-  | _ -> Collections.printList (fun n -> build_record_type n) lst "type " "\n and " "\n"
+  | _ ->
+      Collections.printList
+        (fun n -> build_record_type n)
+        lst "type " "\n and " "\n"
 
 let build_proj_func n =
   let lst = BatList.init n (fun i -> i) in
   Collections.printList
     (* (fun i -> Printf.sprintf "| \"p%d__%d\" -> Obj.magic (fun x -> x.p%d__%d)" i n i n) *)
-      (fun i -> Printf.sprintf "| (%d,%d) -> Obj.magic (fun x -> x.p%d__%d)" i n i n)
+      (fun i ->
+      Printf.sprintf "| (%d,%d) -> Obj.magic (fun x -> x.p%d__%d)" i n i n)
     lst "" "\n" "\n"
 
 (** Builds a table (function) that maps record projector names to the respective
    functions *)
 let build_proj_funcs () =
   let branches =
-    IntSet.fold (fun n acc -> Printf.sprintf "%s%s" (build_proj_func n) acc) !record_table ""
+    IntSet.fold
+      (fun n acc -> Printf.sprintf "%s%s" (build_proj_func n) acc)
+      !record_table ""
   in
-  if String.equal "" branches then "let record_fns s = failwith \"Should not execute\""
+  if String.equal "" branches then
+    "let record_fns s = failwith \"Should not execute\""
   else Printf.sprintf "let record_fns s = match s with \n%s" branches
 
 let build_constructor n =
   let lst = BatList.init n (fun i -> i) in
   let fun_args =
-    Collections.printList (fun i -> Printf.sprintf "p%d__%d" i n) lst "fun " " " " -> "
+    Collections.printList
+      (fun i -> Printf.sprintf "p%d__%d" i n)
+      lst "fun " " " " -> "
   in
-  let fun_body = Collections.printList (fun i -> Printf.sprintf "p%d__%d" i n) lst "{" "; " "}" in
+  let fun_body =
+    Collections.printList
+      (fun i -> Printf.sprintf "p%d__%d" i n)
+      lst "{" "; " "}"
+  in
   Printf.sprintf "| %d -> Obj.magic (%s%s)\n" n fun_args fun_body
 
 (** Builds a table (function) that maps each record to a function that takes as
    arguments a value for each of its fields and creates the record*)
 let build_constructors () =
   let branches =
-    IntSet.fold (fun n acc -> Printf.sprintf "%s%s" (build_constructor n) acc) !record_table ""
+    IntSet.fold
+      (fun n acc -> Printf.sprintf "%s%s" (build_constructor n) acc)
+      !record_table ""
   in
-  if String.equal "" branches then "let record_cnstrs s = failwith \"Should not execute\""
+  if String.equal "" branches then
+    "let record_cnstrs s = failwith \"Should not execute\""
   else Printf.sprintf "let record_cnstrs s = match s with \n%s" branches
 
 let is_prefix_op op =
@@ -93,7 +117,8 @@ let op_to_ocaml_string op =
   (* | ULeq _ -> "<=" *)
   (* | NLess -> "<"
      | NLeq -> "<=" *)
-  | BddAnd | BddNot | BddEq | BddAdd | BddLess -> failwith "BDD operations are handled elsewhere"
+  | BddAnd | BddNot | BddEq | BddAdd | BddLess ->
+      failwith "BDD operations are handled elsewhere"
 
 (** Translating patterns to OCaml patterns*)
 
@@ -127,7 +152,8 @@ let rec ty_to_ocaml_string t =
   | TInt _ -> "int"
   | TNode -> "int"
   | TEdge -> "(int * int)"
-  | TArrow (t1, t2) -> Printf.sprintf "%s -> %s" (ty_to_ocaml_string t1) (ty_to_ocaml_string t2)
+  | TArrow (t1, t2) ->
+      Printf.sprintf "%s -> %s" (ty_to_ocaml_string t1) (ty_to_ocaml_string t2)
 
 (* | TTuple ts ->
        let n = BatList.length ts in
@@ -207,6 +233,8 @@ and track_tuples_pattern p =
   (* records are already unrolled  *)
   | POption None | PWild | PVar _ | PUnit | PBool _ | PInt _ | PRecord _ | PNode _ | PEdge _ -> () *)
 
+let magic s = Printf.sprintf "(Obj.magic %s)" s
+
 (** Translating values and expressions to OCaml*)
 let rec value_to_ocaml_string v =
   match v.v with
@@ -232,26 +260,39 @@ and exp_to_ocaml_string e =
   | EOp (op, es) when is_prefix_op op -> prefix_op_to_ocaml_string op es
   | EOp (op, es) -> op_args_to_ocaml_string op es
   | EFun f -> func_to_ocaml_string f
-  | EApp (e1, e2) -> Printf.sprintf "(%s) (%s)" (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
-  | EIf (e1, e2, e3) ->
-      Printf.sprintf "(if %s then\n %s else\n %s)" (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
-        (exp_to_ocaml_string e3)
-  | ELet (x, e1, e2) ->
-      Printf.sprintf "(let %s = %s in\n %s)" (varname x) (exp_to_ocaml_string e1)
+  | EApp (e1, e2) ->
+      Printf.sprintf "((%s) (%s))" (exp_to_ocaml_string e1)
         (exp_to_ocaml_string e2)
+  | EIf (e1, e2, e3) ->
+      Printf.sprintf "(if %s then\n %s else\n %s)" (exp_to_ocaml_string e1)
+        (exp_to_ocaml_string e2) (exp_to_ocaml_string e3)
+  | ELet (x, e1, e2) ->
+      Printf.sprintf "(let %s = %s in\n %s)" (varname x)
+        (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
   | EBddIf (e1, e2, e3) ->
-      Printf.sprintf "(BddFunc.ite %s %s %s)" (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
-        (exp_to_ocaml_string e3)
-  | EToBdd e1 -> Printf.sprintf "(BddFunc.toBdd record_fns %s)" (exp_to_ocaml_string e1)
-  | EToMap e1 ->
-      Printf.sprintf "(BddFunc.toMap ~value:%s ~vty_id:%d)" (exp_to_ocaml_string e1)
+      Printf.sprintf "(BddFunc.ite %s %s %s)" (exp_to_ocaml_string e1)
+        (exp_to_ocaml_string e2) (exp_to_ocaml_string e3)
+  | EToBdd e1 ->
+      Printf.sprintf "(BddFunc.toBdd record_fns ~vty_id:%d %s)"
         (get_fresh_type_id type_store (OCamlUtils.oget e1.ety))
+        (exp_to_ocaml_string e1)
+  | EToMap e1 ->
+      Printf.sprintf "(BddFunc.toMap ~value:%s)" (exp_to_ocaml_string e1)
   | EApplyN (e1, es) ->
       let el1 = exp_to_ocaml_string e1 in
-      let esl = List.map exp_to_ocaml_string es in
+      let esl =
+        List.map
+          (fun e ->
+            if get_mode (OCamlUtils.oget e.ety) = Some Symbolic then
+              magic
+              @@ Printf.sprintf "(BddFunc.wrap_mtbdd (%s))"
+                   (exp_to_ocaml_string e)
+            else magic @@ exp_to_ocaml_string e)
+          es
+      in
+      ignore (get_fresh_type_id type_store (OCamlUtils.oget e.ety));
       let esl_array = Collections.printList (fun el -> el) esl "[|" "; " "|]" in
-      Printf.sprintf "(BddFunc.applyN ~f:%s ~args:(%s) ~vty_id:%d)" el1 esl_array
-        (get_fresh_type_id type_store (OCamlUtils.oget e.ety))
+      Printf.sprintf "(BddFunc.applyN ~f:%s ~args:(%s))" el1 esl_array
 
 (* | ETuple es ->
        let n = BatList.length es in
@@ -268,30 +309,36 @@ and exp_to_ocaml_string e =
 and op_args_to_ocaml_string op es =
   match es with
   | [] -> failwith "Empty operand list"
-  | [e1] -> Printf.sprintf "(%s %s)" (op_to_ocaml_string op) (exp_to_ocaml_string e1)
-  | [e1; e2] ->
-      Printf.sprintf "(%s %s %s)" (exp_to_ocaml_string e1) (op_to_ocaml_string op)
-        (exp_to_ocaml_string e2)
+  | [ e1 ] ->
+      Printf.sprintf "(%s %s)" (op_to_ocaml_string op) (exp_to_ocaml_string e1)
+  | [ e1; e2 ] ->
+      Printf.sprintf "(%s %s %s)" (exp_to_ocaml_string e1)
+        (op_to_ocaml_string op) (exp_to_ocaml_string e2)
   | _ -> failwith "Should be a keyword op"
 
 and prefix_op_to_ocaml_string op es =
   match es with
   | [] -> failwith "Operation with empty arguments"
-  | [e] -> (
+  | [ e ] -> (
       match op with
       | BddNot -> Printf.sprintf "(BddFunc.bnot %s)" (exp_to_ocaml_string e)
       | _ -> failwith "Wrong number of arguments" )
-  | [e1; e2] -> (
+  | [ e1; e2 ] -> (
       match op with
       | BddAnd ->
-          Printf.sprintf "(BddFunc.band %s %s)" (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
+          Printf.sprintf "(BddFunc.band %s %s)" (exp_to_ocaml_string e1)
+            (exp_to_ocaml_string e2)
       | BddAdd ->
-          Printf.sprintf "(BddFunc.add %s %s)" (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
+          Printf.sprintf "(BddFunc.add %s %s)" (exp_to_ocaml_string e1)
+            (exp_to_ocaml_string e2)
       | BddLess ->
-          Printf.sprintf "(BddFunc.less %s %s)" (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
+          Printf.sprintf "(BddFunc.less %s %s)" (exp_to_ocaml_string e1)
+            (exp_to_ocaml_string e2)
       | BddEq ->
-          Printf.sprintf "(BddFunc.eq %s %s)" (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
-      | Eq | UAdd _ | ULess _ | And | Not | BddNot -> failwith "not applicable" )
+          Printf.sprintf "(BddFunc.eq %s %s)" (exp_to_ocaml_string e1)
+            (exp_to_ocaml_string e2)
+      | Eq | UAdd _ | ULess _ | And | Not | BddNot -> failwith "not applicable"
+      )
   | _ -> failwith "too many arguments to operation"
 
 and func_to_ocaml_string f =
@@ -499,7 +546,8 @@ let compile_decl decl =
   | DSymbolic (x, ty) ->
       let ty_id = get_fresh_type_id type_store ty in
       Printf.sprintf "let %s = BddFunc.create_value %d" (varname x) ty_id
-  | DLet (x, e) -> Printf.sprintf "let %s = %s" (varname x) (exp_to_ocaml_string e)
+  | DLet (x, e) ->
+      Printf.sprintf "let %s = %s" (varname x) (exp_to_ocaml_string e)
   | DAssert e ->
       Printf.sprintf "let () = assert %s" (exp_to_ocaml_string e)
       (*TODO: change how assertions are handled *)
@@ -512,11 +560,18 @@ let compile_decl decl =
               (*NOTE: this is just the attribute type, not including the map from nodes to attributes *)
               (*need to register node types manually! *)
               ignore (get_fresh_type_id type_store (concrete TNode));
+              Printf.printf "Solution type: %s\n" (Printing.ty_to_string attr);
               let attr_id = get_fresh_type_id type_store attr in
-              Printf.sprintf "let %s = SIM.simulate_solve record_fns (%d) (\"%s\") (%s) (%s) (%s)"
-                (varname x) attr_id (Var.name x) (exp_to_ocaml_string solve.init)
-                (exp_to_ocaml_string solve.trans) (exp_to_ocaml_string solve.merge) )
-      | _ -> failwith "Not implemented" (* Only happens if we did map unrolling *) )
+              Printf.sprintf
+                "let %s = SIM.simulate_solve record_fns (%d) (\"%s\") (%s) \
+                 (%s) (%s)"
+                (varname x) attr_id (Var.name x)
+                (exp_to_ocaml_string solve.init)
+                (exp_to_ocaml_string solve.trans)
+                (exp_to_ocaml_string solve.merge) )
+      | _ ->
+          failwith "Not implemented" (* Only happens if we did map unrolling *)
+      )
   | DNodes _ | DEdges _ ->
       (*nodes and edges are not emmited in the OCaml program *)
       ""
@@ -533,7 +588,8 @@ let compile_decls decls =
   Printf.sprintf "%s %s %s %s %s" tuple_s record_cnstrs record_fns embeddings s
 
 let set_entry (name : string) =
-  Printf.sprintf "let () = SrpNative.srp := Some (module %s:SrpNative.CompleteSRPSig)" name
+  Printf.sprintf
+    "let () = SrpNative.srp := Some (module %s:SrpNative.CompleteSRPSig)" name
 
 let generate_ocaml (name : string) decls =
   let header =
@@ -545,7 +601,9 @@ let generate_ocaml (name : string) decls =
        module %s (SIM:SrpNative.SrpSimulationSig): SrpNative.NATIVE_SRP = struct\n"
       name
   in
-  let ocaml_decls = Profile.time_profile "Compilation Time" (fun () -> compile_decls decls) in
+  let ocaml_decls =
+    Profile.time_profile "Compilation Time" (fun () -> compile_decls decls)
+  in
   Printf.sprintf "%s %s end\n %s" header ocaml_decls (set_entry name)
 
 (* Create the plugin that we will dynamically load later, do not print warnings
@@ -564,10 +622,14 @@ let build_dune_file name =
 let build_project_file name = Printf.sprintf "(lang dune 1.10)\n (name %s)" name
 
 let build_opam_file name =
-  Printf.sprintf "name: \"%s-plugin\"\n build: [ \"dune\" \"build\" \"-p\" name \"-j\" jobs ]" name
+  Printf.sprintf
+    "name: \"%s-plugin\"\n\
+    \ build: [ \"dune\" \"build\" \"-p\" name \"-j\" jobs ]" name
 
 let print_file file s =
-  let oc = open_out_gen [Open_rdonly; Open_wronly; Open_creat; Open_trunc] 0o777 file in
+  let oc =
+    open_out_gen [ Open_rdonly; Open_wronly; Open_creat; Open_trunc ] 0o777 file
+  in
   Printf.fprintf oc "%s" s;
   close_out oc
 
@@ -591,8 +653,9 @@ let compile_ocaml name net =
     try Sys.getenv "PROBNV_BUILD" ^ name
     with Not_found ->
       failwith
-        "To use compiler, please set environment variable PROBNV_BUILD to a directory in which to \
-         generate build files. Use something outside the nv directory."
+        "To use compiler, please set environment variable PROBNV_BUILD to a \
+         directory in which to generate build files. Use something outside the \
+         nv directory."
   in
   (try Unix.mkdir src_dir 0o777 with _ -> ());
   let curdir = Sys.getcwd () in

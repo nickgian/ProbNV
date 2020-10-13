@@ -6,6 +6,7 @@ open ProbNv_solution
 open ProbNv_lang
 open ProbNv_datastructures
 open ProbNv_lang.Collections
+open Cudd
 
 (** Type of SRP network *)
 module type NATIVE_SRP = sig
@@ -40,7 +41,8 @@ module type CompleteSRPSig = functor (SIM : SrpSimulationSig) -> NATIVE_SRP
 let (srp : (module CompleteSRPSig) option ref) = ref None
 
 (** Getter function for [srp]*)
-let get_srp () = match !srp with Some srp -> srp | None -> failwith "No srp loaded"
+let get_srp () =
+  match !srp with Some srp -> srp | None -> failwith "No srp loaded"
 
 (******************)
 (* SRP Simulator *)
@@ -70,7 +72,9 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
         let next_q = QueueSet.add q next_n in
         let init_n = init next_n in
         let next_m =
-          AdjGraph.VertexMap.add next_n (AdjGraph.VertexMap.singleton next_n init_n, init_n) m
+          AdjGraph.VertexMap.add next_n
+            (AdjGraph.VertexMap.singleton next_n init_n, init_n)
+            m
         in
         loop next_n next_q next_m
       else (m, q)
@@ -90,34 +94,64 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
     let do_neighbor (_, initial_attribute) (s, todo) neighbor =
       let edge = (origin, neighbor) in
       (* Compute the incoming attribute from origin *)
+      Printf.printf "Before executing a trans\n";
+      flush_all ();
       let n_incoming_attribute = trans edge initial_attribute in
+      Printf.printf "After executing a trans\n";
+      flush_all ();
       let n_received, n_old_attribute = get_attribute neighbor s in
       match AdjGraph.VertexMap.Exceptionless.find origin n_received with
       | None ->
           (* If this is the first message from this node then add it to the received messages of n*)
-          let new_entry = AdjGraph.VertexMap.add origin n_incoming_attribute n_received in
+          let new_entry =
+            AdjGraph.VertexMap.add origin n_incoming_attribute n_received
+          in
+          Printf.printf "Before executing a merge\n";
+          flush_all ();
           (*compute new merge and decide whether best route changed and it needs to be propagated*)
-          let n_new_attribute = merge neighbor n_old_attribute n_incoming_attribute in
+          let n_new_attribute =
+            merge neighbor n_old_attribute n_incoming_attribute
+          in
+          Printf.printf "After executing a merge\n";
+          flush_all ();
           if n_old_attribute = n_new_attribute then
-            (AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s, todo)
-          else (AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s, neighbor :: todo)
+            ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
+              todo )
+          else
+            ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
+              neighbor :: todo )
       | Some old_attribute_from_x ->
           (* if n had already received a message from origin then we may need to recompute everything*)
           (* Withdraw route received from origin *)
           let n_received = AdjGraph.VertexMap.remove origin n_received in
           (* Merge the old route from with the new route from origin *)
-          let compare_routes = merge neighbor old_attribute_from_x n_incoming_attribute in
+          Printf.printf "Before executing another merge\n";
+          flush_all ();
+          let compare_routes =
+            merge neighbor old_attribute_from_x n_incoming_attribute
+          in
+          Printf.printf "After executing another merge\n";
+          flush_all ();
           (* This is a hack because merge may not be selective *)
-          let dummy_new = merge neighbor n_incoming_attribute n_incoming_attribute in
+          let dummy_new =
+            merge neighbor n_incoming_attribute n_incoming_attribute
+          in
           (*if the merge between new and old route from origin is equal to the new route from origin*)
           if compare_routes = dummy_new then
             (*we can incrementally compute in this case*)
-            let n_new_attribute = merge neighbor n_old_attribute n_incoming_attribute in
-            let new_entry = AdjGraph.VertexMap.add origin n_incoming_attribute n_received in
+            let n_new_attribute =
+              merge neighbor n_old_attribute n_incoming_attribute
+            in
+            let new_entry =
+              AdjGraph.VertexMap.add origin n_incoming_attribute n_received
+            in
             (*update the todo list if the node's solution changed.*)
             if n_old_attribute = n_new_attribute then
-              (AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s, todo)
-            else (AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s, neighbor :: todo)
+              ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
+                todo )
+            else
+              ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
+                neighbor :: todo )
           else
             (* In this case, we need to do a full merge of all received routes *)
             let best =
@@ -125,9 +159,13 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
                 (fun _ v acc -> merge neighbor v acc)
                 n_received n_incoming_attribute
             in
-            let newTodo = if n_old_attribute = best then todo else neighbor :: todo in
+            let newTodo =
+              if n_old_attribute = best then todo else neighbor :: todo
+            in
             (*add the new received route for n from origin*)
-            let n_received = AdjGraph.VertexMap.add origin n_incoming_attribute n_received in
+            let n_received =
+              AdjGraph.VertexMap.add origin n_incoming_attribute n_received
+            in
             (AdjGraph.VertexMap.add neighbor (n_received, best) s, newTodo)
     in
     let initial_attribute = get_attribute origin s in
@@ -156,29 +194,43 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
     loop s q k
 
   (* List holding the solutions of solved SRPs*)
-  let solved : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list ref = ref []
+  let solved : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list ref =
+    ref []
 
   let simulate_solve record_fns attr_ty_id name init trans merge =
     let s = create_state (AdjGraph.nb_vertex G.graph) init in
-    let vals = simulate_init trans merge s |> AdjGraph.VertexMap.map (fun (_, v) -> v) in
+    let vals =
+      simulate_init trans merge s |> AdjGraph.VertexMap.map (fun (_, v) -> v)
+    in
     let default = AdjGraph.VertexMap.choose vals |> snd in
     (* Constructing a function from the solutions *)
     let base _ = default in
-    let full = AdjGraph.VertexMap.fold (fun n v acc u -> if u = n then v else acc u) vals base in
+    let full =
+      AdjGraph.VertexMap.fold
+        (fun n v acc u -> if u = n then v else acc u)
+        vals base
+    in
+    (* Storing the AdjGraph.VertexMap in the solved list, but returning
+       the function to the ProbNV program *)
     solved :=
-      (name, (Obj.magic full, Collections.TypeIds.get_elt CompileBDDs.type_store attr_ty_id))
+      ( name,
+        ( Obj.magic vals,
+          Collections.TypeIds.get_elt CompileBDDs.type_store attr_ty_id ) )
       :: !solved;
     full
 end
 
 (** Given the attribute type of the network constructs an OCaml function
       that takes as input an OCaml value and creates a similar NV value.*)
-let ocaml_to_nv_value record_fns (attr_ty : Syntax.ty) : 'a -> Syntax.value =
-  (* Embeddings.embed_value record_fns (TMap (TNode, attr_ty)) *)
-  Embeddings.embed_value record_fns attr_ty
+let ocaml_to_nv_value record_fns (attr_ty : Syntax.ty) v : Syntax.value =
+  match Syntax.get_mode attr_ty with
+  | Some Concrete -> Embeddings.embed_value record_fns attr_ty v
+  | Some Multivalue -> Embeddings.embed_multivalue record_fns attr_ty v
+  | Some Symbolic -> failwith "Solution cannot be symbolic"
+  | None -> failwith "No mode found"
 
 let build_solution record_fns nodes (vals, ty) =
-  AdjGraph.VertexMap.map (ocaml_to_nv_value record_fns ty) vals
+  AdjGraph.VertexMap.map (fun v -> ocaml_to_nv_value record_fns ty v) vals
 
 let build_solutions nodes record_fns
     (sols : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list) =
@@ -188,7 +240,9 @@ let build_solutions nodes record_fns
     solves =
       List.map
         (fun (name, sol) ->
-          (Var.create name, { sol_val = build_solution record_fns nodes sol; attr_ty = snd sol }))
+          ( Var.create name,
+            { sol_val = build_solution record_fns nodes sol; attr_ty = snd sol }
+          ))
         sols;
     nodes;
   }

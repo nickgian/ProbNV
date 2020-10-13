@@ -41,12 +41,16 @@ let bdd_of_bool b = if b then Bdd.dtrue B.mgr else Bdd.dfalse B.mgr
 
 (* given a BDD converts it to a MTBDD*)
 let wrap_mtbdd bdd =
-  let tru = Mtbdd.cst B.mgr B.tbl_bool true in
-  let fal = Mtbdd.cst B.mgr B.tbl_bool false in
-  Mtbdd.ite bdd tru fal
+  match bdd with
+  | BBool bdd ->
+      let tru = Mtbdd.cst B.mgr B.tbl true in
+      let fal = Mtbdd.cst B.mgr B.tbl false in
+      Mtbdd.ite bdd tru fal
+  | _ -> failwith "Expected a boolean BDD"
 
 (* given a boolean MTBDD converts it to a BDD*)
-let bdd_of_mtbdd (map : bool Cudd.Mtbdd.unique Cudd.Vdd.t) = Mtbdd.guard_of_leaf B.tbl_bool map true
+let bdd_of_mtbdd (map : bool Cudd.Mtbdd.unique Cudd.Vdd.t) =
+  Mtbdd.guard_of_leaf B.tbl map true
 
 (* Given a type creates a BDD representing all possible values of that type*)
 let create_value (ty : ty) : 'a t =
@@ -77,13 +81,15 @@ let create_value (ty : ty) : 'a t =
   let ret, _ = aux 0 ty in
   ret
 
-let create_value (ty_id : int) : 'a t = create_value (TypeIds.get_elt type_store ty_id)
+let create_value (ty_id : int) : 'a t =
+  create_value (TypeIds.get_elt type_store ty_id)
 
 (* Todo: will probably require record_fns when we add tuples *)
 
 (** Lifts a value to a BDD*)
-let rec toBdd (record_fns : int * int -> 'a -> 'b) ~(val_ty_id : int) (v : 'v) : 'v t =
-  let val_ty = TypeIds.get_elt type_store val_ty_id in
+let rec toBdd (record_fns : int * int -> 'a -> 'b) ~(vty_id : int) (v : 'v) :
+    'v t =
+  let val_ty = TypeIds.get_elt type_store vty_id in
   match val_ty.typ with
   | TBool -> BBool (bdd_of_bool (Obj.magic v))
   | TInt i ->
@@ -111,7 +117,7 @@ let rec toBdd (record_fns : int * int -> 'a -> 'b) ~(val_ty_id : int) (v : 'v) :
             let bit = B.get_bit (snd (Obj.magic v)) j in
             bdd_of_bool bit)
       in
-      Tuple [BInt bs1; BInt bs2]
+      Tuple [ BInt bs1; BInt bs2 ]
   (* | VOption None ->
          let ty =
            match get_inner_type (oget v.vty) with
@@ -128,7 +134,8 @@ let rec toBdd (record_fns : int * int -> 'a -> 'b) ~(val_ty_id : int) (v : 'v) :
 let rec ite (b : 'a t) (x : 'a t) (y : 'a t) : 'a t =
   match (b, x, y) with
   | BBool b, BBool m, BBool n -> BBool (Bdd.ite b m n)
-  | BBool b, BInt ms, BInt ns -> BInt (Array.map2 (fun m n -> Bdd.ite b m n) ms ns)
+  | BBool b, BInt ms, BInt ns ->
+      BInt (Array.map2 (fun m n -> Bdd.ite b m n) ms ns)
   (* | BBool b, BOption (tag1, m), BOption (tag2, n) ->
       let tag = Bdd.ite b tag1 tag2 in
       BOption (tag, ite b m n) *)
@@ -142,13 +149,17 @@ let rec eq x y : Bdd.vt =
   match (x, y) with
   | BBool b1, BBool b2 -> Bdd.eq b1 b2
   | BInt bs1, BInt bs2 ->
-      Array.fold_lefti (fun acc i b1 -> Bdd.dand acc (Bdd.eq b1 bs2.(i))) (Bdd.dtrue B.mgr) bs1
+      Array.fold_lefti
+        (fun acc i b1 -> Bdd.dand acc (Bdd.eq b1 bs2.(i)))
+        (Bdd.dtrue B.mgr) bs1
   | BOption (tag1, b1), BOption (tag2, b2) ->
       let tags = Bdd.eq tag1 tag2 in
       let values = eq b1 b2 in
       Bdd.dand tags values
   | Tuple xs, Tuple ys ->
-      List.fold_left2 (fun bacc x y -> Bdd.dand (eq x y) bacc) (Bdd.dtrue B.mgr) xs ys
+      List.fold_left2
+        (fun bacc x y -> Bdd.dand (eq x y) bacc)
+        (Bdd.dtrue B.mgr) xs ys
   | _ -> failwith "internal error (eq)"
 
 let eq x y = BBool (eq x y)
@@ -170,22 +181,31 @@ let add xs ys =
   BInt var4
 
 let add x y =
-  match (x, y) with BInt xs, BInt ys -> add xs ys | _, _ -> failwith "Expected integers"
+  match (x, y) with
+  | BInt xs, BInt ys -> add xs ys
+  | _, _ -> failwith "Expected integers"
 
 (** Bitwise and operation. Requires that the two integers are of the same size. *)
-let uand xs ys = BInt (Array.init (Array.length xs) (fun i -> Bdd.dand xs.(i) ys.(i)))
+let uand xs ys =
+  BInt (Array.init (Array.length xs) (fun i -> Bdd.dand xs.(i) ys.(i)))
 
 let uand xs ys =
-  match (xs, ys) with BInt xs, BInt ys -> uand xs ys | _, _ -> failwith "Expected integers"
+  match (xs, ys) with
+  | BInt xs, BInt ys -> uand xs ys
+  | _, _ -> failwith "Expected integers"
 
 let leq xs ys =
   let less x y = Bdd.dand (Bdd.dnot x) y in
   let acc = ref (Bdd.dtrue B.mgr) in
-  Array.iter2 (fun x y -> acc := Bdd.dor (less x y) (Bdd.dand !acc (Bdd.eq x y))) xs ys;
+  Array.iter2
+    (fun x y -> acc := Bdd.dor (less x y) (Bdd.dand !acc (Bdd.eq x y)))
+    xs ys;
   BBool !acc
 
 let leq x y =
-  match (x, y) with BInt xs, BInt ys -> leq xs ys | _, _ -> failwith "Expected integers"
+  match (x, y) with
+  | BInt xs, BInt ys -> leq xs ys
+  | _, _ -> failwith "Expected integers"
 
 let lt xs ys =
   match (leq xs ys, eq xs ys) with
@@ -201,12 +221,15 @@ let band x y =
 
 (** ** Multivalue operations *)
 
-let toMap ~value ~vty_id = { bdd = Mtbdd.cst B.mgr B.tbl (Obj.magic value); val_ty_id = vty_id }
+let toMap ~value = Mtbdd.cst B.mgr B.tbl (Obj.magic value)
 
 (* applyN takes as argument an OCaml function over concrete OCaml values and a nu*)
-let applyN ~f ~args ~vty_id : 'a CompileBDDs.t =
-  let g _ (arr : 'a Cudd.Mtbdd.unique Cudd.Vdd.t array) : 'a Cudd.Mtbdd.unique Cudd.Vdd.t option =
-    let cst = Array.fold_left (fun res add -> res && Mtbdd.is_cst add) true arr in
+let applyN ~f ~args : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
+  let g _ (arr : 'a Cudd.Mtbdd.unique Cudd.Vdd.t array) :
+      'a Cudd.Mtbdd.unique Cudd.Vdd.t option =
+    let cst =
+      Array.fold_left (fun res add -> res && Mtbdd.is_cst add) true arr
+    in
     if cst then
       let res =
         Array.fold_left
@@ -217,6 +240,8 @@ let applyN ~f ~args ~vty_id : 'a CompileBDDs.t =
     else None
   in
   let op =
-    User.make_opN ~memo:Cudd.(Cache (Cache.create (Array.length args))) 0 (Array.length args) g
+    User.make_opN
+      ~memo:Cudd.(Cache (Cache.create (Array.length args)))
+      0 (Array.length args) g
   in
-  { bdd = User.apply_opN op [||] args; val_ty_id = vty_id }
+  User.apply_opN op [||] args

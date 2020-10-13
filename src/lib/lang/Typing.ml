@@ -21,9 +21,12 @@ let edge_ty = TEdge
 let init_ty aty = concrete (TArrow (concrete node_ty, aty))
 
 let merge_ty aty =
-  concrete (TArrow (concrete node_ty, concrete (TArrow (aty, concrete (TArrow (aty, aty))))))
+  concrete
+    (TArrow
+       (concrete node_ty, concrete (TArrow (aty, concrete (TArrow (aty, aty))))))
 
-let trans_ty aty = concrete (TArrow (concrete edge_ty, concrete (TArrow (aty, aty))))
+let trans_ty aty =
+  concrete (TArrow (concrete edge_ty, concrete (TArrow (aty, aty))))
 
 (* let solve_ty aty =
    TRecord
@@ -64,7 +67,8 @@ let rec check_annot_val (v : value) =
   match v.vty with
   | None ->
       Console.error
-        (Printf.sprintf "internal type annotation missing: %s\n" (Printing.value_to_string v))
+        (Printf.sprintf "internal type annotation missing: %s\n"
+           (Printing.value_to_string v))
   | Some _ -> ()
 
 (* match v.v with
@@ -85,7 +89,8 @@ let rec check_annot (e : exp) =
   ( match e.ety with
   | None ->
       Console.error
-        (Printf.sprintf "internal type annotation missing: %s\n" (Printing.exp_to_string e))
+        (Printf.sprintf "internal type annotation missing: %s\n"
+           (Printing.exp_to_string e))
   | Some _ -> () );
   match e.e with
   | EVar _ -> ()
@@ -143,7 +148,9 @@ let occurs tvr (ty : baseTy) : unit =
     match ty with
     | TVar tvr' when equal_tyvars tvr tvr' -> raise Occurs
     | TVar ({ contents = Unbound (name, l') } as tv) ->
-        let min_level = match !tvr with Unbound (_, l) -> min l l' | _ -> l' in
+        let min_level =
+          match !tvr with Unbound (_, l) -> min l l' | _ -> l'
+        in
         tv := Unbound (name, min_level)
     | TVar { contents = Link ty } -> occ tvr ty.typ
     | QVar q ->
@@ -163,7 +170,9 @@ let occurs tvr (ty : baseTy) : unit =
   in
   try occ tvr ty
   with Occurs ->
-    Console.error (Printf.sprintf "%s occurs in %s\n" (tyvar_to_string !tvr) (base_ty_to_string ty))
+    Console.error
+      (Printf.sprintf "%s occurs in %s\n" (tyvar_to_string !tvr)
+         (base_ty_to_string ty))
 
 (* QVar are unexpected: they should've been instantiated *)
 (* Modes are also not used here, we just check that the base types can be
@@ -191,7 +200,8 @@ let rec unify info e t1 t2 : unit =
           true
       (* | TVar {contents= Link t1}, t2 -> try_unify t1 t2
        * | t1, TVar {contents= Link t2} -> try_unify t1 t2 *)
-      | TArrow (tyl1, tyl2), TArrow (tyr1, tyr2) -> try_unify tyl1 tyr1 && try_unify tyl2 tyr2
+      | TArrow (tyl1, tyl2), TArrow (tyr1, tyr2) ->
+          try_unify tyl1 tyr1 && try_unify tyl2 tyr2
       | TBool, TBool -> true
       | TInt i, TInt j when i = j -> true
       | TNode, TNode -> true
@@ -213,7 +223,8 @@ let rec unify info e t1 t2 : unit =
   if try_unify t1 t2 then ()
   else
     let msg =
-      Printf.sprintf "unable to unify types: %s and\n %s" (ty_to_string t1) (ty_to_string t2)
+      Printf.sprintf "unable to unify types: %s and\n %s" (ty_to_string t1)
+        (ty_to_string t2)
     in
     Printf.printf "%s\n" msg;
     Console.error_position info e.espan msg
@@ -232,7 +243,8 @@ let unify_opt info (e : exp) topt1 t2 =
 let generalize ty =
   let rec gen ty =
     match ty.typ with
-    | TVar { contents = Unbound (name, l) } when l > !current_level -> { ty with typ = QVar name }
+    | TVar { contents = Unbound (name, l) } when l > !current_level ->
+        { ty with typ = QVar name }
     | TVar { contents = Link ty } -> gen ty
     | TVar _ | TBool | TInt _ | TNode | TEdge -> ty
     | QVar q ->
@@ -304,7 +316,8 @@ let substitute (ty : ty) : ty =
             fty
         | Some ty -> ty )
     | TVar _ | TBool | TInt _ | TNode | TEdge -> ty
-    | TArrow (ty1, ty2) -> { ty with typ = TArrow (substitute_aux ty1, substitute_aux ty2) }
+    | TArrow (ty1, ty2) ->
+        { ty with typ = TArrow (substitute_aux ty1, substitute_aux ty2) }
     (* | TRecord map -> TRecord (StringMap.map substitute_aux map)
        | TTuple ts -> TTuple (BatList.map substitute_aux ts)
        | TOption t -> TOption (substitute_aux t)
@@ -315,15 +328,18 @@ let substitute (ty : ty) : ty =
 (** Return the type of operations *)
 let op_typ op =
   match op with
-  | And -> ([concrete TBool; concrete TBool], concrete TBool)
+  | And -> ([ concrete TBool; concrete TBool ], concrete TBool)
   (* | Or -> [TBool; TBool], TBool *)
-  | Not -> ([concrete TBool], concrete TBool)
+  | Not -> ([ concrete TBool ], concrete TBool)
   (* Integer operators *)
   | UAdd size ->
-      ([concrete @@ tint_of_size size; concrete @@ tint_of_size size], concrete @@ tint_of_size size)
+      ( [ concrete @@ tint_of_size size; concrete @@ tint_of_size size ],
+        concrete @@ tint_of_size size )
   (* | USub size -> [tint_of_size size; tint_of_size size], tint_of_size size
      | UAnd size -> [tint_of_size size; tint_of_size size], tint_of_size size *)
-  | ULess size -> ([concrete @@ tint_of_size size; concrete @@ tint_of_size size], concrete TBool)
+  | ULess size ->
+      ( [ concrete @@ tint_of_size size; concrete @@ tint_of_size size ],
+        concrete TBool )
   (* | ULeq size -> [tint_of_size size; tint_of_size size], TBool
      | NLess -> [TNode; TNode], TBool
      | NLeq -> [TNode; TNode], TBool *)
@@ -341,21 +357,23 @@ let op_typ op =
      | MForAll *)
   | Eq ->
       failwith
-        (Printf.sprintf "(op_typ): %s should be handled elsewhere" (Printing.op_to_string op))
+        (Printf.sprintf "(op_typ): %s should be handled elsewhere"
+           (Printing.op_to_string op))
   (* LLL expressions *)
-  | BddAnd -> ([symbolic TBool; symbolic TBool], symbolic TBool)
-  | BddNot -> ([symbolic TBool], symbolic TBool)
+  | BddAnd -> ([ symbolic TBool; symbolic TBool ], symbolic TBool)
+  | BddNot -> ([ symbolic TBool ], symbolic TBool)
   | BddAdd ->
       (* The size of the integers do not matter here, but only for the
          surface language, so setting it to 0 to avoid changing the type of TInt to an option.*)
       let t = symbolic @@ tint_of_size 0 in
-      ([t; t], t)
+      ([ t; t ], t)
   | BddLess ->
       let t = symbolic @@ tint_of_size 0 in
-      ([t; t], symbolic TBool)
+      ([ t; t ], symbolic TBool)
   | BddEq ->
       failwith
-        (Printf.sprintf "(op_typ): %s should be handled elsewhere" (Printing.op_to_string op))
+        (Printf.sprintf "(op_typ): %s should be handled elsewhere"
+           (Printing.op_to_string op))
 
 let texp (e, ty, span) = aexp (e, Some ty, span)
 
@@ -402,7 +420,9 @@ let canonicalize_type (ty : ty) : ty =
         match VarMap.Exceptionless.find tyname map with
         | None ->
             let new_var = Var.to_var ("a", count) in
-            ({ ty with typ = QVar new_var }, VarMap.add tyname new_var map, count + 1)
+            ( { ty with typ = QVar new_var },
+              VarMap.add tyname new_var map,
+              count + 1 )
         | Some v -> ({ ty with typ = QVar v }, map, count) )
     | TVar r -> (
         match !r with
@@ -412,10 +432,15 @@ let canonicalize_type (ty : ty) : ty =
   let result, _, _ = aux ty VarMap.empty 0 in
   result
 
-let textract e = match e.ety with None -> failwith "internal error (textract)" | Some ty -> (e, ty)
+let textract e =
+  match e.ety with
+  | None -> failwith "internal error (textract)"
+  | Some ty -> (e, ty)
 
 let textractv v =
-  match v.vty with None -> failwith "internal error (textractv)" | Some ty -> (v, ty)
+  match v.vty with
+  | None -> failwith "internal error (textractv)"
+  | Some ty -> (v, ty)
 
 (** * Type inference for values*)
 
@@ -493,15 +518,20 @@ and infer_values info env record_types vs =
     difference is the solution rule, so we reuse most of the code between the
     two expect for DSolve declarations.*)
 
-let rec infer_declarations_aux isHLL infer_exp i info env record_types (ds : declarations) :
-    declarations =
+let rec infer_declarations_aux isHLL infer_exp i info env record_types
+    (ds : declarations) : declarations =
   match ds with
   | [] -> []
   | d :: ds' ->
-      let env', d' = infer_declaration isHLL infer_exp (i + 1) info env record_types d in
-      d' :: infer_declarations_aux isHLL infer_exp (i + 1) info env' record_types ds'
+      let env', d' =
+        infer_declaration isHLL infer_exp (i + 1) info env record_types d
+      in
+      d'
+      :: infer_declarations_aux isHLL infer_exp (i + 1) info env' record_types
+           ds'
 
-and infer_declaration isHLL infer_exp i info env record_types d : ty Env.t * declaration =
+and infer_declaration isHLL infer_exp i info env record_types d :
+    ty Env.t * declaration =
   let _infer_exp = infer_exp in
   (* Alias in case we need to modify the usually-static args *)
   let infer_exp = infer_exp (i + 1) info env record_types in
@@ -522,11 +552,15 @@ and infer_declaration isHLL infer_exp i info env record_types d : ty Env.t * dec
       unify info e ty { typ = TBool; mode = None };
       (*According to rule Assert we need to check that mode = Multivalue or Concrete *)
       match ty.mode with
-      | Some Concrete | Some Multivalue -> (Env.update env (Var.create "assert") ty, DAssert e')
-      | None | Some Symbolic -> Console.error_position info e.espan "Wrong mode for assertion" )
+      | Some Concrete | Some Multivalue ->
+          (Env.update env (Var.create "assert") ty, DAssert e')
+      | None | Some Symbolic ->
+          Console.error_position info e.espan "Wrong mode for assertion" )
   | DSolve { aty; var_names; init; trans; merge } -> (
       let solve_aty =
-        match aty with Some ty -> ty | None -> { typ = fresh_tyvar (); mode = None }
+        match aty with
+        | Some ty -> ty
+        | None -> { typ = fresh_tyvar (); mode = None }
       in
       let init' = infer_exp init in
       let trans' = infer_exp trans in
@@ -544,15 +578,21 @@ and infer_declaration isHLL infer_exp i info env record_types d : ty Env.t * dec
         let m1 =
           match (oget init'.ety).typ with
           | TArrow (_, ty2) -> get_mode ty2
-          | _ -> Console.error_position info init.espan "Init must be of function type"
+          | _ ->
+              Console.error_position info init.espan
+                "Init must be of function type"
         in
         let mtrans_arg, mtrans_res =
           match (oget trans'.ety).typ with
           | TArrow (_, ty2) -> (
               match ty2.typ with
               | TArrow (tyarg, tyres) -> (get_mode tyarg, get_mode tyres)
-              | _ -> Console.error_position info trans.espan "Trans must be of function type" )
-          | _ -> Console.error_position info trans.espan "Trans must be of function type"
+              | _ ->
+                  Console.error_position info trans.espan
+                    "Trans must be of function type" )
+          | _ ->
+              Console.error_position info trans.espan
+                "Trans must be of function type"
         in
         let mmerge_arg1, mmerge_arg2, mmerge_res =
           match (oget merge'.ety).typ with
@@ -560,31 +600,41 @@ and infer_declaration isHLL infer_exp i info env record_types d : ty Env.t * dec
               match ty2.typ with
               | TArrow (tyarg1, ty3) -> (
                   match ty3.typ with
-                  | TArrow (tyarg2, tyres) -> (get_mode tyarg1, get_mode tyarg2, get_mode tyres)
-                  | _ -> Console.error_position info trans.espan "Merge must be of function type" )
-              | _ -> Console.error_position info trans.espan "Merge must be of function type" )
-          | _ -> Console.error_position info trans.espan "Merge must be of function type"
+                  | TArrow (tyarg2, tyres) ->
+                      (get_mode tyarg1, get_mode tyarg2, get_mode tyres)
+                  | _ ->
+                      Console.error_position info trans.espan
+                        "Merge must be of function type" )
+              | _ ->
+                  Console.error_position info trans.espan
+                    "Merge must be of function type" )
+          | _ ->
+              Console.error_position info trans.espan
+                "Merge must be of function type"
         in
         (*For HLL*)
         if isHLL then
-          join (OCamlUtils.oget m1) (join (OCamlUtils.oget mtrans_res) (OCamlUtils.oget mmerge_res))
+          join (OCamlUtils.oget m1)
+            (join (OCamlUtils.oget mtrans_res) (OCamlUtils.oget mmerge_res))
         else if
           (* For LLL *)
-          m1 = mtrans_arg
-          && mtrans_arg = mtrans_res
-          && mtrans_res = mmerge_arg1
-          && mmerge_arg1 = mmerge_arg2
-          && mmerge_arg2 = mmerge_res
+          m1 = mtrans_arg && mtrans_arg = mtrans_res && mtrans_res = mmerge_arg1
+          && mmerge_arg1 = mmerge_arg2 && mmerge_arg2 = mmerge_res
         then OCamlUtils.oget m1
-        else Console.error_position info trans.espan "Modes of solution declarations do not match"
+        else
+          Console.error_position info trans.espan
+            "Modes of solution declarations do not match"
       in
       match m with
-      | Symbolic -> Console.error_position info trans.espan "Solution cannot be symbolic"
+      | Symbolic ->
+          Console.error_position info trans.espan "Solution cannot be symbolic"
       | _ ->
           (* we don't have maps so I will do it as a function *)
           (* let ety = TMap (TNode, solve_aty) in *)
           let solve_aty = { solve_aty with mode = Some m } in
-          let ety = { typ = TArrow (concrete TNode, solve_aty); mode = Some Concrete } in
+          let ety =
+            { typ = TArrow (concrete TNode, solve_aty); mode = Some Concrete }
+          in
           ( Env.update env var ety,
             DSolve
               {
@@ -608,7 +658,9 @@ module HLLTypeInf = struct
       match e.e with
       | EVar x -> (
           match Env.lookup_opt env x with
-          | None -> Console.error_position info e.espan ("unbound variable " ^ Var.to_string x)
+          | None ->
+              Console.error_position info e.espan
+                ("unbound variable " ^ Var.to_string x)
           | Some t -> texp (e, substitute t, e.espan) )
       | EVal v ->
           let v, t = infer_value v |> textractv in
@@ -756,13 +808,17 @@ module HLLTypeInf = struct
               info
               e.espan
               (Printf.sprintf "invalid number of parameters") *)
-          | Eq, [e1; e2] ->
+          | Eq, [ e1; e2 ] ->
               let e1, ty1 = infer_exp e1 |> textract in
               let e2, ty2 = infer_exp e2 |> textract in
               unify info e ty1 ty2;
               (*compute the mode, based on the modes of the sub expressions *)
-              let m = join (OCamlUtils.oget (get_mode ty1)) (OCamlUtils.oget (get_mode ty2)) in
-              texp (eop o [e1; e2], mty (Some m) TBool, e.espan)
+              let m =
+                join
+                  (OCamlUtils.oget (get_mode ty1))
+                  (OCamlUtils.oget (get_mode ty2))
+              in
+              texp (eop o [ e1; e2 ], mty (Some m) TBool, e.espan)
           | _ ->
               let argtys, resty = op_typ o in
               let es, tys = infer_exps (i + 1) info env record_types es in
@@ -776,16 +832,26 @@ module HLLTypeInf = struct
               in
               texp (eop o es, mty (Some m) resty.typ, e.espan) )
       | EFun { arg = x; argty; resty; body } ->
-          let arg_mode = match argty with None -> Some Concrete | Some typ -> get_mode typ in
+          let arg_mode =
+            match argty with None -> Some Concrete | Some typ -> get_mode typ
+          in
           let ty_x = mty arg_mode (fresh_tyvar ()) in
           let e, ty_e =
-            _infer_exp (i + 1) info (Env.update env x ty_x) record_types body |> textract
+            _infer_exp (i + 1) info (Env.update env x ty_x) record_types body
+            |> textract
           in
           unify_opt info e argty ty_x;
           unify_opt info e resty ty_e;
           (* Functions are always typed as Concrete *)
           texp
-            ( efun { arg = x; argty = Some ty_x; resty = Some ty_e; body = e; fmode = Some Concrete },
+            ( efun
+                {
+                  arg = x;
+                  argty = Some ty_x;
+                  resty = Some ty_e;
+                  body = e;
+                  fmode = Some Concrete;
+                },
               mty (Some Concrete) (TArrow (ty_x, ty_e)),
               e.espan )
       | EApp (e1, e2) -> (
@@ -796,7 +862,9 @@ module HLLTypeInf = struct
           let fun_arg, fun_res =
             match ty_fun.typ with
             | TArrow (fun_arg, fun_res) -> (fun_arg, fun_res)
-            | _ -> Console.error_position info e.espan "Function must have arrow type"
+            | _ ->
+                Console.error_position info e.espan
+                  "Function must have arrow type"
           in
           (* suppose for now we restricted function arguments to C, i.e. symbolics
              are not allowed, ty_arg should be Concrete or Multivalue
@@ -809,7 +877,8 @@ module HLLTypeInf = struct
             match get_mode ty_arg with
             | None | Some Symbolic ->
                 Console.error_position info e.espan
-                  "Argument to application must be in Concrete or Multivalue mode"
+                  "Argument to application must be in Concrete or Multivalue \
+                   mode"
             | _ -> ()
           in
 
@@ -820,12 +889,15 @@ module HLLTypeInf = struct
               (* If rule App-C applies *)
               (* according to App-C, m = m2 U m3 *)
               match
-                join_opt (OCamlUtils.oget (get_mode fun_res)) (OCamlUtils.oget (get_mode ty_arg))
+                join_opt
+                  (OCamlUtils.oget (get_mode fun_res))
+                  (OCamlUtils.oget (get_mode ty_arg))
               with
               | None -> Console.error_position info e.espan "Cannot join modes"
               | Some res_mode ->
                   (* modes should not matter for unification *)
-                  unify info e ty_fun (mty None (TArrow (ty_arg, mty None ty_res)));
+                  unify info e ty_fun
+                    (mty None (TArrow (ty_arg, mty None ty_res)));
                   (* set result mode to m2 U m3 *)
                   texp (eapp e1 e2, mty (Some res_mode) ty_res, e.espan) )
           | Multivalue ->
@@ -882,7 +954,8 @@ module HLLTypeInf = struct
           leave_level ();
           let ty = generalize ty_e1 in
           let e2, ty_e2 =
-            _infer_exp (i + 1) info (Env.update env x ty) record_types e2 |> textract
+            _infer_exp (i + 1) info (Env.update env x ty) record_types e2
+            |> textract
           in
           texp (elet x e1 e2, ty_e2, e.espan)
       (* NOTE:  Changes order of evaluation if e is not a value;
@@ -935,10 +1008,14 @@ module HLLTypeInf = struct
          let e, t1 = infer_exp e |> textract in
          unify info e t t1;
          texp (ety e t1, t1, e.espan) *)
-      | EBddIf _ -> Console.error_position info e.espan "BddIf should not appear in HLL"
-      | EToBdd _ -> Console.error_position info e.espan "ToBdd should not appear in HLL"
-      | EToMap _ -> Console.error_position info e.espan "ToMap should not appear in HLL"
-      | EApplyN _ -> Console.error_position info e.espan "ApplyN should not appear in HLL"
+      | EBddIf _ ->
+          Console.error_position info e.espan "BddIf should not appear in HLL"
+      | EToBdd _ ->
+          Console.error_position info e.espan "ToBdd should not appear in HLL"
+      | EToMap _ ->
+          Console.error_position info e.espan "ToMap should not appear in HLL"
+      | EApplyN _ ->
+          Console.error_position info e.espan "ApplyN should not appear in HLL"
     in
     (* Printf.printf "infer_exp: %s\n" (Printing.exp_to_string e) ;
        Printf.printf "type: %s\n" (Printing.ty_to_string (oget exp.ety)) ;
@@ -1051,37 +1128,43 @@ module LLLTypeInf = struct
       match e.e with
       | EVar x -> (
           match Env.lookup_opt env x with
-          | None -> Console.error_position info e.espan ("unbound variable " ^ Var.to_string x)
+          | None ->
+              Console.error_position info e.espan
+                ("unbound variable " ^ Var.to_string x)
           | Some t -> texp (e, substitute t, e.espan) )
       | EVal v ->
           let v, t = infer_value v |> textractv in
           texp (e_val v, t, e.espan)
       | EOp (o, es) -> (
           match (o, es) with
-          | Eq, [e1; e2] ->
+          | Eq, [ e1; e2 ] ->
               let e1, ty1 = infer_exp e1 |> textract in
               let e2, ty2 = infer_exp e2 |> textract in
               unify info e ty1 ty2;
               (*ensure the modes match*)
               let m1 = OCamlUtils.oget (get_mode ty1) in
               let m2 = OCamlUtils.oget (get_mode ty2) in
-              if m1 = m2 then texp (eop o [e1; e2], mty (Some m1) TBool, e.espan)
+              if m1 = m2 then
+                texp (eop o [ e1; e2 ], mty (Some m1) TBool, e.espan)
               else
                 Console.error_position info e.espan
                   (Printf.sprintf "Mode mismatch in operation: %s and %s"
-                     (Printing.mode_to_string m1) (Printing.mode_to_string m2))
-          | BddEq, [e1; e2] ->
+                     (Printing.mode_to_string m1)
+                     (Printing.mode_to_string m2))
+          | BddEq, [ e1; e2 ] ->
               let e1, ty1 = infer_exp e1 |> textract in
               let e2, ty2 = infer_exp e2 |> textract in
               unify info e ty1 ty2;
               (*ensure the modes match and are symbolic*)
               let m1 = OCamlUtils.oget (get_mode ty1) in
               let m2 = OCamlUtils.oget (get_mode ty2) in
-              if m1 = m2 && m1 = Symbolic then texp (eop o [e1; e2], mty (Some m1) TBool, e.espan)
+              if m1 = m2 && m1 = Symbolic then
+                texp (eop o [ e1; e2 ], mty (Some m1) TBool, e.espan)
               else
                 Console.error_position info e.espan
                   (Printf.sprintf "Mode mismatch in operation: %s and %s"
-                     (Printing.mode_to_string m1) (Printing.mode_to_string m2))
+                     (Printing.mode_to_string m1)
+                     (Printing.mode_to_string m2))
           | _ ->
               let argtys, resty = op_typ o in
               let es, tys = infer_exps (i + 1) info env record_types es in
@@ -1093,18 +1176,30 @@ module LLLTypeInf = struct
                   (fun ty -> OCamlUtils.oget (get_mode ty) = OCamlUtils.oget m1)
                   (List.tl tys)
               then texp (eop o es, mty m1 resty.typ, e.espan)
-              else Console.error_position info e.espan "Mode mismatch in operation" )
+              else
+                Console.error_position info e.espan "Mode mismatch in operation"
+          )
       | EFun { arg = x; argty; resty; body } ->
-          let arg_mode = match argty with None -> Some Concrete | Some typ -> get_mode typ in
+          let arg_mode =
+            match argty with None -> Some Concrete | Some typ -> get_mode typ
+          in
           let ty_x = mty arg_mode (fresh_tyvar ()) in
           let e, ty_e =
-            _infer_exp (i + 1) info (Env.update env x ty_x) record_types body |> textract
+            _infer_exp (i + 1) info (Env.update env x ty_x) record_types body
+            |> textract
           in
           unify_opt info e argty ty_x;
           unify_opt info e resty ty_e;
           (* Functions are always typed as Concrete *)
           texp
-            ( efun { arg = x; argty = Some ty_x; resty = Some ty_e; body = e; fmode = Some Concrete },
+            ( efun
+                {
+                  arg = x;
+                  argty = Some ty_x;
+                  resty = Some ty_e;
+                  body = e;
+                  fmode = Some Concrete;
+                },
               mty (Some Concrete) (TArrow (ty_x, ty_e)),
               e.espan )
       | EApp (e1, e2) ->
@@ -1112,11 +1207,15 @@ module LLLTypeInf = struct
           (* Type check e1 and e2 *)
           let e1, ty_fun = infer_exp e1 |> textract in
           let e2, ty_arg = infer_exp e2 |> textract in
-          Printf.printf "APP(%s,%s)\n" (Printing.exp_to_string e1) (Printing.exp_to_string e2);
+          Printf.printf "APP(%s,%s)\n"
+            (Printing.exp_to_string e1)
+            (Printing.exp_to_string e2);
           let fun_arg, fun_res =
-            match ty_fun.typ with
+            match (get_inner_type ty_fun).typ with
             | TArrow (fun_arg, fun_res) -> (fun_arg, fun_res)
-            | _ -> Console.error_position info e.espan "Function must have arrow type"
+            | _ ->
+                Console.error_position info e.espan
+                  "Function must have arrow type"
           in
           (* suppose for now we restricted function arguments to C, i.e. symbolics
              are not allowed, ty_arg should be Concrete or Multivalue
@@ -1131,7 +1230,8 @@ module LLLTypeInf = struct
             texp (eapp e1 e2, mty (get_mode fun_res) ty_res, e.espan) )
           else
             Console.error_position info e.espan
-              "Function argument mode must match with the mode of the expression applied"
+              "Function argument mode must match with the mode of the \
+               expression applied"
       | EIf (e1, e2, e3) -> (
           (* Based on rules Ite of the LLL*)
           let e1, tcond = infer_exp e1 |> textract in
@@ -1150,19 +1250,22 @@ module LLLTypeInf = struct
               | (Some m2, Some m3) as m when m2 = m3 ->
                   texp (eif e1 e2 e3, mty (fst m) ty2.typ, e.espan)
               | Some m2, Some m3 ->
-                  Console.error_position info e.espan "Mode mismatch between %s and %s"
-                    (Printing.mode_to_string m2) (Printing.mode_to_string m3)
+                  Console.error_position info e.espan
+                    "Mode mismatch between %s and %s"
+                    (Printing.mode_to_string m2)
+                    (Printing.mode_to_string m3)
               | _, _ -> Console.error_position info e.espan "Missing mode" )
           | Some _ ->
-              Console.error_position info e.espan "Symbolic/Multivalue guard - mistyped mode in Ite"
-          )
+              Console.error_position info e.espan
+                "Symbolic/Multivalue guard - mistyped mode in Ite" )
       | ELet (x, e1, e2) ->
           enter_level ();
           let e1, ty_e1 = infer_exp e1 |> textract in
           leave_level ();
           let ty = generalize ty_e1 in
           let e2, ty_e2 =
-            _infer_exp (i + 1) info (Env.update env x ty) record_types e2 |> textract
+            _infer_exp (i + 1) info (Env.update env x ty) record_types e2
+            |> textract
           in
           texp (elet x e1 e2, ty_e2, e.espan)
       (* NOTE:  Changes order of evaluation if e is not a value;
@@ -1240,14 +1343,20 @@ module LLLTypeInf = struct
           (* Based on rule ToBdd of LLL*)
           let e1, ty1 = infer_exp e1 |> textract in
           match get_mode ty1 with
-          | Some Concrete -> texp (etoBdd e1, mty (Some Symbolic) ty1.typ, e.espan)
-          | _ -> Console.error_position info e.espan "ToBdd applied to non concrete expression" )
+          | Some Concrete ->
+              texp (etoBdd e1, mty (Some Symbolic) ty1.typ, e.espan)
+          | _ ->
+              Console.error_position info e.espan
+                "ToBdd applied to non concrete expression" )
       | EToMap e1 -> (
           (* Based on rule ToMap of LLL*)
           let e1, ty1 = infer_exp e1 |> textract in
           match get_mode ty1 with
-          | Some Concrete -> texp (etoMap e1, mty (Some Multivalue) ty1.typ, e.espan)
-          | _ -> Console.error_position info e.espan "ToBdd applied to non concrete expression" )
+          | Some Concrete ->
+              texp (etoMap e1, mty (Some Multivalue) ty1.typ, e.espan)
+          | _ ->
+              Console.error_position info e.espan
+                "ToBdd applied to non concrete expression" )
       | EApplyN (e1, es) ->
           (* Based on rule ApplyN of LLL *)
           let e1, ty1 = infer_exp e1 |> textract in
@@ -1275,7 +1384,9 @@ module LLLTypeInf = struct
                   OCamlUtils.oget fty.mode = Concrete
                   && (ty.mode = Some Multivalue || ty.mode = Some Symbolic)
                 then unify info e fty ty
-                else Console.error_position info e.espan "ApplyN modes do not match")
+                else
+                  Console.error_position info e.espan
+                    "ApplyN modes do not match")
               ftys tys
           in
           texp (eApplyN e1 es, mty (Some Multivalue) resty.typ, e.espan)
@@ -1380,4 +1491,5 @@ module LLLTypeInf = struct
     infer_declarations_aux true infer_exp 0 info Env.empty record_types ds
 end
 
-let rec equiv_tys ty1 ty2 = equal_tys (canonicalize_type ty1) (canonicalize_type ty2)
+let rec equiv_tys ty1 ty2 =
+  equal_tys (canonicalize_type ty1) (canonicalize_type ty2)

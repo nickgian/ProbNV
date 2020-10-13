@@ -71,7 +71,7 @@ module BaseTypeMap = BetterMap.Make (struct
   let to_string = Printing.ty_to_string
 end)
 
-module TypeIds = ArrayIdMake (BaseTypeMap)
+module TypeIds = ArrayIdMake (TypeMap)
 module ExpIds = ArrayIdMake (ExpMap)
 
 (* module ExpEnvMap = BatMap.Make (struct
