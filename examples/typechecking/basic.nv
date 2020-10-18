@@ -1,4 +1,4 @@
-symbolic x:int
+symbolic x:int4
 
 let nodes = 2
 let edges = {0=1;}
@@ -6,10 +6,10 @@ let edges = {0=1;}
 let init u =
   if u = 1n then 15 else 0
 
-let trans e (v : [M]int) = if 0 < x then v + 1 else 1000
+let trans e (v : [M]int) = if 0u4 <u4 x then v + 1 else 100
 
 let merge u v1 v2 = if v1 < v2 then v1 else v2
 
 let s = solution(init, trans, merge)
 
-assert ((s 1n) < 16)
+assert ((s 1n) < 14)

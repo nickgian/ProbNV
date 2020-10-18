@@ -42,19 +42,21 @@ let print_solution (solution : t) =
       solution.solves;
   match solution.assertions with
   | [] ->
-      print_string [green; Bold] "Success: ";
+      print_string [ green; Bold ] "Success: ";
       Printf.printf "No assertions provided, so none failed\n"
   | asns ->
       let all_pass = List.for_all (fun (x, _) -> x) asns in
       if all_pass then (
-        print_string [green; Bold] "Success: ";
+        print_string [ green; Bold ] "Success: ";
         Printf.printf "all assertions passed\n" )
-      else (
-        print_string [red; Bold] "Failed. Here are more details about the computed assertions:\n ";
-        Printf.printf "%s"
-          (Collections.printListi
-             (fun i (b, p) ->
-               Printf.sprintf "Assertion %d %s. It returned true with probability %f" i
-                 (if b then "succeeded" else "failed")
-                 p)
-             asns "" "\n" "\n") )
+      else
+        print_string [ red; Bold ]
+          "Failed. Here are more details about the computed assertions:\n ";
+      Printf.printf "%s"
+        (Collections.printListi
+           (fun i (b, p) ->
+             Printf.sprintf
+               "Assertion %d %s. It returned true with probability %f" i
+               (if b then "succeeded" else "failed")
+               p)
+           asns "" "\n" "\n")
