@@ -5,18 +5,9 @@ open ProbNv_utils
 open ProbNv_datastructures
 open Batteries
 
+type distribution = float Mtbdd.t
+
 let mgr = Man.make_v ()
-
-let set_size sz =
-  let num_vars = Man.get_bddvar_nb mgr in
-  if num_vars < sz then
-    for _ = 1 to sz - num_vars do
-      ignore (Bdd.newvar mgr)
-    done
-
-let ithvar i =
-  set_size (i + 1);
-  Bdd.ithvar mgr i
 
 let rec ty_to_size ty =
   match (get_inner_type ty).typ with
@@ -26,16 +17,28 @@ let rec ty_to_size ty =
      | TTuple ts -> List.fold_left (fun acc t -> acc + ty_to_size t) 0 ts
      | TRecord tmap -> ty_to_size (TTuple (RecordUtils.get_record_entries tmap)) *)
   | TNode -> ty_to_size (concrete (TInt tnode_sz)) (* Encode as int *)
-  (* | TEdge -> ty_to_size (TTuple [TNode; TNode]) (*Encode as node pair*) *)
+  | TEdge -> 2 * ty_to_size (concrete TNode) (*Encode as node pair*)
   | TArrow _ | TVar _ | QVar _ ->
       failwith ("internal error (ty_to_size): " ^ Printing.ty_to_string ty)
+
+(* A list of the range of BDD variables, the type and the distribution, of every symbolic *)
+let vars_list : (int * int * Syntax.ty * distribution) list ref = ref []
+
+let push_symbolic_vars v = vars_list := v :: !vars_list
+
+let freshvars ty =
+  let symbolic_start = Man.get_bddvar_nb mgr in
+  let sz = ty_to_size ty in
+  let symbolic_end = symbolic_start + sz - 1 in
+  let res = Array.init sz (fun _ -> Bdd.newvar mgr) in
+  (symbolic_start, symbolic_end, res)
 
 let tbl = Obj.magic (Mtbdd.make_table ~hash:Hashtbl.hash ~equal:( = ))
 
 let tbl_nv =
-  Mtbdd.make_table
-    ~hash:(hash_value ~hash_meta:false)
-    ~equal:(equal_values ~cmp_meta:false)
+  Mtbdd.make_table ~hash:(hash_value ~hash_meta:false) ~equal:(equal_values ~cmp_meta:false)
+
+let tbl_probabilities : float Mtbdd.table = Mtbdd.make_table ~hash:Hashtbl.hash ~equal:( = )
 
 (* let tbl_bool = Mtbdd.make_table ~hash:(fun b -> if b then 1 else 0) ~equal:( = ) *)
 
@@ -44,40 +47,10 @@ let get_bit (n : int) (i : int) : bool =
   let marker = Z.shift_left Z.one i in
   Z.logand (Z.of_int n) marker <> Z.zero
 
-(* let get_bit (n : Integer.t) (i : int) : bool =
-  let z = Integer.value n in
-  let marker = Z.shift_left Z.one i in
-  Z.logand z marker <> Z.zero *)
-
-let tbool_to_bool tb =
-  match tb with Man.False | Man.Top -> false | Man.True -> true
-
-let count_tops arr sz =
-  let j = ref 0 in
-  for i = 0 to sz - 1 do
-    match arr.(i) with Man.Top -> incr j | _ -> ()
-  done;
-  !j
-
-let rec expand (vars : Man.tbool list) sz : Man.tbool list list =
-  if sz = 0 then [ [] ]
-  else
-    match vars with
-    | [] -> [ [] ]
-    | Man.Top :: xs ->
-        let vars = expand xs (sz - 1) in
-        let trus = List.map (fun v -> Man.False :: v) vars in
-        let fals = List.map (fun v -> Man.True :: v) vars in
-        fals @ trus
-    | x :: xs ->
-        let vars = expand xs (sz - 1) in
-        List.map (fun v -> x :: v) vars
+let tbool_to_bool tb = match tb with Man.False | Man.Top -> false | Man.True -> true
 
 let tbool_to_obool tb =
-  match tb with
-  | Man.False -> Some false
-  | Man.Top -> None
-  | Man.True -> Some true
+  match tb with Man.False -> Some false | Man.Top -> None | Man.True -> Some true
 
 (* Treats Top as false *)
 let vars_to_value vars ty =
@@ -150,33 +123,41 @@ let vars_to_value vars ty =
   in
   fst (aux 0 ty)
 
-let pick_default_value (map, ty) =
-  let count = ref (-1) in
-  let value = ref None in
-  Mtbdd.iter_cube
-    (fun vars v ->
-      let c = count_tops vars (ty_to_size ty) in
-      if c > !count then count := c;
-      value := Some v)
-    map;
-  OCamlUtils.oget !value
+(** * Probability computation functions *)
+let move v var distr =
+  if (not (Mtbdd.is_cst distr)) && Mtbdd.topvar distr = var then
+    (*If the top variable in the distribution matches the given variable *)
+    if v = Man.True then (*Move left or right *)
+      Mtbdd.dthen distr else Mtbdd.delse distr
+  else (*Otherwise nothing changes *)
+    distr
 
-(* Basic version *)
-let bindings (map : mtbdd) : (value * value) list * value =
-  let bs = ref [] in
-  let dv = pick_default_value (map, ty) in
+(* Computes the probability of a slice of a cube - only for a single symbolic *)
+let rec symbolicProbability cube i sz distr =
+  (* Printf.printf "symbolic probability %d, %d\n" i sz;
+     flush_all (); *)
+  (* TODO: Check here if distr is leaf and optimize *)
+  if i > sz then Mtbdd.dval distr
+    (* If we have examined all variables of this symbolic the distribution must be a leaf*)
+  else if cube.(i) = Man.True || cube.(i) = Man.False then
+    symbolicProbability cube (i + 1) sz (move cube.(i) i distr)
+  else
+    (*TODO: optimize *)
+    symbolicProbability cube (i + 1) sz (move Man.True i distr)
+    +. symbolicProbability cube (i + 1) sz (move Man.False i distr)
+
+(* Computes the probability of a cube happening - includes all symbolics *)
+let rec cubeProbability (cube : Cudd.Man.tbool array)
+    (bounds : (int * int * Syntax.ty * float Cudd.Mtbdd.t) list) =
+  match bounds with
+  | [] -> 1.0
+  | (xstart, xend, _, xdistribution) :: bounds ->
+      let p = symbolicProbability cube xstart xend xdistribution in
+      p *. cubeProbability cube bounds
+
+let rec computeTrueProbability (assertion : bool Cudd.Mtbdd.t) bounds =
+  let ptrue = ref 0.0 in
   Mtbdd.iter_cube
-    (fun vars v ->
-      let lst = Array.to_list vars in
-      let sz = B.ty_to_size ty in
-      let expanded =
-        if B.count_tops vars sz <= 2 then B.expand lst sz else [ lst ]
-      in
-      List.iter
-        (fun vars ->
-          if not (equal_values ~cmp_meta:false v dv) then
-            let k = vars_to_value (Array.of_list vars) ty in
-            bs := (k, v) :: !bs)
-        expanded)
-    map;
-  (!bs, dv)
+    (fun cube v -> if v then ptrue := !ptrue +. cubeProbability cube bounds else ())
+    assertion;
+  !ptrue

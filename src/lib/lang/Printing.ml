@@ -3,6 +3,7 @@ open Batteries
 open Syntax
 open ProbNv_datastructures
 open ProbNv_utils.PrimitiveCollections
+open Cudd
 
 (* open Nv_utils.RecordUtils *)
 open ProbNv_utils
@@ -24,10 +25,10 @@ let prec_op op =
   | And | BddAnd -> 7
   (* | Or -> 7 *)
   | Not | BddNot -> 6
-  | UAdd _ | BddAdd -> 4
+  | UAdd _ | BddAdd _ -> 4
   (* | USub _ -> 4 *)
   | Eq | BddEq -> 5
-  | ULess _ | BddLess -> 5
+  | ULess _ | BddLess _ -> 5
 
 (*| ULeq _ -> 5
   | UAnd _ -> 5
@@ -67,13 +68,9 @@ let prec_exp e =
    | EProject _ -> 0 *)
 
 let rec sep s f xs =
-  match xs with
-  | [] -> ""
-  | [ x ] -> f x
-  | x :: y :: rest -> f x ^ s ^ sep s f (y :: rest)
+  match xs with [] -> "" | [x] -> f x | x :: y :: rest -> f x ^ s ^ sep s f (y :: rest)
 
-let rec term s f xs =
-  match xs with [] -> "" | _ -> PrimitiveCollections.printList f xs "" s ""
+let rec term s f xs = match xs with [] -> "" | _ -> PrimitiveCollections.printList f xs "" s ""
 
 let comma_sep f xs = sep "," f xs
 
@@ -83,8 +80,7 @@ let semi_term f xs = term ";" f xs
 
 let list_to_string f lst = PrimitiveCollections.printList f lst "[" ";" "]"
 
-let mode_to_string m =
-  match m with Concrete -> "C" | Symbolic -> "S" | Multivalue -> "M"
+let mode_to_string m = match m with Concrete -> "C" | Symbolic -> "S" | Multivalue -> "M"
 
 open ProbNv_datastructures
 include ProbNv_utils.PrimitiveCollections
@@ -131,9 +127,7 @@ let canonicalize_type (ty : ty) : ty =
         match VarMap.Exceptionless.find tyname map with
         | None ->
             let new_var = Var.to_var ("a", count) in
-            ( { ty with typ = QVar new_var },
-              VarMap.add tyname new_var map,
-              count + 1 )
+            ({ ty with typ = QVar new_var }, VarMap.add tyname new_var map, count + 1)
         | Some v -> ({ ty with typ = QVar v }, map, count) )
     | TVar r -> (
         match !r with
@@ -174,8 +168,7 @@ and ty_to_string ty =
   (* let ty = canonicalize_type ty in *)
   match ty.mode with
   | None -> base_ty_to_string ty.typ
-  | Some m ->
-      Printf.sprintf "[%s]%s" (mode_to_string m) (base_ty_to_string ty.typ)
+  | Some m -> Printf.sprintf "[%s]%s" (mode_to_string m) (base_ty_to_string ty.typ)
 
 and tyvar_to_string tv =
   match tv with
@@ -193,9 +186,9 @@ let op_to_string op =
   | Eq -> "="
   | ULess n -> "<" ^ "u" ^ string_of_int n
   | BddAnd -> "&&b"
-  | BddAdd -> "+b"
+  | BddAdd _ -> "+b"
   | BddNot -> "!b"
-  | BddLess -> "<b"
+  | BddLess _ -> "<b"
   | BddEq -> "=b"
 
 (* | ULeq n -> "<=" ^ "u" ^ (string_of_int n)
@@ -235,35 +228,65 @@ let padding i = String.init i (fun _ -> ' ')
 
 let ty_env_to_string env = Env.to_string ty_to_string env.ty
 
-let tyo_to_string tyo =
-  match tyo with None -> "None" | Some ty -> ty_to_string ty
+let tyo_to_string tyo = match tyo with None -> "None" | Some ty -> ty_to_string ty
 
 let glob = ref false
+
+let count_tops arr =
+  let j = ref 0 in
+  for i = 0 to Array.length arr - 1 do
+    match arr.(i) with Man.Top -> incr j | _ -> ()
+  done;
+  !j
+
+let rec expand (vars : Man.tbool list) sz : Man.tbool list list =
+  if sz = 0 then [[]]
+  else
+    match vars with
+    | [] -> [[]]
+    | Man.Top :: xs ->
+        let vars = expand xs (sz - 1) in
+        let trus = List.map (fun v -> Man.False :: v) vars in
+        let fals = List.map (fun v -> Man.True :: v) vars in
+        fals @ trus
+    | x :: xs ->
+        let vars = expand xs (sz - 1) in
+        List.map (fun v -> x :: v) vars
+
+let pick_default_value map =
+  let count = ref (-1) in
+  let value = ref None in
+  Mtbdd.iter_cube
+    (fun vars v ->
+      let c = count_tops vars in
+      if c > !count then count := c;
+      value := Some v)
+    map;
+  OCamlUtils.oget !value
+
+(* Basic version *)
+let bindings (map : mtbdd) : value list * value =
+  let bs = ref [] in
+  let dv = pick_default_value map in
+  Mtbdd.iter_cube (fun _ v -> bs := v :: !bs) map;
+  (!bs, dv)
 
 let rec value_env_to_string ~show_types env =
   Env.to_string (value_to_string_p ~show_types max_prec) env.value
 
 and env_to_string ?(show_types = false) env =
   if env.ty = Env.empty && env.value = Env.empty then " "
-  else
-    "[" ^ ty_env_to_string env ^ "|"
-    ^ value_env_to_string ~show_types env
-    ^ "] "
+  else "[" ^ ty_env_to_string env ^ "|" ^ value_env_to_string ~show_types env ^ "] "
 
 and func_to_string_p ~show_types prec { arg = x; argty; resty = _; body } =
   let s_arg = Var.to_string x in
   let arg_str =
-    if show_types then Printf.sprintf "(%s : %s)" s_arg (tyo_to_string argty)
-    else s_arg
+    if show_types then Printf.sprintf "(%s : %s)" s_arg (tyo_to_string argty) else s_arg
   in
-  let s =
-    Printf.sprintf "fun %s -> %s " arg_str
-      (exp_to_string_p ~show_types max_prec body)
-  in
+  let s = Printf.sprintf "fun %s -> %s " arg_str (exp_to_string_p ~show_types max_prec body) in
   if prec < max_prec then "(" ^ s ^ ")" else s
 
-and closure_to_string_p ~show_types prec
-    (env, { arg = x; argty = argt; resty = rest; body }) =
+and closure_to_string_p ~show_types prec (env, { arg = x; argty = argt; resty = rest; body }) =
   let s_arg =
     match argt with
     | None -> Var.to_string x
@@ -273,7 +296,9 @@ and closure_to_string_p ~show_types prec
   let s =
     "fun"
     ^ env_to_string ~show_types env
-    ^ s_arg ^ s_res ^ " -> "
+    ^ s_arg
+    ^ s_res
+    ^ " -> "
     ^ exp_to_string_p ~show_types prec body
   in
   if prec < max_prec then "(" ^ s ^ ")" else s
@@ -295,7 +320,7 @@ and value_to_string_p ~show_types prec v =
   | VBool true -> "true"
   | VBool false -> "false"
   | VInt i -> Integer.to_string i
-  | VTotalMap m -> map_to_string ~show_types " |-> " "\n" m
+  | VTotalMap m -> map_to_string ~show_types "\n" m
   (* | VTuple vs ->
        if List.is_empty vs then "VEmptyTuple" else
          "(" ^ comma_sep (value_to_string_p max_prec) vs ^ ")"
@@ -309,14 +334,12 @@ and value_to_string_p ~show_types prec v =
   | VEdge (n1, n2) -> Printf.sprintf "%d~%d" n1 n2
   | VClosure cl -> closure_to_string_p ~show_types prec cl
 
-and map_to_string ~show_types sep_s term_s m =
-  let binding_to_string (k, v) =
+and map_to_string ~show_types term_s m =
+  let binding_to_string v =
     (* BddMap.multiValue_to_string k *)
-    value_to_string_p ~show_types max_prec k
-    ^ sep_s
-    ^ value_to_string_p ~show_types max_prec v
+    value_to_string_p ~show_types max_prec v
   in
-  let bs, _ = BddMap.bindings m in
+  let bs, _ = bindings m in
   Printf.sprintf "{ %s }" (term term_s binding_to_string bs)
 
 and exp_to_string_p ~show_types prec e =
@@ -329,26 +352,26 @@ and exp_to_string_p ~show_types prec e =
     | EVal v -> value_to_string_p prec v
     | EOp (op, es) -> op_args_to_string ~show_types prec p op es
     | EFun f -> func_to_string_p ~show_types prec f
-    | EApp (e1, e2) ->
-        exp_to_string_p prec e1 ^ " " ^ exp_to_string_p p e2 ^ " "
+    | EApp (e1, e2) -> exp_to_string_p prec e1 ^ " " ^ exp_to_string_p p e2 ^ " "
     | EIf (e1, e2, e3) ->
         "if "
         ^ exp_to_string_p max_prec e1
         ^ " then \n"
         ^ exp_to_string_p max_prec e2
-        ^ " else \n" ^ exp_to_string_p prec e3
+        ^ " else \n"
+        ^ exp_to_string_p prec e3
     | ELet (x, e1, e2) ->
-        "let " ^ Var.to_string x ^ "="
+        "let "
+        ^ Var.to_string x
+        ^ "="
         ^ exp_to_string_p max_prec e1
-        ^ " in \n" ^ exp_to_string_p prec e2
+        ^ " in \n"
+        ^ exp_to_string_p prec e2
     | EBddIf (e1, e2, e3) ->
-        Printf.sprintf "bddIf %s then \n %s else %s \n"
-          (exp_to_string_p max_prec e1)
-          (exp_to_string_p max_prec e2)
-          (exp_to_string_p max_prec e3)
+        Printf.sprintf "bddIf %s then \n %s else %s \n" (exp_to_string_p max_prec e1)
+          (exp_to_string_p max_prec e2) (exp_to_string_p max_prec e3)
     | EApplyN (e1, es) ->
-        Printf.sprintf "applyN(%s, %s)"
-          (exp_to_string_p max_prec e1)
+        Printf.sprintf "applyN(%s, %s)" (exp_to_string_p max_prec e1)
           (comma_sep (exp_to_string_p max_prec) es)
     | EToBdd e1 -> Printf.sprintf "toBdd (%s)" (exp_to_string_p max_prec e1)
     | EToMap e1 -> Printf.sprintf "toMap (%s)" (exp_to_string_p max_prec e1)
@@ -379,29 +402,21 @@ and branches_to_string ~show_types prec bs =
   | b :: bs -> branch_to_string ~show_types prec b ^ "\n" ^ branches_to_string ~show_types prec bs *)
 and op_args_to_string ~show_types prec p op es =
   let exp_to_string_p = exp_to_string_p ~show_types in
-  if is_keyword_op op then
-    op_to_string op ^ "(" ^ comma_sep (exp_to_string_p max_prec) es ^ ")"
+  if is_keyword_op op then op_to_string op ^ "(" ^ comma_sep (exp_to_string_p max_prec) es ^ ")"
   else
     match es with
     | [] -> op_to_string op ^ "()" (* should not happen *)
-    | [ e1 ] -> op_to_string op ^ exp_to_string_p p e1
-    | [ e1; e2 ] ->
-        exp_to_string_p p e1 ^ " " ^ op_to_string op ^ " "
-        ^ exp_to_string_p prec e2
-    | es ->
-        op_to_string op ^ "(" ^ comma_sep (exp_to_string_p max_prec) es ^ ")"
+    | [e1] -> op_to_string op ^ exp_to_string_p p e1
+    | [e1; e2] -> exp_to_string_p p e1 ^ " " ^ op_to_string op ^ " " ^ exp_to_string_p prec e2
+    | es -> op_to_string op ^ "(" ^ comma_sep (exp_to_string_p max_prec) es ^ ")"
 
-let value_to_string ?(show_types = false) v =
-  value_to_string_p ~show_types max_prec v
+let value_to_string ?(show_types = false) v = value_to_string_p ~show_types max_prec v
 
-let exp_to_string ?(show_types = false) e =
-  exp_to_string_p ~show_types max_prec e
+let exp_to_string ?(show_types = false) e = exp_to_string_p ~show_types max_prec e
 
-let func_to_string ?(show_types = false) f =
-  func_to_string_p ~show_types max_prec f
+let func_to_string ?(show_types = false) f = func_to_string_p ~show_types max_prec f
 
-let closure_to_string ?(show_types = false) c =
-  closure_to_string_p ~show_types max_prec c
+let closure_to_string ?(show_types = false) c = closure_to_string_p ~show_types max_prec c
 
 (* TODO: should the let statements use the identifiers defined in Syntax instead? *)
 let rec declaration_to_string ?(show_types = false) d =
@@ -418,9 +433,7 @@ let rec declaration_to_string ?(show_types = false) d =
   | DNodes n -> "let nodes = " ^ string_of_int n
   | DEdges es ->
       "let edges = {"
-      ^ List.fold_right
-          (fun (u, v) s -> Printf.sprintf "%s%dn-%dn;" s u v)
-          es ""
+      ^ List.fold_right (fun (u, v) s -> Printf.sprintf "%s%dn-%dn;" s u v) es ""
       ^ "}"
 
 (* | DUserTy (name, ty) ->
@@ -429,7 +442,4 @@ let rec declaration_to_string ?(show_types = false) d =
 let rec declarations_to_string ?(show_types = false) ds =
   match ds with
   | [] -> ""
-  | d :: ds ->
-      declaration_to_string ~show_types d
-      ^ "\n"
-      ^ declarations_to_string ~show_types ds
+  | d :: ds -> declaration_to_string ~show_types d ^ "\n" ^ declarations_to_string ~show_types ds

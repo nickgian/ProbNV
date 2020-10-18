@@ -18,10 +18,6 @@ type 'a t =
   | BOption of Bdd.vt * 'a t (* Option of BDD *)
   | Tuple of 'a t list
 
-(* Tuple of elements *)
-
-(* MTBDD map *)
-
 let rec print (x : 'a t) =
   match x with
   | BBool _ -> "BBool"
@@ -49,46 +45,12 @@ let wrap_mtbdd bdd =
   | _ -> failwith "Expected a boolean BDD"
 
 (* given a boolean MTBDD converts it to a BDD*)
-let bdd_of_mtbdd (map : bool Cudd.Mtbdd.unique Cudd.Vdd.t) =
-  Mtbdd.guard_of_leaf B.tbl map true
-
-(* Given a type creates a BDD representing all possible values of that type*)
-let create_value (ty : ty) : 'a t =
-  let rec aux i ty =
-    match (get_inner_type ty).typ with
-    | TBool -> (BBool (B.ithvar i), i + 1)
-    | TInt size -> (BInt (Array.init size (fun j -> B.ithvar (i + j))), i + size)
-    | TNode -> aux i (concrete (TInt tnode_sz))
-    (* | TEdge -> aux i (TTuple [TNode; TNode]) *)
-    (* | TTuple ts ->
-        let bs, idx =
-          List.fold_left
-            (fun (ls, idx) t ->
-              let v, i = aux idx t in
-              (v :: ls, i))
-            ([], i) ts
-        in
-        (Tuple (List.rev bs), idx) *)
-    (* | TRecord map -> aux i (TTuple (RecordUtils.get_record_entries map))
-       | TOption ty ->
-           let v, idx = aux (i + 1) ty in
-           (BOption (B.ithvar i, v), idx) *)
-    | TArrow _ | QVar _ | TVar _ ->
-        failwith
-          (Printf.sprintf "internal error (create_value) type:%s\n"
-             (Printing.ty_to_string (get_inner_type ty)))
-  in
-  let ret, _ = aux 0 ty in
-  ret
-
-let create_value (ty_id : int) : 'a t =
-  create_value (TypeIds.get_elt type_store ty_id)
+let bdd_of_mtbdd (map : bool Cudd.Mtbdd.unique Cudd.Vdd.t) = Mtbdd.guard_of_leaf B.tbl map true
 
 (* Todo: will probably require record_fns when we add tuples *)
 
 (** Lifts a value to a BDD*)
-let rec toBdd (record_fns : int * int -> 'a -> 'b) ~(vty_id : int) (v : 'v) :
-    'v t =
+let rec toBdd (_ : int * int -> 'a -> 'b) ~(vty_id : int) (v : 'v) : 'v t =
   let val_ty = TypeIds.get_elt type_store vty_id in
   match val_ty.typ with
   | TBool -> BBool (bdd_of_bool (Obj.magic v))
@@ -117,7 +79,7 @@ let rec toBdd (record_fns : int * int -> 'a -> 'b) ~(vty_id : int) (v : 'v) :
             let bit = B.get_bit (snd (Obj.magic v)) j in
             bdd_of_bool bit)
       in
-      Tuple [ BInt bs1; BInt bs2 ]
+      Tuple [BInt bs1; BInt bs2]
   (* | VOption None ->
          let ty =
            match get_inner_type (oget v.vty) with
@@ -134,8 +96,7 @@ let rec toBdd (record_fns : int * int -> 'a -> 'b) ~(vty_id : int) (v : 'v) :
 let rec ite (b : 'a t) (x : 'a t) (y : 'a t) : 'a t =
   match (b, x, y) with
   | BBool b, BBool m, BBool n -> BBool (Bdd.ite b m n)
-  | BBool b, BInt ms, BInt ns ->
-      BInt (Array.map2 (fun m n -> Bdd.ite b m n) ms ns)
+  | BBool b, BInt ms, BInt ns -> BInt (Array.map2 (fun m n -> Bdd.ite b m n) ms ns)
   (* | BBool b, BOption (tag1, m), BOption (tag2, n) ->
       let tag = Bdd.ite b tag1 tag2 in
       BOption (tag, ite b m n) *)
@@ -149,17 +110,13 @@ let rec eq x y : Bdd.vt =
   match (x, y) with
   | BBool b1, BBool b2 -> Bdd.eq b1 b2
   | BInt bs1, BInt bs2 ->
-      Array.fold_lefti
-        (fun acc i b1 -> Bdd.dand acc (Bdd.eq b1 bs2.(i)))
-        (Bdd.dtrue B.mgr) bs1
+      Array.fold_lefti (fun acc i b1 -> Bdd.dand acc (Bdd.eq b1 bs2.(i))) (Bdd.dtrue B.mgr) bs1
   | BOption (tag1, b1), BOption (tag2, b2) ->
       let tags = Bdd.eq tag1 tag2 in
       let values = eq b1 b2 in
       Bdd.dand tags values
   | Tuple xs, Tuple ys ->
-      List.fold_left2
-        (fun bacc x y -> Bdd.dand (eq x y) bacc)
-        (Bdd.dtrue B.mgr) xs ys
+      List.fold_left2 (fun bacc x y -> Bdd.dand (eq x y) bacc) (Bdd.dtrue B.mgr) xs ys
   | _ -> failwith "internal error (eq)"
 
 let eq x y = BBool (eq x y)
@@ -181,31 +138,22 @@ let add xs ys =
   BInt var4
 
 let add x y =
-  match (x, y) with
-  | BInt xs, BInt ys -> add xs ys
-  | _, _ -> failwith "Expected integers"
+  match (x, y) with BInt xs, BInt ys -> add xs ys | _, _ -> failwith "Expected integers"
 
 (** Bitwise and operation. Requires that the two integers are of the same size. *)
-let uand xs ys =
-  BInt (Array.init (Array.length xs) (fun i -> Bdd.dand xs.(i) ys.(i)))
+let uand xs ys = BInt (Array.init (Array.length xs) (fun i -> Bdd.dand xs.(i) ys.(i)))
 
 let uand xs ys =
-  match (xs, ys) with
-  | BInt xs, BInt ys -> uand xs ys
-  | _, _ -> failwith "Expected integers"
+  match (xs, ys) with BInt xs, BInt ys -> uand xs ys | _, _ -> failwith "Expected integers"
 
-let leq xs ys =
+let leq_arr xs ys =
   let less x y = Bdd.dand (Bdd.dnot x) y in
   let acc = ref (Bdd.dtrue B.mgr) in
-  Array.iter2
-    (fun x y -> acc := Bdd.dor (less x y) (Bdd.dand !acc (Bdd.eq x y)))
-    xs ys;
+  Array.iter2 (fun x y -> acc := Bdd.dor (less x y) (Bdd.dand !acc (Bdd.eq x y))) xs ys;
   BBool !acc
 
 let leq x y =
-  match (x, y) with
-  | BInt xs, BInt ys -> leq xs ys
-  | _, _ -> failwith "Expected integers"
+  match (x, y) with BInt xs, BInt ys -> leq_arr xs ys | _, _ -> failwith "Expected integers"
 
 let lt xs ys =
   match (leq xs ys, eq xs ys) with
@@ -225,11 +173,8 @@ let toMap ~value = Mtbdd.cst B.mgr B.tbl (Obj.magic value)
 
 (* applyN takes as argument an OCaml function over concrete OCaml values and a nu*)
 let applyN ~f ~args : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
-  let g _ (arr : 'a Cudd.Mtbdd.unique Cudd.Vdd.t array) :
-      'a Cudd.Mtbdd.unique Cudd.Vdd.t option =
-    let cst =
-      Array.fold_left (fun res add -> res && Mtbdd.is_cst add) true arr
-    in
+  let g _ (arr : 'a Cudd.Mtbdd.unique Cudd.Vdd.t array) : 'a Cudd.Mtbdd.unique Cudd.Vdd.t option =
+    let cst = Array.fold_left (fun res add -> res && Mtbdd.is_cst add) true arr in
     if cst then
       let res =
         Array.fold_left
@@ -240,8 +185,58 @@ let applyN ~f ~args : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
     else None
   in
   let op =
-    User.make_opN
-      ~memo:Cudd.(Cache (Cache.create (Array.length args)))
-      0 (Array.length args) g
+    User.make_opN ~memo:Cudd.(Cache (Cache.create (Array.length args))) 0 (Array.length args) g
   in
   User.apply_opN op [||] args
+
+(** ** Probabilistic part *)
+
+(* Returns a uniform probability based on the given type *)
+let uniform_probability_ty ty (g : AdjGraph.t) =
+  match ty.typ with
+  | TBool -> 1.0 /. 2.0
+  | TInt sz -> 1.0 /. float (1 lsl sz)
+  | TNode -> 1.0 /. float (AdjGraph.nb_vertex g)
+  | TEdge -> 1.0 /. float (AdjGraph.nb_edges g)
+  | TArrow _ | QVar _ | TVar _ -> failwith "No probabilities over arrow types or type variables"
+
+(* Creates a uniform distribution represented as a MTBDD, given the type of the value.*)
+(*TODO: fix this for nodes and edges - probability of invalid nodes should be 0 *)
+let uniform_distribution symbolic_start symbolic_end ty (g : AdjGraph.t) :
+    float Cudd.Mtbdd.unique Cudd.Vdd.t =
+  let prob = Mtbdd.cst B.mgr B.tbl_probabilities (uniform_probability_ty ty g) in
+  prob
+
+(* Given a type creates a BDD representing all possible values of that type*)
+let create_value (ty : ty) (g : AdjGraph.t) : 'a t =
+  let rec aux ty =
+    let typ = get_inner_type ty in
+    let symbolic_start, symbolic_end, res = B.freshvars typ in
+    let distr = uniform_distribution symbolic_start symbolic_end typ g in
+    B.push_symbolic_vars (symbolic_start, symbolic_end, typ, distr);
+    match typ.typ with
+    | TBool -> BBool res.(0)
+    | TInt _ -> BInt res
+    | TNode -> BInt res
+    | TEdge -> failwith "todo once we introduce tuples?" (*aux i (TTuple [TNode; TNode]) *)
+    (* | TTuple ts ->
+        let bs, idx =
+          List.fold_left
+            (fun (ls, idx) t ->
+              let v, i = aux idx t in
+              (v :: ls, i))
+            ([], i) ts
+        in
+        (Tuple (List.rev bs), idx) *)
+    (* | TRecord map -> aux i (TTuple (RecordUtils.get_record_entries map))
+       | TOption ty ->
+           let v, idx = aux (i + 1) ty in
+           (BOption (B.ithvar i, v), idx) *)
+    | TArrow _ | QVar _ | TVar _ ->
+        failwith
+          (Printf.sprintf "internal error (create_value) type:%s\n"
+             (Printing.ty_to_string (get_inner_type ty)))
+  in
+  aux ty
+
+let create_value (ty_id : int) g : 'a t = create_value (TypeIds.get_elt type_store ty_id) g

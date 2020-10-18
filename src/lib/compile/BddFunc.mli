@@ -15,8 +15,8 @@ val equal_t : 'a t -> 'b t -> bool
 
 val bdd_of_bool : bool -> Cudd.Man.v Cudd.Bdd.t
 
-val create_value : int -> 'a t
 (** Given a type index, creates a BDD value representing all possible values of this type. *)
+val create_value : int -> AdjGraph.t -> 'a t
 
 val toBdd : (int * int -> 'a -> 'b) -> vty_id:int -> 'v -> 'v t
 (** Converts a value to a BDD *)

@@ -1,0 +1,11 @@
+(library
+  (name probNv_printing)
+  (public_name probNv.printing)
+  (libraries
+    batteries
+    cudd
+    integers
+    probNv_datastructures
+    probNv_lang
+    probNv_utils)
+)

@@ -1,7 +1,8 @@
 open Syntax
 open Batteries
 open ProbNv_datastructures
-include ProbNv_utils.PrimitiveCollections
+open ProbNv_utils
+include PrimitiveCollections
 module VarMap = BetterMap.Make (Var)
 module VarSet = BetterSet.Make (Var)
 

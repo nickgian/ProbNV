@@ -87,7 +87,7 @@ let rec inline_app cond env e1 e2 : exp =
     | EIf (e3, e4, e5) ->
         let etrue = inline_app env e4 e2 in
         let efalse = inline_app env e5 e2 in
-        eif e3 etrue efalse |> wrap e1
+        eif e3 etrue efalse
     | ELet (x, e3, e4) ->
         let e5 = inline_exp env (eapp e4 e2 |> wrap e4) in
         elet x e3 e5
@@ -101,6 +101,8 @@ let rec inline_app cond env e1 e2 : exp =
            mapBranches (fun (p,e) -> inline_branch_app env e2 (p,e)) bs
        in
         ematch e branches |> wrap e1 *)
+    | EBddIf (_, _, _) | EToBdd _ | EToMap _ | EApplyN (_, _) ->
+        failwith "Not inlining in LLL right now."
   in
   (* Printf.printf "inline_app e1: %s\ninline_app e2: %s)\n"
      (Printing.exp_to_string e1)
@@ -120,7 +122,7 @@ and inline_exp (cond : ty -> bool) (env : exp Env.t) (e : exp) : exp =
   | EFun f ->
       let body = inline_exp env f.body in
       efun { f with body } |> wrap e
-  | EApp (e1, e2) -> inline_app cond env (inline_exp env e1) (inline_exp env e2)
+  | EApp (e1, e2) -> inline_app cond env (inline_exp env e1) (inline_exp env e2) |> wrap e
   | EIf (e1, e2, e3) -> eif (inline_exp env e1) (inline_exp env e2) (inline_exp env e3) |> wrap e
   | ELet (x, e1, e2) -> (
       let e1' = inline_exp env e1 in
@@ -183,7 +185,7 @@ let rec inline_declarations_aux cond env (ds : declarations) : declarations =
 (* Inline everything *)
 let inline_declarations (ds : declarations) = inline_declarations_aux (fun _ -> true) Env.empty ds
 
-let rec getReturnType ty = match ty.typ with TArrow (ty1, ty2) -> getReturnType ty2 | _ -> ty
+let rec getReturnType ty = match ty.typ with TArrow (_, ty2) -> getReturnType ty2 | _ -> ty
 
 (* Inline functions that return a multivalue *)
 let inline_multivalue_declarations (ds : declarations) =
