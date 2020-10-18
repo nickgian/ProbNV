@@ -156,16 +156,17 @@ let rec symbolicProbability cube i j distr =
     i > j
   then Mtbdd.dval distr
   else if
-    (*If this variable is determined*)
+    (*If this variable is determined, then procceed down the appropriate path.
+      Also move the distribution if necessary.*)
     cube.(i) = Man.True || cube.(i) = Man.False
   then
     symbolicProbability cube (i + 1) j
       (if Mtbdd.topvar distr = i then move cube.(i) distr else distr)
   else if
-    (* Otherwise if it's Top, it can be both true and false.*)
+    (* Otherwise it's Top, and it can be both true and false.*)
     (not (Mtbdd.is_cst distr)) && Mtbdd.topvar distr = i
   then
-    (*If the top variable in the distribution matches the given variable, then recurse on both cases. *)
+    (*If the top variable in the distribution matches the given variable, then recurse on both cases, and move the distribution accordingly. *)
     symbolicProbability cube (i + 1) j (move Man.True distr)
     +. symbolicProbability cube (i + 1) j (move Man.False distr)
   else
