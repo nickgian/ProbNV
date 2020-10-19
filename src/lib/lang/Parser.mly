@@ -227,18 +227,18 @@ expr:
     | SOME expr                         { exp (esome $2) (Span.extend $1 $2.espan) } */
     | NOT expr                          { exp (eop Not [$2]) (Span.extend $1 $2.espan) }
     | expr AND expr                     { exp (eop And [$1;$3]) (Span.extend $1.espan $3.espan) }
-    /* | expr OR expr                      { exp (eop Or [$1;$3]) (Span.extend $1.espan $3.espan) } */
+    | expr OR expr                      { exp (eop Or [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr PLUS expr                    { exp (eop (UAdd (snd $2)) [$1;$3]) (Span.extend $1.espan $3.espan) }
     /* | expr UAND expr                    { exp (eop (UAnd (snd $2)) [$1;$3]) (Span.extend $1.espan $3.espan) } */
     | expr EQ expr                      { exp (eop Eq [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr LESS expr                    { exp (eop (ULess (snd $2)) [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr GREATER expr                 { exp (eop (ULess (snd $2)) [$3;$1]) (Span.extend $1.espan $3.espan) }
-    /* | expr LEQ expr                     { exp (eop (ULeq (snd $2)) [$1;$3]) (Span.extend $1.espan $3.espan) }
-    | expr GEQ expr                     { exp (eop (ULeq (snd $2)) [$3;$1]) (Span.extend $1.espan $3.espan) } */
-    /* | expr NLESS expr                   { exp (eop NLess [$1;$3]) (Span.extend $1.espan $3.espan) }
+    | expr LEQ expr                     { exp (eop (ULeq (snd $2)) [$1;$3]) (Span.extend $1.espan $3.espan) }
+    | expr GEQ expr                     { exp (eop (ULeq (snd $2)) [$3;$1]) (Span.extend $1.espan $3.espan) }
+    | expr NLESS expr                   { exp (eop NLess [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr NGREATER expr                { exp (eop NLess [$3;$1]) (Span.extend $1.espan $3.espan) }
     | expr NLEQ expr                    { exp (eop NLeq [$1;$3]) (Span.extend $1.espan $3.espan) }
-    | expr NGEQ expr                    { exp (eop NLeq [$3;$1]) (Span.extend $1.espan $3.espan) } */
+    | expr NGEQ expr                    { exp (eop NLeq [$3;$1]) (Span.extend $1.espan $3.espan) }
     | LPAREN expr COLON ty RPAREN       { exp ~ty:(Some $4) $2 (Span.extend $1 $5) }
     | LPAREN expr RPAREN                { exp $2 (Span.extend $1 $3) }
     /* | expr DOT ID                       { exp (eproject $1 (Var.name (snd $3))) (Span.extend ($1.espan) (fst $3)) }

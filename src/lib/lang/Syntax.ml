@@ -27,14 +27,23 @@ type mode = Symbolic | Concrete | Multivalue [@@deriving ord, eq]
 let rec join_opt m1 m2 =
   match m1 with
   | Concrete -> Some m2
-  | Symbolic -> ( match m2 with Concrete | Symbolic -> Some Symbolic | Multivalue -> None )
-  | Multivalue -> ( match m2 with Concrete | Multivalue -> Some Multivalue | Symbolic -> None )
+  | Symbolic -> (
+      match m2 with Concrete | Symbolic -> Some Symbolic | Multivalue -> None )
+  | Multivalue -> (
+      match m2 with
+      | Concrete | Multivalue -> Some Multivalue
+      | Symbolic -> None )
 
 let join m1 m2 =
-  match join_opt m1 m2 with Some m -> m | None -> failwith "Failed to join the given modes"
+  match join_opt m1 m2 with
+  | Some m -> m
+  | None -> failwith "Failed to join the given modes"
 
 let join_opts m1 m2 =
-  match (m1, m2) with None, _ -> m2 | _, None -> m1 | Some m1, Some m2 -> join_opt m1 m2
+  match (m1, m2) with
+  | None, _ -> m2
+  | _, None -> m1
+  | Some m1, Some m2 -> join_opt m1 m2
 
 (** Base types in probNV include an execution mode *)
 type baseTy =
@@ -45,18 +54,50 @@ type baseTy =
   | TNode
   | TEdge
   | TArrow of ty * ty
+  | TTuple of ty list
 [@@deriving ord, eq]
 
 and ty = { typ : baseTy; mode : mode option }
 
 and tyvar = Unbound of tyname * level | Link of ty
 
+let rec join_ty ty1 ty2 =
+  match (ty1.typ, ty2.typ) with
+  | TInt sz1, TInt sz2 when sz1 = sz2 ->
+      { ty1 with mode = join_opts ty1.mode ty2.mode }
+  | TBool, TBool | TNode, TNode | TEdge, TEdge ->
+      { ty1 with mode = join_opts ty1.mode ty2.mode }
+  | TTuple ts1, TTuple ts2 ->
+      {
+        typ = TTuple (List.map2 (fun ty1 ty2 -> join_ty ty1 ty2) ts1 ts2);
+        mode = join_opts ty1.mode ty2.mode;
+      }
+  | TArrow _, TArrow _ ->
+      if ty1 = ty2 then ty1 else failwith "cannot join unequal arrow types"
+  | TVar { contents = Link ty3 }, _ ->
+      join_ty { ty3 with mode = join_opts ty1.mode ty3.mode } ty2
+  | _, TVar { contents = Link ty3 } ->
+      join_ty ty1 { ty3 with mode = join_opts ty2.mode ty3.mode }
+  | TVar _, _
+  | QVar _, _
+  | TBool, _
+  | TInt _, _
+  | TArrow _, _
+  | TTuple _, _
+  | TEdge, _
+  | TNode, _ ->
+      failwith "Cannot join the given types"
+
 type op =
   | And
+  | Or
   | Not
   | Eq
   | UAdd of bitwidth
   | ULess of bitwidth
+  | ULeq of bitwidth
+  | NLess
+  | NLeq
   (* Low-Level Language BDD operations *)
   | BddAnd
   | BddNot
@@ -71,6 +112,7 @@ type v =
   | VInt of Integer.t
   | VNode of node
   | VEdge of edge
+  | VTuple of value list
   | VClosure of closure
   | VTotalMap of mtbdd
 [@@deriving ord]
@@ -83,12 +125,16 @@ and value = {
 [@@deriving ord]
 (** Values also encapsulate their type and location information for error reporting*)
 
-and closure = (env * func[@compare fun _ _ -> failwith "Map value comparison not supported"])
+and closure =
+  (env * func
+  [@compare fun _ _ -> failwith "Map value comparison not supported"])
 [@@deriving ord]
 
 and env = { ty : ty Env.t; value : value Env.t }
 
-and mtbdd = (value Mtbdd.t[@compare fun _ _ -> failwith "Map value comparison not supported"])
+and mtbdd =
+  (value Mtbdd.t
+  [@compare fun _ _ -> failwith "Map value comparison not supported"])
 
 (** Expression Language for both HLL + LLL combined *)
 and e =
@@ -99,6 +145,7 @@ and e =
   | EApp of exp * exp
   | EIf of exp * exp * exp
   | ELet of var * exp * exp
+  | ETuple of exp list
   (* Low-Level Language expressions *)
   | EBddIf of exp * exp * exp
   | EToBdd of exp
@@ -106,13 +153,29 @@ and e =
   | EApplyN of exp * exp list
 [@@deriving ord]
 
-and exp = { e : e; ety : ty option; [@compare fun _ _ -> 0] espan : Span.t [@compare fun _ _ -> 0] }
+and exp = {
+  e : e;
+  ety : ty option; [@compare fun _ _ -> 0]
+  espan : Span.t; [@compare fun _ _ -> 0]
+}
 [@@deriving ord]
 
-and func = { arg : var; argty : ty option; resty : ty option; body : exp; fmode : mode option }
+and func = {
+  arg : var;
+  argty : ty option;
+  resty : ty option;
+  body : exp;
+  fmode : mode option;
+}
 
 (* var_names should be an exp that uses only the EVar and ETuple constructors *)
-type solve = { aty : ty option; var_names : exp; init : exp; trans : exp; merge : exp }
+type solve = {
+  aty : ty option;
+  var_names : exp;
+  init : exp;
+  trans : exp;
+  merge : exp;
+}
 
 type declaration =
   | DLet of var * exp
@@ -126,7 +189,8 @@ type declarations = declaration list
 
 (* equality / hashing *)
 
-let equal_spans (s1 : Span.t) (s2 : Span.t) = s1.start = s2.start && s1.finish = s2.finish
+let equal_spans (s1 : Span.t) (s2 : Span.t) =
+  s1.start = s2.start && s1.finish = s2.finish
 
 let equal_opt e o1 o2 =
   match (o1, o2) with
@@ -151,13 +215,18 @@ let rec equal_base_tys ty1 ty2 =
       | Link t1, Link t2 -> equal_tys t1 t2
       | _ -> false )
   | QVar n1, QVar n2 -> Var.equals n1 n2
-  | (TBool | TNode | TEdge | TInt _ | TArrow _ | TVar _ | QVar _), _ -> false
+  | TTuple ts1, TTuple ts2 -> List.for_all2 equal_tys ts1 ts2
+  | (TBool | TNode | TEdge | TInt _ | TArrow _ | TVar _ | QVar _ | TTuple _), _
+    ->
+      false
 
 and equal_tys ty1 ty2 = ty1.mode = ty2.mode && equal_base_tys ty1.typ ty2.typ
 
 let rec equal_values ~cmp_meta (v1 : value) (v2 : value) =
   let b = equal_vs ~cmp_meta v1.v v2.v in
-  if cmp_meta then b && equal_opt equal_tys v1.vty v2.vty && equal_spans v1.vspan v2.vspan else b
+  if cmp_meta then
+    b && equal_opt equal_tys v1.vty v2.vty && equal_spans v1.vspan v2.vspan
+  else b
 
 and equal_vs ~cmp_meta v1 v2 =
   match (v1, v2) with
@@ -165,6 +234,7 @@ and equal_vs ~cmp_meta v1 v2 =
   | VNode n1, VNode n2 -> n1 = n2
   | VEdge e1, VEdge e2 -> e1 = e2
   | VInt i1, VInt i2 -> Integer.equal i1 i2
+  | VTuple vs1, VTuple vs2 -> equal_lists ~cmp_meta vs1 vs2
   | VClosure (e1, f1), VClosure (e2, f2) ->
       let { ty = ty1; value = value1 } = e1 in
       let { ty = ty2; value = value2 } = e2 in
@@ -172,42 +242,64 @@ and equal_vs ~cmp_meta v1 v2 =
       && Env.equal (equal_values ~cmp_meta) value1 value2
       && equal_funcs ~cmp_meta f1 f2
   | VTotalMap m1, VTotalMap m2 -> Mtbdd.is_equal m1 m2
-  | (VBool _ | VNode _ | VEdge _ | VInt _ | VClosure _ | VTotalMap _), _ -> false
+  | ( ( VBool _ | VNode _ | VEdge _ | VInt _ | VClosure _ | VTotalMap _
+      | VTuple _ ),
+      _ ) ->
+      false
 
 and equal_lists ~cmp_meta vs1 vs2 =
   match (vs1, vs2) with
   | [], [] -> true
   | [], _ | _, [] -> false
-  | v1 :: vs1, v2 :: vs2 -> equal_values ~cmp_meta v1 v2 && equal_lists ~cmp_meta vs1 vs2
+  | v1 :: vs1, v2 :: vs2 ->
+      equal_values ~cmp_meta v1 v2 && equal_lists ~cmp_meta vs1 vs2
 
 and equal_exps ~cmp_meta (e1 : exp) (e2 : exp) =
   let b = equal_es ~cmp_meta e1.e e2.e in
-  if cmp_meta then b && equal_opt equal_tys e1.ety e2.ety && equal_spans e1.espan e2.espan else b
+  if cmp_meta then
+    b && equal_opt equal_tys e1.ety e2.ety && equal_spans e1.espan e2.espan
+  else b
 
 and equal_es ~cmp_meta e1 e2 =
   match (e1, e2) with
   | EVar x1, EVar x2 -> Var.equals x1 x2
   | EVal v1, EVal v2 -> equal_values ~cmp_meta v1 v2
-  | EOp (op1, es1), EOp (op2, es2) -> equal_op op1 op2 && equal_lists_es ~cmp_meta es1 es2
+  | EOp (op1, es1), EOp (op2, es2) ->
+      equal_op op1 op2 && equal_lists_es ~cmp_meta es1 es2
   | EFun f1, EFun f2 -> equal_funcs ~cmp_meta f1 f2
-  | EApp (e1, e2), EApp (e3, e4) -> equal_exps ~cmp_meta e1 e3 && equal_exps ~cmp_meta e2 e4
+  | EApp (e1, e2), EApp (e3, e4) ->
+      equal_exps ~cmp_meta e1 e3 && equal_exps ~cmp_meta e2 e4
   | EIf (e1, e2, e3), EIf (e4, e5, e6) ->
-      equal_exps ~cmp_meta e1 e4 && equal_exps ~cmp_meta e2 e5 && equal_exps ~cmp_meta e3 e6
+      equal_exps ~cmp_meta e1 e4 && equal_exps ~cmp_meta e2 e5
+      && equal_exps ~cmp_meta e3 e6
   | ELet (x1, e1, e2), ELet (x2, e3, e4) ->
-      Var.equals x1 x2 && equal_exps ~cmp_meta e1 e3 && equal_exps ~cmp_meta e2 e4
-  | _, _ -> false
+      Var.equals x1 x2 && equal_exps ~cmp_meta e1 e3
+      && equal_exps ~cmp_meta e2 e4
+  | ETuple es1, ETuple es2 -> equal_lists_es ~cmp_meta es1 es2
+  | EVar _, _
+  | EVal _, _
+  | EOp _, _
+  | EFun _, _
+  | EApp _, _
+  | EIf _, _
+  | ELet _, _
+  | ETuple _, _ ->
+      false
 
 and equal_lists_es ~cmp_meta es1 es2 =
   match (es1, es2) with
   | [], [] -> true
   | [], _ | _, [] -> false
-  | e1 :: es1, e2 :: es2 -> equal_exps ~cmp_meta e1 e2 && equal_lists_es ~cmp_meta es1 es2
+  | e1 :: es1, e2 :: es2 ->
+      equal_exps ~cmp_meta e1 e2 && equal_lists_es ~cmp_meta es1 es2
 
 and equal_funcs ~cmp_meta f1 f2 =
   let { arg = x; argty = aty1; resty = rty1; body = e1 } = f1 in
   let { arg = y; argty = aty2; resty = rty2; body = e2 } = f2 in
   let b =
-    if cmp_meta then equal_opt equal_tys aty1 aty2 && equal_opt equal_tys rty1 rty2 else true
+    if cmp_meta then
+      equal_opt equal_tys aty1 aty2 && equal_opt equal_tys rty1 rty2
+    else true
   in
   b && Var.equals x y && equal_exps ~cmp_meta e1 e2
 
@@ -229,6 +321,7 @@ let rec hash_ty ty =
   | TBool -> 4
   | TInt _ -> 5
   | TArrow (ty1, ty2) -> 6 + hash_ty ty1 + hash_ty ty2
+  | TTuple ts -> List.fold_left (fun acc t -> acc + hash_ty t) 0 ts + 7
   | TNode -> 12
   | TEdge -> 13
 
@@ -245,7 +338,9 @@ let hash_string str =
   !acc
 
 let rec hash_value ~hash_meta v : int =
-  let m = if hash_meta then (19 * hash_opt hash_ty v.vty) + hash_span v.vspan else 0 in
+  let m =
+    if hash_meta then (19 * hash_opt hash_ty v.vty) + hash_span v.vspan else 0
+  in
   (19 * hash_v ~hash_meta v.v) + m
 
 and hash_v ~hash_meta v =
@@ -254,6 +349,11 @@ and hash_v ~hash_meta v =
   | VInt i -> (19 * Integer.to_int i) + 1
   | VNode n -> (19 * n) + 9
   | VEdge (e1, e2) -> (19 * (e1 + (19 * e2))) + 10
+  | VTuple vs ->
+      let acc =
+        List.fold_left (fun acc v -> acc + hash_value ~hash_meta v) 0 vs
+      in
+      (19 * acc) + 3
   | VClosure (e1, _) ->
       let { ty = _; value = v } = e1 in
       let vs = Env.to_list v in
@@ -267,7 +367,9 @@ and hash_v ~hash_meta v =
       (19 * acc) + 5
 
 and hash_exp ~hash_meta e =
-  let m = if hash_meta then (19 * hash_opt hash_ty e.ety) + hash_span e.espan else 0 in
+  let m =
+    if hash_meta then (19 * hash_opt hash_ty e.ety) + hash_span e.espan else 0
+  in
   (19 * hash_e ~hash_meta e.e) + m
 
 and hash_e ~hash_meta e =
@@ -276,33 +378,47 @@ and hash_e ~hash_meta e =
   | EVal v -> (19 * hash_value ~hash_meta v) + 1
   | EOp (op, es) -> (19 * ((19 * hash_op op) + hash_es ~hash_meta es)) + 2
   | EFun f ->
-      let i = if hash_meta then hash_opt hash_ty f.argty + hash_opt hash_ty f.resty else 0 in
-      (19 * ((19 * ((19 * hash_var f.arg) + hash_exp ~hash_meta f.body)) + i)) + 3
-  | EApp (e1, e2) -> (19 * ((19 * hash_exp ~hash_meta e1) + hash_exp ~hash_meta e2)) + 4
+      let i =
+        if hash_meta then hash_opt hash_ty f.argty + hash_opt hash_ty f.resty
+        else 0
+      in
+      (19 * ((19 * ((19 * hash_var f.arg) + hash_exp ~hash_meta f.body)) + i))
+      + 3
+  | EApp (e1, e2) ->
+      (19 * ((19 * hash_exp ~hash_meta e1) + hash_exp ~hash_meta e2)) + 4
   | EIf (e1, e2, e3) ->
       19
-      * ((19 * ((19 * hash_exp ~hash_meta e1) + hash_exp ~hash_meta e2)) + hash_exp ~hash_meta e3)
+      * ( (19 * ((19 * hash_exp ~hash_meta e1) + hash_exp ~hash_meta e2))
+        + hash_exp ~hash_meta e3 )
       + 5
   | ELet (x, e1, e2) ->
-      (19 * ((19 * ((19 * hash_var x) + hash_exp ~hash_meta e1)) + hash_exp ~hash_meta e2)) + 6
+      19
+      * ( (19 * ((19 * hash_var x) + hash_exp ~hash_meta e1))
+        + hash_exp ~hash_meta e2 )
+      + 6
+  | ETuple es -> (19 * hash_es ~hash_meta es) + 7
 
 and hash_var x = hash_string (Var.to_string x)
 
-and hash_es ~hash_meta es = List.fold_left (fun acc e -> acc + hash_exp ~hash_meta e) 0 es
+and hash_es ~hash_meta es =
+  List.fold_left (fun acc e -> acc + hash_exp ~hash_meta e) 0 es
 
 and hash_op op =
   match op with
   | And -> 1
-  (* | Or -> 2 *)
+  | Or -> 2
   | Not -> 3
   | Eq -> 4
   | UAdd n -> 11 + n + 256
   | ULess n -> 11 + n + (256 * 3)
+  | ULeq n -> 11 + n + (256 * 4)
   | BddAnd -> 8
   | BddAdd n -> 11 + n + (256 * 5)
   | BddEq -> 10
   | BddLess n -> 11 + n + (256 * 7)
   | BddNot -> 12
+  | NLess -> 14
+  | NLeq -> 15
 
 (* | UAnd n -> 12 + n + 256 *  5 *)
 
@@ -310,11 +426,11 @@ and hash_op op =
 
 let arity op =
   match op with
-  | And -> 2
+  | And | Or -> 2
   | Not -> 1
   | UAdd _ -> 2
   | Eq -> 2
-  | ULess _ -> 2
+  | ULess _ | ULeq _ | NLeq | NLess -> 2
   | BddAdd _ | BddAnd | BddEq | BddLess _ -> 2
   | BddNot -> 1
 
@@ -352,6 +468,8 @@ let vedge e = value (VEdge e)
 
 let vint i = value (VInt i)
 
+let vtuple vs = value (VTuple vs)
+
 let evar x = exp (EVar x)
 
 let e_val v = exp (EVal v)
@@ -384,11 +502,18 @@ let rec liftSymbolicTy ty =
   | TVar _ | QVar _ -> failwith "Should be an instantiated type"
   | TBool | TInt _ | TNode | TEdge ->
       { ty with mode = Some (liftSymbolicMode (OCamlUtils.oget ty.mode)) }
+  | TTuple ts ->
+      {
+        typ = TTuple (List.map liftSymbolicTy ts);
+        mode = Some (liftSymbolicMode (OCamlUtils.oget ty.mode));
+      }
   | TArrow (_, _) -> failwith "Cannot lift to symbolic"
 
 let etoBdd e1 =
   let e1' = exp (EToBdd e1) in
-  match e1.ety with None -> e1' | Some ty -> aexp (e1', Some (liftSymbolicTy ty), e1.espan)
+  match e1.ety with
+  | None -> e1'
+  | Some ty -> aexp (e1', Some (liftSymbolicTy ty), e1.espan)
 
 let liftMultiMode m =
   match m with
@@ -402,21 +527,33 @@ let rec liftMultiTy ty =
   | TVar _ | QVar _ -> failwith "Should be an instantiated type"
   | TBool | TInt _ | TNode | TEdge ->
       { ty with mode = Some (liftMultiMode (OCamlUtils.oget ty.mode)) }
+  | TTuple ts ->
+      {
+        typ = TTuple (List.map liftMultiTy ts);
+        mode = Some (liftMultiMode (OCamlUtils.oget ty.mode));
+      }
   | TArrow (_, _) -> failwith "Cannot lift to multivalue"
 
 (* TODO: lift multivalue through tuples *)
 let etoMap e1 =
   let e1' = exp (EToMap e1) in
-  match e1.ety with None -> e1' | Some ty -> aexp (e1', Some (liftMultiTy ty), e1.espan)
+  match e1.ety with
+  | None -> e1'
+  | Some ty -> aexp (e1', Some (liftMultiTy ty), e1.espan)
 
 let eApplyN e1 es = exp (EApplyN (e1, es))
 
-let deconstructFun exp = match exp.e with EFun f -> f | _ -> failwith "expected a function"
+let deconstructFun exp =
+  match exp.e with EFun f -> f | _ -> failwith "expected a function"
 
 let rec is_value e =
-  match e.e with EVal _ -> true | EVar _ | EOp _ | EFun _ | EApp _ | EIf _ | ELet _ -> false
+  match e.e with
+  | EVal _ -> true
+  | ETuple es -> BatList.for_all is_value es
+  | EVar _ | EOp _ | EFun _ | EApp _ | EIf _ | ELet _ -> false
 
-let rec to_value e = match e.e with EVal v -> v | _ -> failwith "internal error (to_value)"
+let rec to_value e =
+  match e.e with EVal v -> v | _ -> failwith "internal error (to_value)"
 
 let exp_of_v x = exp (EVal (value x))
 
@@ -433,6 +570,7 @@ let rec exp_to_value (e : exp) : value =
   | EApplyN (_, _) ->
       failwith "Not a literal"
   | EVal v -> v
+  | ETuple es -> vtuple (List.map exp_to_value es)
 
 let func x body = { arg = x; argty = None; resty = None; body; fmode = None }
 
@@ -441,7 +579,10 @@ let funcFull x argty resty fmode body = { arg = x; argty; resty; body; fmode }
 let efunc f =
   match (f.argty, f.resty, f.fmode) with
   | Some argty, Some resty, Some m ->
-      aexp (exp (EFun f), Some { typ = TArrow (argty, resty); mode = Some m }, Span.default)
+      aexp
+        ( exp (EFun f),
+          Some { typ = TArrow (argty, resty); mode = Some m },
+          Span.default )
   | _, _, _ -> exp (EFun f)
 
 let lam x body = exp (EFun (func x body))
@@ -453,13 +594,13 @@ let annotv ty v = { v with vty = Some ty; vspan = v.vspan }
 let rec lams params body =
   match params with
   | [] -> failwith "lams: no parameters"
-  | [p] -> lam p body
+  | [ p ] -> lam p body
   | p :: params -> lam p (lams params body)
 
 let rec apps f args : exp =
   match args with
   | [] -> failwith "apps: no arguments"
-  | [a] -> exp (EApp (f, a))
+  | [ a ] -> exp (EApp (f, a))
   | a :: args -> apps (exp (EApp (f, a))) args
 
 let get_decl ds f =
@@ -471,13 +612,20 @@ let get_decl ds f =
   with _ -> None
 
 let get_edges ds =
-  try Some (BatList.find_map (fun d -> match d with DEdges es -> Some es | _ -> None) ds)
+  try
+    Some
+      (BatList.find_map
+         (fun d -> match d with DEdges es -> Some es | _ -> None)
+         ds)
   with Not_found -> None
 
-let get_nodes ds = get_decl ds (fun d -> match d with DNodes i -> Some i | _ -> None)
+let get_nodes ds =
+  get_decl ds (fun d -> match d with DNodes i -> Some i | _ -> None)
 
 let get_symbolics ds =
-  List.fold_left (fun acc d -> match d with DSymbolic (x, e) -> (x, e) :: acc | _ -> acc) [] ds
+  List.fold_left
+    (fun acc d -> match d with DSymbolic (x, e) -> (x, e) :: acc | _ -> acc)
+    [] ds
   |> List.rev
 
 (* Getting the mode of a type is a bit trickier because of Links. We need to search through
@@ -490,7 +638,8 @@ let rec get_mode ty =
 let rec get_inner_type t : ty =
   match t.typ with TVar { contents = Link t } -> get_inner_type t | _ -> t
 
-let bool_of_val (v : value) : bool option = match v.v with VBool b -> Some b | _ -> None
+let bool_of_val (v : value) : bool option =
+  match v.v with VBool b -> Some b | _ -> None
 
 let compare_vs = compare_value
 
