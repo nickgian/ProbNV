@@ -87,19 +87,19 @@ rule token = parse
   | "-"               { SUB (position lexbuf, 32) }
   | "&" width as s    { UAND (position lexbuf, int_of_string @@ String.lchop ~n:2 s) }
   | "&"               { UAND (position lexbuf, 32) }
-  (* | "<=n"             { NLEQ (position lexbuf) }
+  | "<=n"             { NLEQ (position lexbuf) }
   | "<=" width as s   { LEQ (position lexbuf, int_of_string @@ String.lchop ~n:3 s) }
   | "<="              { LEQ (position lexbuf, 32) }
   | ">=n"             { NGEQ (position lexbuf) }
   | ">=" width as s   { GEQ (position lexbuf, int_of_string @@ String.lchop ~n:3 s) }
-  | ">="              { GEQ (position lexbuf, 32) } *)
+  | ">="              { GEQ (position lexbuf, 32) }
   | "="               { EQ (position lexbuf) }
-  (* | "<n"              { NLESS (position lexbuf) } *)
+  | "<n"              { NLESS (position lexbuf) }
   | "<" width as s    { LESS (position lexbuf, int_of_string @@ String.lchop ~n:2 s) }
   | "<"               { LESS (position lexbuf, 32) }
-  (* | ">n"              { NGREATER (position lexbuf) }
+  | ">n"              { NGREATER (position lexbuf) }
   | ">" width as s    { GREATER (position lexbuf, int_of_string @@ String.lchop ~n:2 s) }
-  | ">"               { GREATER (position lexbuf, 32) } *)
+  | ">"               { GREATER (position lexbuf, 32) }
   | ";"               { SEMI (position lexbuf) }
   | ":"               { COLON (position lexbuf) }
   | "("               { LPAREN (position lexbuf) }

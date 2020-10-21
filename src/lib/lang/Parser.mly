@@ -40,6 +40,22 @@
   let make_dsolve ?ty:(ty=None) x init trans merge =
     DSolve ({aty = ty; var_names = evar x; init; trans; merge})
 
+
+  let ensure_node_pattern p =
+    match p with
+    | PInt n -> PNode (ProbNv_datastructures.Integer.to_int n)
+    | _ -> p
+
+  let tuple_pattern ps =
+    match ps with
+    | [p] -> p
+    | ps -> PTuple ps
+
+   let tuple_it es (span : Span.t) : exp =
+    match es with
+    | [e] -> exp e span
+    | es -> exp (etuple es) span
+
 %}
 
 
@@ -59,6 +75,10 @@
 %token <ProbNv_datastructures.Span.t * int> GREATER
 %token <ProbNv_datastructures.Span.t * int> LEQ
 %token <ProbNv_datastructures.Span.t * int> GEQ
+%token <ProbNv_datastructures.Span.t> NGEQ
+%token <ProbNv_datastructures.Span.t> NGREATER
+%token <ProbNv_datastructures.Span.t> NLESS
+%token <ProbNv_datastructures.Span.t> NLEQ
 %token <ProbNv_datastructures.Span.t> LET
 %token <ProbNv_datastructures.Span.t> IN
 %token <ProbNv_datastructures.Span.t> IF
@@ -132,8 +152,8 @@ bty:
    | TNODE                              { TNode }
    | TEDGE                              { TEdge }
    | TINT                               { Syntax.TInt (snd $1) }
-   /* | LPAREN tys RPAREN                  { if List.length $2 = 1 then List.hd $2 else TTuple $2 }
-   | TOPTION LBRACKET ty RBRACKET       { TOption $3 }
+   | LPAREN tys RPAREN                  { if List.length $2 = 1 then failwith "impossible" else TTuple $2 }
+   /*| TOPTION LBRACKET ty RBRACKET       { TOption $3 }
    | TDICT LBRACKET ty COMMA ty RBRACKET{ TMap ($3,$5) } */
    /* | TSET LBRACKET ty RBRACKET          { TMap ($3,TBool) }
    | LBRACE record_entry_tys RBRACE     { TRecord (make_record_map $2) }
@@ -142,12 +162,12 @@ bty:
 
 ty:
   | ty ARROW ty     { {typ=TArrow ($1,$3); mode= Some Concrete} }
+  | LPAREN ty RPAREN                  { $2 }  
   | LBRACKET mode RBRACKET bty             { {typ=$4; mode= Some $2} }
 
-/* tys:
-  | ty                                  { [Syntax.typ $1] }
-  | ty LBRACE mode RBRACE               { [Syntax.typ $1 $3] } */
-  /* | ty COMMA tys                        { $1::$3 } */
+tys:
+  | ty                                   { [$1] }
+  | ty COMMA tys                         { $1::$3 }
 ;
 
 /* record_entry_ty:
@@ -215,7 +235,7 @@ expr:
                                           exp e span } */
     | IF expr THEN expr ELSE expr       { exp (eif $2 $4 $6) (Span.extend $1 $6.espan) }
     (* TODO: span does not include the branches here *)
-    /* | MATCH expr WITH branches          { exp (ematch $2 $4) (Span.extend $1 $3) } */
+    | MATCH expr WITH branches          { exp (ematch $2 $4) (Span.extend $1 $3) }
     | FUN params ARROW expr             { make_fun $2 $4 $4.espan (Span.extend $1 $4.espan) }
     /* | FOLDNODE exprsspace               { exp (eop MFoldNode $2) $1 }
     | FOLDEDGE exprsspace               { exp (eop MFoldEdge $2) $1 } */
@@ -270,7 +290,7 @@ expr3:
     | TRUE                              { to_value (vbool true) $1 }
     | FALSE                             { to_value (vbool false) $1 }
     /* | NONE                              { to_value (voption None) $1 } */
-    /* | LPAREN exprs RPAREN               { tuple_it $2 (Span.extend $1 $3) } */
+    | LPAREN exprs RPAREN               { tuple_it $2 (Span.extend $1 $3) }
 ;
 
 ipaddr:
@@ -286,12 +306,7 @@ edge_arg:
 
 exprs:
     | expr                              { [$1] }
-    /* | expr COMMA exprs                  { $1 :: $3 } */
-;
-
-exprsspace:
-    | expr3                             { [$1] }
-    | expr3 exprsspace                  { $1 :: $2 }
+    | expr COMMA exprs                  { $1 :: $3 }
 ;
 
 edgenode:
@@ -310,7 +325,7 @@ edges:
     | edge edges                        { $1 @ $2 }
 ;
 
- /* pattern:
+  pattern:
     | UNDERSCORE                        { PWild }
     | ID                                { PVar (snd $1) }
     | TRUE                              { PBool true }
@@ -319,12 +334,12 @@ edges:
     | NODE                              { PNode (snd $1) }
     | pattern TILDE pattern             { PEdge (ensure_node_pattern $1, ensure_node_pattern $3)}
     | LPAREN patterns RPAREN            { tuple_pattern $2 }
-    | NONE                              { POption None }
-    | SOME pattern                      { POption (Some $2) }
-    | LBRACE record_entry_ps RBRACE     { PRecord (make_record_map
+    /* | NONE                              { POption None }
+    | SOME pattern                      { POption (Some $2) } */
+    /* | LBRACE record_entry_ps RBRACE     { PRecord (make_record_map
                                           (if snd $2
                                            then fill_record (fst $2) (fun _ -> PWild)
-                                           else fst $2)) }
+                                           else fst $2)) } */
 ;
 
 patterns:
@@ -332,7 +347,7 @@ patterns:
     | pattern COMMA patterns            { $1::$3 }
 ;
 
-record_entry_p:
+/* record_entry_p:
   | ID EQ pattern                    { snd $1, $3 }
 ;
 
@@ -340,7 +355,7 @@ record_entry_ps:
   | record_entry_p                      { ([$1], false) }
   | record_entry_p SEMI                 { ([$1], false) }
   | record_entry_p SEMI UNDERSCORE      { ([$1], true) }
-  | record_entry_p SEMI record_entry_ps { ($1::(fst $3), snd $3) }
+  | record_entry_p SEMI record_entry_ps { ($1::(fst $3), snd $3) } */
 
 branch:
     | BAR pattern ARROW expr            { ($2, $4) }
@@ -349,7 +364,7 @@ branch:
 branches:
     | branch                            { addBranch (fst $1) (snd $1) emptyBranch }
     | branch branches                   { addBranch (fst $1) (snd $1) $2 }
-; */
+;
 
 prog:
     | components EOF                    { $1 }
