@@ -17,6 +17,11 @@ let rec fty (ty : ty) : ty =
   match ty.typ with
   | TVar { contents = Link ty } -> fty ty
   | TVar _ | QVar _ | TBool | TInt _ | TNode | TEdge -> { ty with mode = fty_mode (get_mode ty) }
+  | TTuple ts ->
+      {
+        typ = TTuple (List.map (fun ty1 -> fty { ty1 with mode = get_mode ty }) ts);
+        mode = fty_mode (get_mode ty);
+      }
   | TArrow (ty1, ty2) ->
       let ty1 = fty ty1 in
       let ty2 = fty ty2 in
@@ -26,11 +31,15 @@ let rec fty (ty : ty) : ty =
 let opToBddOp op =
   match op with
   | And -> BddAnd
+  | Or -> BddOr
   | Not -> BddNot
   | Eq -> BddEq
   | UAdd n -> BddAdd n
   | ULess n -> BddLess n
-  | BddAnd | BddAdd _ | BddNot | BddEq | BddLess _ -> op
+  | ULeq n -> BddLeq n
+  | NLess -> BddLess tnode_sz
+  | NLeq -> BddLeq tnode_sz
+  | BddAnd | BddAdd _ | BddOr | BddNot | BddEq | BddLess _ | BddLeq _ -> op
 
 let liftBdd e1 =
   let typ = OCamlUtils.oget e1.ety in
@@ -167,7 +176,40 @@ let rec translate (e : exp) : exp * BddBinds.t =
       let el2, r2 = translate e2 in
       ( { e with e = (elet x el1 el2).e; ety = Some (fty (OCamlUtils.oget e.ety)) },
         BddBinds.union r1 r2 )
+  | ETuple es -> (
+      let esl, rs =
+        List.fold_left
+          (fun (acc, accr) e ->
+            let el, r = translate e in
+            (el :: acc, BddBinds.union r accr))
+          ([], BddBinds.empty ())
+          es
+      in
+      match get_mode (OCamlUtils.oget e.ety) with
+      | Some Concrete | Some Multivalue ->
+          ({ e with e = (etuple (List.rev esl)).e; ety = Some (fty (OCamlUtils.oget e.ety)) }, rs)
+      | Some Symbolic ->
+          ( {
+              e with
+              e = (etuple (List.fold_left (fun acc el -> liftBdd el :: acc) [] esl)).e;
+              ety = Some (fty (OCamlUtils.oget e.ety));
+            },
+            rs )
+      | None -> failwith "No mode found in tuple" )
   | EBddIf _ | EToBdd _ | EToMap _ | EApplyN _ -> failwith "Cannot translate LLL expressions"
+
+let rec pattern_vars p =
+  match p with
+  | PWild | PBool _ | PInt _ | PNode _ -> VarSet.empty
+  | PVar v -> VarSet.singleton v
+  | PEdge (p1, p2) -> pattern_vars (PTuple [p1; p2])
+  | PTuple ps -> List.fold_left (fun set p -> VarSet.union set (pattern_vars p)) VarSet.empty ps
+
+(* | PRecord map ->
+   StringMap.fold
+     (fun _ p set -> PSet.union set (pattern_vars p))
+     map
+     (PSet.create Var.compare) *)
 
 (* Computing the free variables of an expression typed in multi-value mode  *)
 let rec free (seen : VarSet.t) (e : exp) : BddBinds.t =
@@ -177,8 +219,7 @@ let rec free (seen : VarSet.t) (e : exp) : BddBinds.t =
         BddBinds.empty ()
       else BddBinds.singleton v e
   | EVal _ -> BddBinds.empty ()
-  | EOp (_, es) ->
-      (* | ETuple es -> *)
+  | EOp (_, es) | ETuple es ->
       let acc =
         List.fold_left (fun set e -> BddBinds.union set (free seen e)) (BddBinds.empty ()) es
       in
@@ -194,28 +235,27 @@ let rec free (seen : VarSet.t) (e : exp) : BddBinds.t =
   | ELet (x, e1, e2) ->
       let seen = VarSet.add x seen in
       BddBinds.union (free seen e1) (free seen e2)
+  | EMatch (e, bs) ->
+      let bs1 =
+        PatMap.fold
+          (fun p e set ->
+            let seen = VarSet.union seen (pattern_vars p) in
+            BddBinds.union set (free seen e))
+          bs.pmap (BddBinds.empty ())
+      in
+      let bs =
+        BatList.fold_left
+          (fun set (p, e) ->
+            let seen = VarSet.union seen (pattern_vars p) in
+            BddBinds.union set (free seen e))
+          bs1 bs.plist
+      in
+      BddBinds.union (free seen e) bs
   | EBddIf _ | EToBdd _ | EToMap _ | EApplyN _ ->
       failwith "This function is intented to be used with HLL expressions. This is a logic error."
 
 (* | ESome e | ETy (e, _) | EProject (e, _) -> free seen e
-   | EMatch (e, bs) ->
-     let bs1 =
-       PatMap.fold
-         (fun p e set ->
-           let seen = PSet.union seen (pattern_vars p) in
-           PSet.union set (free seen e))
-         bs.pmap
-         (PSet.create Var.compare)
-     in
-     let bs =
-       BatList.fold_left
-         (fun set (p, e) ->
-           let seen = PSet.union seen (pattern_vars p) in
-           PSet.union set (free seen e))
-         bs1
-         bs.plist
-     in
-     PSet.union (free seen e) bs *)
+ *)
 
 let free e = free VarSet.empty e
 

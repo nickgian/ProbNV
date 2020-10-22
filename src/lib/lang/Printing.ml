@@ -4,16 +4,9 @@ open Syntax
 open ProbNv_datastructures
 open ProbNv_utils.PrimitiveCollections
 open Cudd
-
-(* open Nv_utils.RecordUtils *)
 open ProbNv_utils
 
-let is_keyword_op op = false
-
-(* match op with
-   | And | Or | Not | UAdd _ | USub _ | UAnd _ | Eq | ULess _ | ULeq _ | MGet | NLess | NLeq -> false *)
-(* | TGet _| TSet _| MCreate | MSet | MMap | MMerge | MFoldNode
-   | MFoldEdge | MMapFilter | MMapIte | AtMost _ -> true *)
+let is_keyword_op _ = false
 
 (* set to true if you want to print universal quanifiers explicitly *)
 let quantifiers = true
@@ -23,28 +16,12 @@ let max_prec = 10
 let prec_op op =
   match op with
   | And | BddAnd -> 7
-  (* | Or -> 7 *)
+  | Or -> 7
   | Not | BddNot -> 6
   | UAdd _ | BddAdd _ -> 4
   (* | USub _ -> 4 *)
   | Eq | BddEq -> 5
-  | ULess _ | BddLess _ -> 5
-
-(*| ULeq _ -> 5
-  | UAnd _ -> 5
-  | NLess -> 5
-  | NLeq -> 5
-  | TGet _ -> 5
-  | TSet _ -> 5
-  | MCreate -> 5
-  | MGet -> 5
-  | MSet -> 3
-  | MMap -> 5
-  | MMerge -> 5
-  | MFoldNode -> 5
-  | MFoldEdge -> 5
-  | MMapFilter -> 5
-  | MMapIte -> 5 *)
+  | ULess _ | BddLess _ | NLess | ULeq _ | NLeq -> 5
 
 let prec_exp e =
   match e.e with
@@ -59,10 +36,10 @@ let prec_exp e =
   | EToBdd _ -> max_prec
   | EToMap _ -> max_prec
   | EBddIf _ -> max_prec
+  | EMatch _ -> 8
+  | ETuple _ -> 0
 
-(* | ETuple _ -> 0
-   | ESome _ -> max_prec
-   | EMatch _ -> 8
+(* | ESome _ -> max_prec
    | ETy (_, _) -> max_prec
    | ERecord _ -> 0
    | EProject _ -> 0 *)
@@ -94,35 +71,34 @@ let canonicalize_type (ty : ty) : ty =
         let t1', map, count = aux t1 map count in
         let t2', map, count = aux t2 map count in
         ({ ty with typ = TArrow (t1', t2') }, map, count)
-    (* | TTuple tys ->
-         let tys', map, count =
-           BatList.fold_left
-             (fun (lst, map, count) t ->
-               let t', map, count = aux t map count in
-               t' :: lst, map, count)
-             ([], map, count)
-             tys
-         in
-         TTuple (BatList.rev tys'), map, count
-       | TRecord tmap ->
-         let open RecordUtils in
-         let tmap', map, count =
-           List.fold_left2
-             (fun (tmap, map, count) l t ->
-               let t', map, count = aux t map count in
-               StringMap.add l t' tmap, map, count)
-             (StringMap.empty, map, count)
-             (get_record_labels tmap)
-             (get_record_entries tmap)
-         in
-         TRecord tmap', map, count
-       | TOption t ->
-         let t', map, count = aux t map count in
-         TOption t', map, count
-       | TMap (t1, t2) ->
-         let t1', map, count = aux t1 map count in
-         let t2', map, count = aux t2 map count in
-         TMap (t1', t2'), map, count *)
+    | TTuple tys ->
+        let tys', map, count =
+          BatList.fold_left
+            (fun (lst, map, count) t ->
+              let t', map, count = aux t map count in
+              (t' :: lst, map, count))
+            ([], map, count) tys
+        in
+        ({ ty with typ = TTuple (BatList.rev tys') }, map, count)
+        (* | TRecord tmap ->
+             let open RecordUtils in
+             let tmap', map, count =
+               List.fold_left2
+                 (fun (tmap, map, count) l t ->
+                   let t', map, count = aux t map count in
+                   StringMap.add l t' tmap, map, count)
+                 (StringMap.empty, map, count)
+                 (get_record_labels tmap)
+                 (get_record_entries tmap)
+             in
+             TRecord tmap', map, count
+           | TOption t ->
+             let t', map, count = aux t map count in
+             TOption t', map, count
+           | TMap (t1, t2) ->
+             let t1', map, count = aux t1 map count in
+             let t2', map, count = aux t2 map count in
+             TMap (t1', t2'), map, count *)
     | QVar tyname -> (
         match VarMap.Exceptionless.find tyname map with
         | None ->
@@ -148,14 +124,14 @@ let rec base_ty_to_string t =
   | TInt i -> Printf.sprintf "int%d" i
   | TNode -> Printf.sprintf "tnode"
   | TEdge -> Printf.sprintf "tedge"
-  (* | TTuple ts ->
-       if List.is_empty ts then "TEmptyTuple"
-       else "(" ^ sep "," ty_to_string ts ^ ")"
-     | TOption t -> "option[" ^ ty_to_string t ^ "]"
-     | TMap (t1, t2) ->
-       "dict[" ^ ty_to_string t1 ^ "," ^ ty_to_string t2
-       ^ "]"
-     | TRecord map -> print_record ":" (ty_to_string) map *)
+  | TTuple ts ->
+      if List.is_empty ts then "TEmptyTuple"
+      else "(" ^ sep "," ty_to_string ts ^ ")"
+        (* | TOption t -> "option[" ^ ty_to_string t ^ "]"
+           | TMap (t1, t2) ->
+             "dict[" ^ ty_to_string t1 ^ "," ^ ty_to_string t2
+             ^ "]"
+           | TRecord map -> print_record ":" (ty_to_string) map *)
   | TArrow (t1, t2) ->
       let leftside =
         match t1.typ with
@@ -178,7 +154,7 @@ and tyvar_to_string tv =
 let op_to_string op =
   match op with
   | And -> "&&"
-  (* | Or -> "||" *)
+  | Or -> "||"
   | Not -> "!"
   | UAdd n -> "+" ^ "u" ^ string_of_int n
   (* | USub n -> "-" ^ "u" ^ (string_of_int n)
@@ -190,39 +166,24 @@ let op_to_string op =
   | BddNot -> "!b"
   | BddLess _ -> "<b"
   | BddEq -> "=b"
+  | ULeq n -> "<=" ^ "u" ^ string_of_int n
+  | NLess -> "<n"
+  | NLeq -> "<=n"
 
-(* | ULeq n -> "<=" ^ "u" ^ (string_of_int n)
-   | NLess -> "<n"
-   | NLeq -> "<=n" *)
-(* | TGet (n1, n2, n3) -> Printf.sprintf "tuple%dGet%d-%d" n1 n2 n3
-   | TSet (n1, n2, n3) -> Printf.sprintf "tuple%dSet%d-%d" n1 n2 n3
-   | MCreate -> "createMap"
-   | MGet -> "at"
-   | MSet -> "set"
-   | MMap -> "map"
-   | MMapFilter -> "mapIf"
-   | MMapIte -> "mapIte"
-   | MMerge -> "combine"
-   | MFoldNode -> "foldNodes"
-   | MFoldEdge -> "foldEdges"
-   | AtMost _ -> "atMost" *)
-
-(* let rec pattern_to_string pattern =
+let rec pattern_to_string pattern =
   match pattern with
   | PWild -> "_"
   | PVar x -> Var.to_string x
-  | PUnit -> "PUnit"
   | PBool true -> "true"
   | PBool false -> "false"
   | PInt i -> Integer.to_string i
   | PTuple ps ->
-    if List.is_empty ps then "PEmptyTuple" else
-      "(" ^ comma_sep pattern_to_string ps ^ ")"
-  | POption None -> "None"
-  | POption (Some p) -> "Some " ^ pattern_to_string p
-  | PRecord map -> print_record "=" pattern_to_string map
+      if List.is_empty ps then "PEmptyTuple" else "(" ^ comma_sep pattern_to_string ps ^ ")"
+  (* | POption None -> "None"
+     | POption (Some p) -> "Some " ^ pattern_to_string p
+     | PRecord map -> print_record "=" pattern_to_string map *)
   | PNode n -> Printf.sprintf "%dn" n
-  | PEdge (p1, p2) -> Printf.sprintf "%s~%s" (pattern_to_string p1) (pattern_to_string p2) *)
+  | PEdge (p1, p2) -> Printf.sprintf "%s~%s" (pattern_to_string p1) (pattern_to_string p2)
 
 let padding i = String.init i (fun _ -> ' ')
 
@@ -321,10 +282,10 @@ and value_to_string_p ~show_types prec v =
   | VBool false -> "false"
   | VInt i -> Integer.to_string i
   | VTotalMap m -> map_to_string ~show_types "\n" m
-  (* | VTuple vs ->
-       if List.is_empty vs then "VEmptyTuple" else
-         "(" ^ comma_sep (value_to_string_p max_prec) vs ^ ")"
-     | VOption None -> (* Printf.sprintf "None:%s" (ty_to_string (oget v.vty)) *)
+  | VTuple vs ->
+      if List.is_empty vs then "VEmptyTuple"
+      else "(" ^ comma_sep (value_to_string_p max_prec) vs ^ ")"
+  (* | VOption None -> (* Printf.sprintf "None:%s" (ty_to_string (oget v.vty)) *)
        "None"
      | VOption (Some v) ->
        let s = "Some(" ^ value_to_string_p max_prec v ^ ")" in
@@ -375,31 +336,34 @@ and exp_to_string_p ~show_types prec e =
           (comma_sep (exp_to_string_p max_prec) es)
     | EToBdd e1 -> Printf.sprintf "toBdd (%s)" (exp_to_string_p max_prec e1)
     | EToMap e1 -> Printf.sprintf "toMap (%s)" (exp_to_string_p max_prec e1)
-    (* | ETuple es ->
-         if List.is_empty es then "EEmptyTuple" else
-           "(" ^ comma_sep (exp_to_string_p max_prec) es ^ ")"
-       | ESome e -> "Some(" ^ exp_to_string_p prec e ^ ")"
-       | EMatch (e1, bs) ->
-         "(match "
-         ^ exp_to_string_p max_prec e1
-         ^ " with " ^ "\n"
-         ^ branches_to_string ~show_types prec (branchToList bs)
-         ^ ")"
+    | ETuple es ->
+        if List.is_empty es then "EEmptyTuple"
+        else "(" ^ comma_sep (exp_to_string_p max_prec) es ^ ")"
+    | EMatch (e1, bs) ->
+        "(match "
+        ^ exp_to_string_p max_prec e1
+        ^ " with "
+        ^ "\n"
+        ^ branches_to_string ~show_types prec (branchToList bs)
+        ^ ")"
+    (* | ESome e -> "Some(" ^ exp_to_string_p prec e ^ ")"
        | ETy (e, t) -> exp_to_string_p prec e ^ ty_to_string t
        | ERecord map -> print_record "=" (exp_to_string_p prec) map
        | EProject (e, l) -> exp_to_string_p prec e ^ "." ^ l *)
   in
+
   if show_types then Printf.sprintf "(%s : %s)" s (tyo_to_string e.ety)
   else if p > prec then "(" ^ s ^ ")"
   else s
 
-(* and branch_to_string ~show_types prec (p, e) =
+and branch_to_string ~show_types prec (p, e) =
   " | " ^ pattern_to_string p ^ " -> " ^ exp_to_string_p ~show_types prec e
 
 and branches_to_string ~show_types prec bs =
   match bs with
   | [] -> ""
-  | b :: bs -> branch_to_string ~show_types prec b ^ "\n" ^ branches_to_string ~show_types prec bs *)
+  | b :: bs -> branch_to_string ~show_types prec b ^ "\n" ^ branches_to_string ~show_types prec bs
+
 and op_args_to_string ~show_types prec p op es =
   let exp_to_string_p = exp_to_string_p ~show_types in
   if is_keyword_op op then op_to_string op ^ "(" ^ comma_sep (exp_to_string_p max_prec) es ^ ")"
