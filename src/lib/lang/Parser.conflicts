@@ -1,0 +1,62 @@
+
+** Conflict (shift/reduce) in state 127.
+** Token involved: BAR
+** This state is reached from expreof after reading:
+
+MATCH expr WITH BAR pattern ARROW MATCH expr WITH branch 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+expreof 
+expr EOF 
+MATCH expr WITH branches 
+                (?)
+
+** In state 127, looking ahead at BAR, shifting is permitted
+** because of the following sub-derivation:
+
+branch 
+BAR pattern ARROW expr 
+                  MATCH expr WITH branches 
+                                  branch branches 
+                                         branch 
+                                         . BAR pattern ARROW expr 
+
+** In state 127, looking ahead at BAR, reducing production
+** branches -> branch 
+** is permitted because of the following sub-derivation:
+
+branch branches // lookahead token appears because branches can begin with BAR
+BAR pattern ARROW expr // lookahead token is inherited
+                  MATCH expr WITH branches // lookahead token is inherited
+                                  branch . 
+
+** Conflict (shift/reduce) in state 120.
+** Token involved: TILDE
+** This state is reached from expreof after reading:
+
+MATCH expr WITH BAR pattern TILDE pattern 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+expreof 
+expr EOF 
+MATCH expr WITH branches 
+                branch 
+                BAR pattern ARROW expr 
+                    (?)
+
+** In state 120, looking ahead at TILDE, shifting is permitted
+** because of the following sub-derivation:
+
+pattern TILDE pattern 
+              pattern . TILDE pattern 
+
+** In state 120, looking ahead at TILDE, reducing production
+** pattern -> pattern TILDE pattern 
+** is permitted because of the following sub-derivation:
+
+pattern TILDE pattern // lookahead token appears
+pattern TILDE pattern . 

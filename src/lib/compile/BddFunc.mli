@@ -3,39 +3,41 @@ open ProbNv_datastructures
 open ProbNv_lang
 open Syntax
 
-type 'a t =
+type t =
   | BBool of Bdd.vt
   | BInt of Bdd.vt array
-  | BOption of Bdd.vt * 'a t
-  | Tuple of 'a t list
+  | BOption of Bdd.vt * t
+  | Tuple of t list
 
-val print : 'a t -> string
+val print : t -> string
 
-val equal_t : 'a t -> 'b t -> bool
+val equal_t : t -> t -> bool
 
 val bdd_of_bool : bool -> Cudd.Man.v Cudd.Bdd.t
 
+val create_value : int -> AdjGraph.t -> t
 (** Given a type index, creates a BDD value representing all possible values of this type. *)
-val create_value : int -> AdjGraph.t -> 'a t
 
-val toBdd : (int * int -> 'a -> 'b) -> vty_id:int -> 'v -> 'v t
+val toBdd : (int * int -> 'a -> 'b) -> vty_id:int -> 'a -> t
 (** Converts a value to a BDD *)
 
-val wrap_mtbdd : 'a t -> bool Mtbdd.t
+val wrap_mtbdd : t -> bool Mtbdd.t
 
-val ite : 'a t -> 'a t -> 'a t -> 'a t
+val ite : t -> t -> t -> t
 
-val eq : 'a t -> 'b t -> 'c t
+val eq : t -> t -> t
 
-val add : 'a t -> 'b t -> 'c t
+val add : t -> t -> t
 
-val uand : 'a t -> 'b t -> 'c t
+val uand : t -> t -> t
 
-val leq : 'a t -> 'b t -> 'c t
+val leq : t -> t -> t
 
-val lt : 'a t -> 'b t -> 'c t
+val lt : t -> t -> t
 
-val band : 'a t -> 'b t -> 'c t
+val band : t -> t -> t
+
+val bor : t -> t -> t
 
 val toMap : value:'a -> 'a Cudd.Mtbdd.unique Cudd.Vdd.t
 

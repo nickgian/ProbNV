@@ -120,9 +120,10 @@ let rec check_annot (e : exp) =
   | EApplyN (e1, e2) ->
       check_annot e1;
       BatList.iter check_annot e2
+  | ESome e -> check_annot e
 
 (* | ETuple es -> BatList.iter check_annot es
-   | ESome e -> check_annot e
+
    | EMatch (e, bs) ->
    check_annot e;
    iterBranches (fun (_, e) -> check_annot e) bs
@@ -131,7 +132,7 @@ let rec check_annot (e : exp) =
 
 let check_annot_decl (d : declaration) =
   match d with
-  | DLet (_, e) | DAssert e -> check_annot e
+  | DLet (_, e) | DAssert (e, _) -> check_annot e
   | DSolve { var_names; init; trans; merge; _ } ->
       check_annot var_names;
       check_annot init;
@@ -175,8 +176,9 @@ let occurs tvr (ty : baseTy) : unit =
         occ tvr t2.typ
     | TBool | TInt _ | TNode | TEdge -> ()
     | TTuple ts -> BatList.iter (fun ty -> occ tvr ty.typ) ts
+    | TOption t -> occ tvr t.typ
     (* | TRecord map -> StringMap.iter (fun _ -> occ tvr) map
-       | TOption t -> occ tvr t
+
        | TMap (t1, t2) ->
        occ tvr t1;
        occ tvr t2 *)
@@ -193,12 +195,12 @@ let occurs tvr (ty : baseTy) : unit =
    unified. We compute the right mode in the infer_exp/infer_value/infer_decl functions.*)
 let rec unify info e t1 t2 : unit =
   (* similar to unify, but returns a bool indicating if it was successful *)
-  (* let rec try_unifies ts1 ts2 : bool =
-     match (ts1, ts2) with
-     | [], [] -> true
-     | t1 :: ts1, t2 :: ts2 -> try_unify t1 t2 && try_unifies ts1 ts2
-     | _, _ -> false *)
-  let rec try_unify t1 t2 : bool =
+  let rec try_unifies ts1 ts2 : bool =
+    match (ts1, ts2) with
+    | [], [] -> true
+    | t1 :: ts1, t2 :: ts2 -> try_unify t1 t2 && try_unifies ts1 ts2
+    | _, _ -> false
+  and try_unify t1 t2 : bool =
     if t1 == t2 then true (* t1 and t2 are physically the same *)
     else
       match (t1.typ, t2.typ) with
@@ -220,18 +222,20 @@ let rec unify info e t1 t2 : unit =
       | TInt i, TInt j when i = j -> true
       | TNode, TNode -> true
       | TEdge, TEdge -> true
-      (* | TTuple ts1, TTuple ts2 -> try_unifies ts1 ts2
-         | TOption t1, TOption t2 -> try_unify t1 t2
-         | TMap (t1, t2), TMap (t3, t4) -> try_unify t1 t3 && try_unify t2 t4
-         | TRecord map1, TRecord map2 ->
-         let open RecordUtils in
-         if not (same_labels map1 map2)
-         then false
-         else
-          BatList.fold_left
-            (fun b l -> b && try_unify (StringMap.find l map1) (StringMap.find l map2))
-            true
-            (get_record_labels map1) *)
+      | TTuple ts1, TTuple ts2 -> try_unifies ts1 ts2
+      | TOption t1, TOption t2 -> try_unify t1 t2
+      (*
+
+          | TMap (t1, t2), TMap (t3, t4) -> try_unify t1 t3 && try_unify t2 t4
+          | TRecord map1, TRecord map2 ->
+          let open RecordUtils in
+          if not (same_labels map1 map2)
+          then false
+          else
+           BatList.fold_left
+             (fun b l -> b && try_unify (StringMap.find l map1) (StringMap.find l map2))
+             true
+             (get_record_labels map1) *)
       | _, _ -> false
   in
   if try_unify t1 t2 then ()
@@ -269,11 +273,11 @@ let generalize ty =
         let ty2 = gen ty2 in
         { ty with typ = TArrow (ty1, ty2) }
     | TTuple ts -> { ty with typ = TTuple (BatList.map (fun ty -> gen ty) ts) }
+    | TOption t ->
+        let t' = gen t in
+        { ty with typ = TOption t' }
     (* | TRecord map -> TRecord (StringMap.map gen map)
 
-       | TOption t ->
-       let ty = gen t in
-       TOption ty
        | TMap (ty1, ty2) ->
        let ty1 = gen ty1 in
        let ty2 = gen ty2 in
@@ -302,11 +306,12 @@ let inst subst ty =
     | TTuple ts ->
         let ts = loops subst ts in
         { ty with typ = TTuple ts }
+    | TOption t ->
+        let t = loop subst t in
+        { ty with typ = TOption t }
   (*
       | TRecord map -> TRecord (StringMap.map (loop subst) map)
-      | TOption t ->
-      let t = loop subst t in
-      TOption t
+
       | TMap (ty1, ty2) ->
       let ty1 = loop subst ty1 in
       let ty2 = loop subst ty2 in
@@ -337,10 +342,12 @@ let substitute (ty : ty) : ty =
         { ty with typ = TArrow (substitute_aux ty1, substitute_aux ty2) }
     | TTuple ts ->
         { ty with typ = TTuple (BatList.map (fun ty -> substitute_aux ty) ts) }
+    | TOption t -> { ty with typ = TOption (substitute_aux t) }
     (* | TRecord map -> TRecord (StringMap.map substitute_aux map)
-       | TOption t -> TOption (substitute_aux t)
+
        | TMap (ty1, ty2) -> TMap (substitute_aux ty1, substitute_aux ty2) *)
   in
+
   substitute_aux ty
 
 (** Return the type of operations *)
@@ -381,11 +388,15 @@ let op_typ op =
            (Printing.op_to_string op))
   (* LLL expressions *)
   | BddAnd -> ([ symbolic TBool; symbolic TBool ], symbolic TBool)
+  | BddOr -> ([ symbolic TBool; symbolic TBool ], symbolic TBool)
   | BddNot -> ([ symbolic TBool ], symbolic TBool)
   | BddAdd n ->
       let t = symbolic @@ tint_of_size n in
       ([ t; t ], t)
   | BddLess n ->
+      let t = symbolic @@ tint_of_size n in
+      ([ t; t ], symbolic TBool)
+  | BddLeq n ->
       let t = symbolic @@ tint_of_size n in
       ([ t; t ], symbolic TBool)
   | BddEq ->
@@ -414,6 +425,9 @@ let canonicalize_type (ty : ty) : ty =
             ([], map, count) tys
         in
         ({ ty with typ = TTuple (BatList.rev tys') }, map, count)
+    | TOption t ->
+        let t', map, count = aux t map count in
+        ({ ty with typ = TOption t' }, map, count)
     (*
         | TRecord tmap ->
         let open RecordUtils in
@@ -427,9 +441,6 @@ let canonicalize_type (ty : ty) : ty =
            (get_record_entries tmap)
         in
         TRecord tmap', map, count
-        | TOption t ->
-        let t', map, count = aux t map count in
-        TOption t', map, count
         | TMap (t1, t2) ->
         let t1', map, count = aux t1 map count in
         let t2', map, count = aux t2 map count in
@@ -473,6 +484,14 @@ let rec infer_value info env record_types (v : Syntax.value) : Syntax.value =
     | VTuple vs ->
         let vs, ts = infer_values info env record_types vs in
         tvalue (vtuple vs, concrete (TTuple ts), v.vspan)
+    | VOption None ->
+        let tv = fresh_tyvar () in
+        tvalue (voption None, concrete (TOption (concrete tv)), v.vspan)
+    | VOption (Some v) ->
+        let v, t = textractv (infer_value info env record_types v) in
+        let tv = fresh_tyvar () |> concrete in
+        unify info (exp_of_value v) t tv;
+        tvalue (voption (Some v), concrete @@ TOption tv, v.vspan)
     (* | VMap m ->
        let vs, default = BddMap.bindings m in
        let default, dty = infer_value default |> textractv in
@@ -518,7 +537,7 @@ let rec infer_value info env record_types (v : Syntax.value) : Syntax.value =
        let tv = fresh_tyvar () in
        unify info (exp_of_value v) t tv;
        tvalue (voption (Some v), TOption tv, v.vspan) *)
-    | VClosure _ -> failwith "internal error (infer_value)"
+    | VTotalMap _ | VClosure _ -> failwith "internal error (infer_value)"
   in
   ret
 
@@ -562,7 +581,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
       let ty = generalize ty_e1 in
       (Env.update env x ty, DLet (x, texp (e1, ty, e1.espan)))
   | DSymbolic (x, ty) -> (Env.update env x ty, DSymbolic (x, ty))
-  | DAssert e -> (
+  | DAssert (e, prob) -> (
       let e' = infer_exp e in
       let ty = oget e'.ety in
       (* Mode should not matter for unification - although it might matter in the TVar case
@@ -571,7 +590,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
       (*According to rule Assert we need to check that mode = Multivalue or Concrete *)
       match ty.mode with
       | Some Concrete | Some Multivalue ->
-          (Env.update env (Var.create "assert") ty, DAssert e')
+          (Env.update env (Var.create "assert") ty, DAssert (e', prob))
       | None | Some Symbolic ->
           Console.error_position info e.espan "Wrong mode for assertion" )
   | DSolve { aty; var_names; init; trans; merge } -> (
@@ -849,8 +868,15 @@ module HLLTypeInf = struct
               (Some Concrete) tys
           in
           texp (etuple es, { typ = TTuple tys; mode = m }, e.espan)
+      | ESome e ->
+          (* Like tuple but with one element *)
+          let e, t = infer_exp e |> textract in
+          texp (esome e, { typ = TOption t; mode = t.mode }, e.espan)
       | EMatch (e1, branches) -> (
           let e1, tmatch = infer_exp e1 |> textract in
+          Printf.printf "e1: %s, tmatch: %s\n"
+            (Printing.exp_to_string e1)
+            (Printing.ty_to_string tmatch);
           let branches, t =
             infer_branches (i + 1) info env record_types e1 tmatch branches
           in
@@ -914,10 +940,7 @@ module HLLTypeInf = struct
           let label_type = StringMap.find label tmap in
           let e1, ety = infer_exp e1 |> textract in
           unify info e1 ety (TRecord tmap);
-          texp (eproject e1 label, label_type, e.espan)
-          | ESome e ->
-          let e, t = infer_exp e |> textract in
-          texp (esome e, TOption t, e.espan)*)
+          texp (eproject e1 label, label_type, e.espan)*)
       | EBddIf _ ->
           Console.error_position info e.espan "BddIf should not appear in HLL"
       | EToBdd _ ->
@@ -981,6 +1004,12 @@ module HLLTypeInf = struct
         let ty = concrete (TTuple ts) in
         unify info e tmatch ty;
         infer_patterns (i + 1) info env e ts ps
+    | POption x -> (
+        let t = concrete @@ fresh_tyvar () in
+        unify info e tmatch (concrete @@ TOption t);
+        match x with
+        | None -> env
+        | Some p -> infer_pattern (i + 1) info env e t p )
 
   (* | PRecord pmap ->
          let ptmap = StringMap.map (fun p -> (p, fresh_tyvar ())) pmap in
@@ -989,13 +1018,7 @@ module HLLTypeInf = struct
          unify info e tmatch ty;
          StringMap.fold
            (fun _ (p, t) env -> infer_pattern (i + 1) info env e t p)
-           ptmap env
-     | POption x -> (
-         let t = fresh_tyvar () in
-         unify info e tmatch (TOption t);
-         match x with
-         | None -> env
-         | Some p -> infer_pattern (i + 1) info env e t p ) *)
+           ptmap env *)
   and infer_patterns i info env e ts ps =
     match (ts, ps) with
     | [], [] -> env
@@ -1019,10 +1042,11 @@ module HLLTypeInf = struct
               ("variable " ^ Var.to_string x ^ " appears twice in pattern") )
     | PEdge (p1, p2) -> valid_patterns env [ p1; p2 ]
     | PTuple ps -> valid_patterns env ps
+    | POption None -> env
+    | POption (Some p) -> valid_pattern env p
 
   (* | PRecord map -> StringMap.fold (fun _ p env -> valid_pattern env p) map env
-     | POption None -> env
-     | POption (Some p) -> valid_pattern env p *)
+    *)
   and valid_patterns env p =
     match p with
     | [] -> env
@@ -1191,6 +1215,9 @@ module LLLTypeInf = struct
           if List.for_all (fun ty2 -> get_mode ty2 = m) (List.tl tys) then
             texp (etuple es, { typ = TTuple tys; mode = m }, e.espan)
           else Console.error_position info e.espan "Mode mismatch in tuple"
+      | ESome e ->
+          let e, t = infer_exp e |> textract in
+          texp (esome e, { typ = TOption t; mode = get_mode t }, e.espan)
       | EMatch (e1, branches) -> (
           let e1, tmatch = infer_exp e1 |> textract in
           let branches, t =
@@ -1242,9 +1269,7 @@ module LLLTypeInf = struct
           let e1, ety = infer_exp e1 |> textract in
           unify info e1 ety (TRecord tmap);
           texp (eproject e1 label, label_type, e.espan)
-          | ESome e ->
-          let e, t = infer_exp e |> textract in
-          texp (esome e, TOption t, e.espan)
+
           | ETy (e, t) ->
           let e, t1 = infer_exp e |> textract in
           unify info e t t1;
@@ -1378,6 +1403,12 @@ module LLLTypeInf = struct
         let ty = concrete (TTuple ts) in
         unify info e tmatch ty;
         infer_patterns (i + 1) info env e ts ps
+    | POption x -> (
+        let t = concrete @@ fresh_tyvar () in
+        unify info e tmatch (concrete @@ TOption t);
+        match x with
+        | None -> env
+        | Some p -> infer_pattern (i + 1) info env e t p )
 
   and infer_patterns i info env e ts ps =
     match (ts, ps) with
@@ -1402,10 +1433,11 @@ module LLLTypeInf = struct
               ("variable " ^ Var.to_string x ^ " appears twice in pattern") )
     | PEdge (p1, p2) -> valid_patterns env [ p1; p2 ]
     | PTuple ps -> valid_patterns env ps
+    | POption None -> env
+    | POption (Some p) -> valid_pattern env p
 
   (* | PRecord map -> StringMap.fold (fun _ p env -> valid_pattern env p) map env
-     | POption None -> env
-     | POption (Some p) -> valid_pattern env p *)
+   *)
   and valid_patterns env p =
     match p with
     | [] -> env

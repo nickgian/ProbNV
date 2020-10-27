@@ -13,9 +13,10 @@ let rec ty_to_size ty =
   match (get_inner_type ty).typ with
   | TBool -> 1
   | TInt n -> n
-  (* | TOption tyo -> 1 + ty_to_size tyo
-     | TTuple ts -> List.fold_left (fun acc t -> acc + ty_to_size t) 0 ts
-     | TRecord tmap -> ty_to_size (TTuple (RecordUtils.get_record_entries tmap)) *)
+  | TTuple ts -> List.fold_left (fun acc t -> acc + ty_to_size t) 0 ts
+  | TOption tyo -> 1 + ty_to_size tyo
+  (*
+      | TRecord tmap -> ty_to_size (TTuple (RecordUtils.get_record_entries tmap)) *)
   | TNode -> ty_to_size (concrete (TInt tnode_sz)) (* Encode as int *)
   | TEdge -> 2 * ty_to_size (concrete TNode) (*Encode as node pair*)
   | TArrow _ | TVar _ | QVar _ ->
@@ -32,6 +33,10 @@ let freshvars ty =
   let symbolic_end = symbolic_start + sz - 1 in
   let res = Array.init sz (fun _ -> Bdd.newvar mgr) in
   (symbolic_start, symbolic_end, res)
+
+let freshvar () = Bdd.newvar mgr
+
+let getVarsNb () = Man.get_bddvar_nb mgr
 
 let tbl = Obj.magic (Mtbdd.make_table ~hash:Hashtbl.hash ~equal:( = ))
 
@@ -60,7 +65,7 @@ let tbool_to_obool tb =
   | Man.True -> Some true
 
 (* Treats Top as false *)
-let vars_to_value vars ty =
+(* let vars_to_value vars ty =
   let open RecordUtils in
   let rec aux idx ty =
     let v, i =
@@ -128,7 +133,7 @@ let vars_to_value vars ty =
        in *)
     (annotv ty v, i)
   in
-  fst (aux 0 ty)
+  fst (aux 0 ty) *)
 
 (** * Probability computation functions *)
 
@@ -190,6 +195,7 @@ let rec cubeProbability (cube : Cudd.Man.tbool array)
       (* compute the probability for one variable *)
       let p = symbolicProbability cube xstart xend xdistribution in
       (* debugging code *)
+      Printf.printf "range:(%d,%d) " xstart xend;
       Printf.printf "cube: ";
       printCube cube;
       Printf.printf " symbProb: %f\n" p;

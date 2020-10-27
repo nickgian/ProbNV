@@ -1,0 +1,136 @@
+let edges = {
+  3-16; (*core-0,Serial0 --> aggregation-8,Serial0*)
+  13-12; (*aggregation-5,Serial3 --> edge-7,Serial1*)
+  8-1; (*aggregation-16,Serial1 --> core-1,Serial3*)
+  6-7; (*aggregation-17,Serial3 --> core-2,Serial1*)
+  19-16; (*edge-10,Serial0 --> aggregation-8,Serial2*)
+  14-3; (*aggregation-4,Serial0 --> core-0,Serial2*)
+  6-4; (*aggregation-17,Serial0 --> core-3,Serial1*)
+  4-13; (*core-3,Serial2 --> aggregation-5,Serial1*)
+  9-18; (*edge-14,Serial0 --> aggregation-12,Serial2*)
+  17-0; (*aggregation-13,Serial3 --> edge-15,Serial1*)
+  8-2; (*aggregation-16,Serial2 --> edge-18,Serial0*)
+  3-14; (*core-0,Serial2 --> aggregation-4,Serial0*)
+  18-3; (*aggregation-12,Serial0 --> core-0,Serial1*)
+  1-8; (*core-1,Serial3 --> aggregation-16,Serial1*)
+  7-15; (*core-2,Serial0 --> aggregation-9,Serial3*)
+  15-5; (*aggregation-9,Serial2 --> edge-11,Serial1*)
+  18-0; (*aggregation-12,Serial3 --> edge-15,Serial0*)
+  10-8; (*edge-19,Serial0 --> aggregation-16,Serial3*)
+  5-16; (*edge-11,Serial0 --> aggregation-8,Serial3*)
+  6-2; (*aggregation-17,Serial1 --> edge-18,Serial1*)
+  7-17; (*core-2,Serial3 --> aggregation-13,Serial0*)
+  15-4; (*aggregation-9,Serial0 --> core-3,Serial0*)
+  0-18; (*edge-15,Serial0 --> aggregation-12,Serial3*)
+  7-6; (*core-2,Serial1 --> aggregation-17,Serial3*)
+  16-5; (*aggregation-8,Serial3 --> edge-11,Serial0*)
+  13-7; (*aggregation-5,Serial0 --> core-2,Serial2*)
+  16-19; (*aggregation-8,Serial2 --> edge-10,Serial0*)
+  14-11; (*aggregation-4,Serial2 --> edge-6,Serial0*)
+  11-13; (*edge-6,Serial1 --> aggregation-5,Serial2*)
+  3-18; (*core-0,Serial1 --> aggregation-12,Serial0*)
+  9-17; (*edge-14,Serial1 --> aggregation-13,Serial2*)
+  6-10; (*aggregation-17,Serial2 --> edge-19,Serial1*)
+  13-4; (*aggregation-5,Serial1 --> core-3,Serial2*)
+  2-6; (*edge-18,Serial1 --> aggregation-17,Serial1*)
+  18-1; (*aggregation-12,Serial1 --> core-1,Serial1*)
+  15-19; (*aggregation-9,Serial1 --> edge-10,Serial1*)
+  1-14; (*core-1,Serial2 --> aggregation-4,Serial1*)
+  2-8; (*edge-18,Serial0 --> aggregation-16,Serial2*)
+  8-3; (*aggregation-16,Serial0 --> core-0,Serial3*)
+  17-4; (*aggregation-13,Serial1 --> core-3,Serial3*)
+  18-9; (*aggregation-12,Serial2 --> edge-14,Serial0*)
+  0-17; (*edge-15,Serial1 --> aggregation-13,Serial3*)
+  7-13; (*core-2,Serial2 --> aggregation-5,Serial0*)
+  4-17; (*core-3,Serial3 --> aggregation-13,Serial1*)
+  14-1; (*aggregation-4,Serial1 --> core-1,Serial2*)
+  8-10; (*aggregation-16,Serial3 --> edge-19,Serial0*)
+  10-6; (*edge-19,Serial1 --> aggregation-17,Serial2*)
+  1-18; (*core-1,Serial1 --> aggregation-12,Serial1*)
+  15-7; (*aggregation-9,Serial3 --> core-2,Serial0*)
+  11-14; (*edge-6,Serial0 --> aggregation-4,Serial2*)
+  12-13; (*edge-7,Serial1 --> aggregation-5,Serial3*)
+  17-7; (*aggregation-13,Serial0 --> core-2,Serial3*)
+  3-8; (*core-0,Serial3 --> aggregation-16,Serial0*)
+  17-9; (*aggregation-13,Serial2 --> edge-14,Serial1*)
+  13-11; (*aggregation-5,Serial2 --> edge-6,Serial1*)
+  16-1; (*aggregation-8,Serial1 --> core-1,Serial0*)
+  16-3; (*aggregation-8,Serial0 --> core-0,Serial0*)
+  4-15; (*core-3,Serial0 --> aggregation-9,Serial0*)
+  19-15; (*edge-10,Serial1 --> aggregation-9,Serial1*)
+  12-14; (*edge-7,Serial0 --> aggregation-4,Serial3*)
+  14-12; (*aggregation-4,Serial3 --> edge-7,Serial0*)
+  1-16; (*core-1,Serial0 --> aggregation-8,Serial1*)
+  4-6; (*core-3,Serial1 --> aggregation-17,Serial0*)
+  5-15; (*edge-11,Serial1 --> aggregation-9,Serial2*)
+}
+
+let nodes = 20
+
+symbolic b0: bool
+symbolic b1: bool
+symbolic b2: bool
+symbolic b3: bool
+symbolic b4: bool
+symbolic b5: bool
+symbolic b6: bool
+symbolic b7: bool
+symbolic b8: bool
+symbolic b9: bool
+symbolic b10: bool
+symbolic b11: bool
+symbolic b12: bool
+symbolic b13: bool
+symbolic b14: bool
+symbolic b15: bool
+symbolic b16: bool
+symbolic b17: bool
+symbolic b18: bool
+symbolic b19: bool
+
+let isFailed u =
+    match u with
+    | 0n -> b0
+    | 1n -> b1
+    | 2n -> b2
+    | 3n -> b3
+    | 4n -> b4
+    | 5n -> b5
+    | 6n -> b6
+    | 7n -> b7
+    | 8n -> b8
+    | 9n -> b9
+    | 10n -> b10
+    | 11n -> b11
+    | 12n -> b12
+    | 13n -> b13
+    | 14n -> b14
+    | 15n -> b15
+    | 16n -> b16
+    | 17n -> b17
+    | 18n -> b18
+    | 19n -> b19
+
+let trans e route = 
+    match route with
+    | None -> None
+    | Some r -> Some (r+1)
+
+let merge u (r1 : [M](option[int])) (r2: [M](option[int])) =
+    if isFailed u then
+        None
+    else
+        (match (r1,r2) with
+         | (_, None) -> r1
+         | (None, _) -> r2
+         | (Some a, Some b) -> if a <= b then Some a else Some b)
+
+let init u =
+  if u = 0n then Some 0 else None
+
+let s = solution(init, trans, merge)
+
+assert ((match (s 1n) with
+        | None -> false
+        | Some _ -> true), 0.7)
+

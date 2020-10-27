@@ -20,6 +20,7 @@
 let id = ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '_' '0'-'9']*
 let symbol = ['~' '`' '!' '@' '#' '$' '%' '^' '&' '|' ':' '?' '>' '<' '[' ']' '=' '-' '.']+
 let num = ['0'-'9']+
+let prob_literal = (['0']['.']['0'-'9']+) | ("1.0")
 let width = "u"num
 let tid = ['\'']['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '_' '0'-'9']*
 let node = num"n"
@@ -42,9 +43,9 @@ rule token = parse
   | "Some"            { SOME (position lexbuf) }
   | "edges"           { EDGES (position lexbuf) }
   | "nodes"           { NODES (position lexbuf) }
- (* | "match"           { MATCH (position lexbuf) }
+  | "match"           { MATCH (position lexbuf) }
   | "with"            { WITH (position lexbuf) }
-  | "require"         { REQUIRE (position lexbuf) }
+ (* | "require"         { REQUIRE (position lexbuf) }
   | "createDict"      { CREATEMAP (position lexbuf) }
   | "foldNodes"       { FOLDNODE (position lexbuf) }
   | "foldEdges"       { FOLDEDGE (position lexbuf) }
@@ -57,8 +58,8 @@ rule token = parse
   | "filter"          { FILTER (position lexbuf) }
   | "minus"           { MINUS (position lexbuf) }
   | "set"             { TSET (position lexbuf) }
-  | "dict"            { TDICT (position lexbuf) }
-  | "option"          { TOPTION (position lexbuf) } *)
+  | "dict"            { TDICT (position lexbuf) }*)
+  | "option"          { TOPTION (position lexbuf) } 
   | "int" num as s    { TINT (position lexbuf, int_of_string @@ String.lchop ~n:3 s) }
   | "int"             { TINT (position lexbuf, 32) }
   | "bool"            { TBOOL (position lexbuf) }
@@ -74,6 +75,7 @@ rule token = parse
   | node as s         { NODE (position lexbuf, int_of_string (String.rchop ~n:1 s)) }
   | num width as n    { NUM (position lexbuf, ProbNv_datastructures.Integer.of_string n) }
   | num as n          { NUM (position lexbuf, ProbNv_datastructures.Integer.of_string n) }
+  | prob_literal as n { PROB (position lexbuf, float_of_string n)}
   | "&&"              { AND (position lexbuf) }
   | "||"              { OR (position lexbuf) }
   | "|"               { BAR (position lexbuf) }

@@ -1,0 +1,34 @@
+symbolic e0:bool
+symbolic e1:bool
+
+let nodes = 2
+let edges = {0=1;}
+
+let init u =
+  if u = 1n then (false, 0) else (true, 0)
+
+let merge u v1 v2 = 
+    match (v1, v2) with
+    | ((false, _), _) -> v2
+    | (_, (false, _)) -> v1
+    | ((true, n1), (true, n2)) ->
+        if n1 <= n2 then v1 else v2
+
+let f e =
+  match e with
+  | 0~1 -> e0
+  | 1~0 -> e1
+
+let trans e (v : [M]([C]bool, [C]int)) =
+   if (f e) then
+     (false, 0)
+   else
+     match v with
+     | (false, _) -> v
+     | (true, n) -> (true, n+1)
+
+let s = solution(init, trans, merge)
+
+assert ((match (s 1n) with
+        | (false, _) -> false
+        | (true, _) -> true), 0.7)
