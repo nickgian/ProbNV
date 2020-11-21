@@ -67,6 +67,7 @@ let edges = {
 
 let nodes = 20
 
+(* Each symbolic denotes a node failure *)
 symbolic b0: bool
 symbolic b1: bool
 symbolic b2: bool

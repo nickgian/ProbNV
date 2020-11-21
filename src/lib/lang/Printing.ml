@@ -422,7 +422,11 @@ let rec declaration_to_string ?(show_types = false) d =
   let exp_to_string = exp_to_string ~show_types in
   match d with
   | DLet (x, e) -> "let " ^ Var.to_string x ^ " = " ^ exp_to_string e
-  | DSymbolic (x, ty) -> "symbolic " ^ Var.to_string x ^ " : " ^ ty_to_string ty
+  | DSymbolic (x, ty, None) ->
+      Printf.sprintf "symbolic %s : %s" (Var.to_string x) (ty_to_string ty)
+  | DSymbolic (x, ty, Some prob) ->
+      Printf.sprintf "symbolic %s : %s = %f" (Var.to_string x) (ty_to_string ty)
+        prob
   | DAssert (e, prob) -> Printf.sprintf "assert(%s, %f)" (exp_to_string e) prob
   | DSolve { aty; var_names; init; trans; merge } ->
       Printf.sprintf "let %s = solution<%s> {init = %s; trans = %s; merge = %s}"

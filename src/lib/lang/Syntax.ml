@@ -241,8 +241,8 @@ type probability = float
 
 type declaration =
   | DLet of var * exp
-  | DSymbolic of var * ty
-  | DAssert of (exp * float)
+  | DSymbolic of var * ty * probability option
+  | DAssert of (exp * probability)
   | DSolve of solve
   | DNodes of int
   | DEdges of (node * node) list
@@ -881,7 +881,8 @@ let get_nodes ds =
 
 let get_symbolics ds =
   List.fold_left
-    (fun acc d -> match d with DSymbolic (x, e) -> (x, e) :: acc | _ -> acc)
+    (fun acc d ->
+      match d with DSymbolic (x, ty, prob) -> (x, ty, prob) :: acc | _ -> acc)
     [] ds
   |> List.rev
 

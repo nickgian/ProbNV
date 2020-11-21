@@ -580,7 +580,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
       leave_level ();
       let ty = generalize ty_e1 in
       (Env.update env x ty, DLet (x, texp (e1, ty, e1.espan)))
-  | DSymbolic (x, ty) -> (Env.update env x ty, DSymbolic (x, ty))
+  | DSymbolic (x, ty, prob) -> (Env.update env x ty, DSymbolic (x, ty, prob))
   | DAssert (e, prob) -> (
       let e' = infer_exp e in
       let ty = oget e'.ety in

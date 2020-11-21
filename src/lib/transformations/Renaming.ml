@@ -115,11 +115,11 @@ let alpha_convert_declaration bmap (env : Var.t Env.t) (d : declaration) =
       let e = alpha_convert_exp env e in
       let env = Env.update env x y in
       (env, DLet (y, e))
-  | DSymbolic (x, ty) ->
+  | DSymbolic (x, ty, p) ->
       let y = fresh x in
       map_back bmap y x;
       let env = Env.update env x y in
-      (env, DSymbolic (y, ty))
+      (env, DSymbolic (y, ty, p))
   | DSolve { aty; var_names; init; trans; merge } ->
       let init, trans, merge =
         ( alpha_convert_exp env init,

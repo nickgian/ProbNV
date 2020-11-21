@@ -201,7 +201,8 @@ component:
     /* | LET letvars EQ SOLUTION expr      { make_dsolve (fst $2) $5 } */
     | LET letvars EQ SOLUTION LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (fst $2) $6 $8 $10 }
     | LET letvars EQ expr                       { global_let $2 $4 $4.espan (Span.extend $1 $4.espan) }
-    | SYMBOLIC ID COLON bty                     { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}) }
+    | SYMBOLIC ID COLON bty                    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, None) }
+    | SYMBOLIC ID COLON bty EQ PROB            { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, Some (snd $6)) }
     | ASSERT LPAREN expr COMMA PROB RPAREN      { DAssert ($3,snd $5) }
     | LET EDGES EQ LBRACE RBRACE        { DEdges [] }
     | LET EDGES EQ LBRACE edges RBRACE  { DEdges $5 }
