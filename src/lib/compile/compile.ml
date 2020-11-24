@@ -3,9 +3,11 @@ open ProbNv_lang
 
 open ProbNv_utils
 open PrimitiveCollections
+open Collections
 open Syntax
 open ProbNv_datastructures
 open CompileBDDs
+open Batteries
 
 let varname x = Var.to_string_delim "_" x
 
@@ -177,6 +179,68 @@ let rec ty_to_ocaml_string t =
        Printf.sprintf "(%s) CompileBDDs.t" vty
    | TRecord map -> record_to_ocaml_record ":" ty_to_ocaml_string map *)
 
+let rec pattern_vars p =
+  match p with
+  | PWild | PBool _ | PInt _ | POption None | PNode _ ->
+      BatSet.PSet.create Var.compare
+  | PVar v -> BatSet.PSet.singleton ~cmp:Var.compare v
+  | PEdge (p1, p2) -> pattern_vars (PTuple [ p1; p2 ])
+  | PTuple ps ->
+      List.fold_left
+        (fun set p -> BatSet.PSet.union set (pattern_vars p))
+        (BatSet.PSet.create Var.compare)
+        ps
+  | POption (Some p) -> pattern_vars p
+
+(* | PRecord map ->
+    StringMap.fold
+      (fun _ p set -> BatSet.PSet.union set (pattern_vars p))
+      map
+      (PSet.create Var.compare) *)
+
+let rec free (seen : Var.t BatSet.PSet.t) (e : exp) : Var.t BatSet.PSet.t =
+  match e.e with
+  | EVar v ->
+      if BatSet.PSet.mem v seen then BatSet.PSet.create Var.compare
+      else BatSet.PSet.singleton ~cmp:Var.compare v
+  | EVal _ -> BatSet.PSet.create Var.compare
+  | EOp (_, es) | ETuple es ->
+      List.fold_left
+        (fun set e -> BatSet.PSet.union set (free seen e))
+        (BatSet.PSet.create Var.compare)
+        es
+  (* | ERecord map ->
+     StringMap.fold
+       (fun _ e set -> BatSet.PSet.union set (free seen e))
+       map
+       (BatSet.PSet.create Var.compare) *)
+  | EFun f -> free (BatSet.PSet.add f.arg seen) f.body
+  | EApp (e1, e2) -> BatSet.PSet.union (free seen e1) (free seen e2)
+  | EIf (e1, e2, e3) ->
+      BatSet.PSet.union (free seen e1)
+        (BatSet.PSet.union (free seen e2) (free seen e3))
+  | ELet (x, e1, e2) ->
+      let seen = BatSet.PSet.add x seen in
+      BatSet.PSet.union (free seen e1) (free seen e2)
+  | ESome e -> free seen e
+  | EMatch (e, bs) ->
+      let bs1 =
+        PatMap.fold
+          (fun p e set ->
+            let seen = BatSet.PSet.union seen (pattern_vars p) in
+            BatSet.PSet.union set (free seen e))
+          bs.pmap
+          (BatSet.PSet.create Var.compare)
+      in
+      let bs =
+        BatList.fold_left
+          (fun set (p, e) ->
+            let seen = BatSet.PSet.union seen (pattern_vars p) in
+            BatSet.PSet.union set (free seen e))
+          bs1 bs.plist
+      in
+      BatSet.PSet.union (free seen e) bs
+
 (** Returns an OCaml string that contains the hashconsed int of the function
    body and a tuple with the free variables that appear in the function. Used
    for caching BDD operations.
@@ -184,23 +248,21 @@ let rec ty_to_ocaml_string t =
     of any function that is called and may have free variables.
 *)
 
-(* let getFuncCache (e : exp) : string =
+let getFuncCache (e : exp) : string =
   match e.e with
   | EFun f ->
       let seen = BatSet.PSet.singleton ~cmp:Var.compare f.arg in
-      let free = Syntax.free seen f.body in
+      let free = free seen f.body in
       let freeList = BatSet.PSet.to_list free in
-      let closure = Collections.printList (fun x -> varname x) freeList "(" "," ")" in
-      Printf.sprintf "(%d, %s)" (Collections.ExpIds.fresh_id exp_store f.body) closure
-      (*FIXME: annoying BatSet printing outputs null character at the end so I am using the code above*)
-      (* let closure = BatIO.output_string () in
-       *   BatSet.PSet.print ~first:"(" ~sep:"," ~last:")"
-       *     (fun out x -> BatIO.write_string out (varname x))
-       *     closure free;
-       *   Printf.sprintf "(%d, %s)" f.body.etag (BatInnerIO.close_out closure) *)
+      let closure =
+        Collections.printList (fun x -> varname x) freeList "(" "," ")"
+      in
+      Printf.sprintf "(%d, %s)"
+        (Collections.ExpIds.fresh_id exp_store f.body)
+        closure
   | _ ->
       (*assume there are no free variables, but this needs to be fixed: always inline*)
-      Printf.sprintf "(%d, ())" (Collections.ExpIds.fresh_id exp_store e) *)
+      Printf.sprintf "(%d, ())" (Collections.ExpIds.fresh_id exp_store e)
 
 (** Function walking through an expression to record tuple types.
     This is done by the compiler on the go, but not for
@@ -290,7 +352,7 @@ and exp_to_ocaml_string e =
         (exp_to_ocaml_string e1)
   | EToMap e1 ->
       Printf.sprintf "(BddFunc.toMap ~value:%s)" (exp_to_ocaml_string e1)
-  | EApplyN (e1, es) ->
+  | EApplyN (e1, es) -> (
       let el1 = exp_to_ocaml_string e1 in
       let esl =
         List.map
@@ -303,8 +365,36 @@ and exp_to_ocaml_string e =
           es
       in
       ignore (get_fresh_type_id type_store (OCamlUtils.oget e.ety));
-      let esl_array = Collections.printList (fun el -> el) esl "[|" "; " "|]" in
-      Printf.sprintf "(BddFunc.applyN ~f:%s ~args:(%s))" el1 esl_array
+
+      (*cache user op on e1 *)
+      (* Get e1's hashcons and closure *)
+      let op_key = getFuncCache e1 in
+      (*FIXME: this needs to be fresh, to avoid the case where it is
+                used inside e1 but our separator is not OCaml friendly*)
+      let op_key_var = "op_key" in
+      (* special cases *)
+      match esl with
+      | [ v1 ] ->
+          Printf.sprintf
+            "(Obj.magic (let %s = %s in \n\
+            \ BddFunc.apply1 ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s))" op_key_var
+            op_key op_key_var el1 v1
+      | [ v1; v2 ] ->
+          Printf.sprintf
+            "(Obj.magic (let %s = %s in \n\
+            \ BddFunc.apply2 ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s ~arg2:%s))"
+            op_key_var op_key op_key_var el1 v1 v2
+      | [ v1; v2; v3 ] ->
+          Printf.sprintf
+            "(Obj.magic (let %s = %s in \n\
+            \ BddFunc.apply3 ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s ~arg2:%s \
+             ~arg3:%s))"
+            op_key_var op_key op_key_var el1 v1 v2 v3
+      | _ ->
+          let esl_array =
+            Collections.printList (fun el -> el) esl "[|" "; " "|]"
+          in
+          Printf.sprintf "(BddFunc.applyN ~f:%s ~args:(%s))" el1 esl_array )
   | ETuple es ->
       let n = BatList.length es in
       Collections.printListi
@@ -588,6 +678,99 @@ let compile_decl decl =
               ignore (get_fresh_type_id type_store (concrete TNode));
               Printf.printf "Solution type: %s\n" (Printing.ty_to_string attr);
               let attr_id = get_fresh_type_id type_store attr in
+
+              (* ignore (exp_to_ocaml_string solve.init);
+                 ignore (exp_to_ocaml_string solve.trans);
+                 ignore (exp_to_ocaml_string solve.merge);
+                 Printf.sprintf
+                   "let s_120 = SIM.simulate_solve record_fns (2) (\"s\") ((fun \
+                    u_121 -> (BddFunc.toMap ~value:((init_118) (u_121))))) ((fun \
+                    e_122 -> (fun x_123 -> (Obj.magic (let op_key = (1, \
+                    (trans_108,e_122)) in\n\
+                   \                 BddFunc.apply1 ~op_key:(Obj.magic op_key) \
+                    ~f:(fun x_123 -> ((((trans_108) (e_122))) (x_123))) \
+                    ~arg1:(Obj.magic x_123)))))) ((fun u_113 -> (fun r1_114 -> \
+                    (fun r2_115 -> (Obj.magic (let op_key = (0, ()) in\n\
+                   \              let arg2 = BddFunc.apply2 ~op_key:(Obj.magic \
+                    (3, ())) ~f:(fun b -> fun x -> if b then None else x) \
+                    ~arg1:(Obj.magic (BddFunc.wrap_mtbdd (((isFailed_106) \
+                    (u_113))))) ~arg2:(Obj.magic r2_115) in\n\
+                   \              let arg3 = BddFunc.apply2 ~op_key:(Obj.magic \
+                    (4, ())) ~f:(fun b -> fun x -> if b then None else x) \
+                    ~arg1:(Obj.magic (BddFunc.wrap_mtbdd (((isFailed_106) \
+                    (u_113))))) ~arg2:(Obj.magic r1_114) in\n\n\
+                   \                               BddFunc.apply2 \
+                    ~op_key:(Obj.magic op_key) ~f:(fun r2_42 -> (fun r1_41 ->\n\
+                   \              (match {p0__2 = r1_41; p1__2 = r2_42} with \n\
+                   \              | {p0__2 = _; p1__2 = None} -> r1_41\n\
+                   \             | {p0__2 = None; p1__2 = _} -> r2_42\n\
+                   \             | {p0__2 = Some a_59; p1__2 = Some b_60} -> (if \
+                    (a_59 <= b_60) then\n\
+                   \              Some (a_59) else\n\
+                   \              Some (b_60))\n\
+                   \             ))) ~arg1:(Obj.magic arg2) ~arg2:(Obj.magic \
+                    arg3)))))))" *)
+              (* Printf.sprintf
+                 "let s_47 = SIM.simulate_solve record_fns (2) (\"s\") ((fun \
+                  u_48 -> (BddFunc.toMap ~value:((init_45) (u_48))))) ((fun \
+                  e_49 -> (fun x_50 -> (Obj.magic (let op_key = (1, \
+                  (trans_35,e_49)) in\n\
+                 \              BddFunc.apply1 ~op_key:(Obj.magic op_key) \
+                  ~f:(fun x_50 -> ((((trans_35) (e_49))) (x_50))) \
+                  ~arg1:(Obj.magic x_50)))))) \n\
+                 \              \n\
+                 \              ((fun u_40 -> (fun r1_41 -> (fun r2_42 -> \
+                  (Obj.magic (let op_key = (0, ()) in\n\
+                 \              let arg2 = BddFunc.apply2 ~op_key:(Obj.magic \
+                  (3, ())) ~f:(fun b -> fun x -> if b then None else x) \
+                  ~arg1:(Obj.magic (BddFunc.wrap_mtbdd (((isFailed_33) \
+                  (u_40))))) ~arg2:(Obj.magic r2_42) in\n\
+                 \              let arg3 = BddFunc.apply2 ~op_key:(Obj.magic \
+                  (4, ())) ~f:(fun b -> fun x -> if b then None else x) \
+                  ~arg1:(Obj.magic (BddFunc.wrap_mtbdd (((isFailed_33) \
+                  (u_40))))) ~arg2:(Obj.magic r1_41) in\n\
+                 \            \n\
+                 \              BddFunc.apply2 ~op_key:(Obj.magic op_key) \
+                  ~f:(fun r2_42 -> (fun r1_41 ->\n\
+                 \              (match {p0__2 = r1_41; p1__2 = r2_42} with \n\
+                 \              | {p0__2 = _; p1__2 = None} -> r1_41\n\
+                 \             | {p0__2 = None; p1__2 = _} -> r2_42\n\
+                 \             | {p0__2 = Some a_59; p1__2 = Some b_60} -> (if \
+                  (a_59 <= b_60) then\n\
+                 \              Some (a_59) else\n\
+                 \              Some (b_60))\n\
+                 \             ))) ~arg1:(Obj.magic arg2) ~arg2:(Obj.magic \
+                  arg3)))))))" *)
+              (* Printf.sprintf
+                 "let s_63 = SIM.simulate_solve record_fns (2) (\"s\")\n\
+                 \                     ((fun u_64 -> (BddFunc.toMap \
+                  ~value:((init_61) (u_64)))))\n\
+                 \                     ((fun e_65 -> (fun x_66 -> (Obj.magic \
+                  (let op_key = (1, (trans_51,e_65)) in\n\
+                 \                  BddFunc.apply1 ~op_key:(Obj.magic op_key) \
+                  ~f:(fun x_66 -> ((((trans_51) (e_65))) (x_66))) \
+                  ~arg1:(Obj.magic x_66))))))\n\n\
+                 \                  ((fun u_56 -> (fun r1_57 -> (fun r2_58 -> \
+                  (Obj.magic (let op_key = (0, ()) in\n\
+                 \                  let arg2 = BddFunc.apply2 \
+                  ~op_key:(Obj.magic (3, ())) ~f:(fun b -> fun x -> if b then \
+                  None else x) ~arg1:(Obj.magic (BddFunc.wrap_mtbdd \
+                  (((isFailed_49) (u_56))))) ~arg2:(Obj.magic r2_58) in\n\
+                 \                  let arg3 = BddFunc.apply2 \
+                  ~op_key:(Obj.magic (4, ())) ~f:(fun b -> fun x -> if b then \
+                  None else x) ~arg1:(Obj.magic (BddFunc.wrap_mtbdd \
+                  (((isFailed_49) (u_56))))) ~arg2:(Obj.magic r1_57) in\n\
+                 \                  BddFunc.apply2 ~op_key:(Obj.magic op_key) \
+                  ~f:(fun r2_58 -> (fun r1_57 ->\n\
+                 \                  (match {p0__2 = r1_57; p1__2 = r2_58} with\n\
+                 \                  | {p0__2 = _; p1__2 = None} -> r1_57\n\
+                 \                 | {p0__2 = None; p1__2 = _} -> r2_58\n\
+                 \                 | {p0__2 = Some a_59; p1__2 = Some b_60} -> \
+                  (if (a_59 <= b_60) then\n\
+                 \                  Some (a_59) else\n\
+                 \                  Some (b_60))\n\
+                 \                 ))) ~arg1:(Obj.magic arg2) ~arg2:(Obj.magic \
+                  arg3)))))))" *)
               Printf.sprintf
                 "let %s = SIM.simulate_solve record_fns (%d) (\"%s\") (%s) \
                  (%s) (%s)"

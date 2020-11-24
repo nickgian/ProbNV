@@ -100,6 +100,8 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
 
   let attr_equal = ref (fun _ _ -> true)
 
+  let merges = ref 0
+
   let simulate_step trans merge (s : 'a extendedSolution) (origin : int) =
     let do_neighbor (_, initial_attribute) (s, todo) neighbor =
       let edge = (origin, neighbor) in
@@ -132,10 +134,12 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
           in
           (* This is a hack because merge may not be selective *)
           let dummy_new =
-            merge neighbor n_incoming_attribute n_incoming_attribute
+            n_incoming_attribute
+            (* merge neighbor n_incoming_attribute n_incoming_attribute *)
           in
           (*if the merge between new and old route from origin is equal to the new route from origin*)
-          if compare_routes = dummy_new then
+          if compare_routes = dummy_new then (
+            incr merges;
             (*we can incrementally compute in this case*)
             let n_new_attribute =
               merge neighbor n_old_attribute n_incoming_attribute
@@ -149,7 +153,7 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
                 todo )
             else
               ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
-                neighbor :: todo )
+                neighbor :: todo ) )
           else
             (* In this case, we need to do a full merge of all received routes *)
             let best =
@@ -200,6 +204,7 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
     let vals =
       simulate_init trans merge s |> AdjGraph.VertexMap.map (fun (_, v) -> v)
     in
+    Printf.printf "Number of incremental merges: %d\n" !merges;
     let default = AdjGraph.VertexMap.choose vals |> snd in
     (* Constructing a function from the solutions *)
     let base _ = default in

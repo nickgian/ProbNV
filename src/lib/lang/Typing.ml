@@ -584,6 +584,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
   | DAssert (e, prob) -> (
       let e' = infer_exp e in
       let ty = oget e'.ety in
+      Printf.printf "Assertion type: %s" (Printing.ty_to_string ty);
       (* Mode should not matter for unification - although it might matter in the TVar case
          but I don't think that case appears here *)
       unify info e ty { typ = TBool; mode = None };
@@ -902,7 +903,7 @@ module HLLTypeInf = struct
                   Console.error_position info e.espan "Join on match failed" )
           | Some Multivalue ->
               (* Match-M applies *)
-              texp (ematch e1 branches, t, e.espan)
+              texp (ematch e1 branches, mty (Some Multivalue) t.typ, e.espan)
           | None ->
               Console.error_position info e.espan
                 "No mode on scrutinee of match expression" )
@@ -1230,6 +1231,9 @@ module LLLTypeInf = struct
               (* If rule Match applies *)
               texp (ematch e1 branches, t, e1.espan)
           | Some _ ->
+              Printf.printf "tmatch: %s\n" (Printing.ty_to_string tmatch);
+              Printf.printf "Match: %s\n"
+                (Printing.exp_to_string ~show_types:true e);
               Console.error_position info e.espan
                 "Symbolic/Multivalue guard - mistyped mode in Match" )
       (* NOTE:  Changes order of evaluation if e is not a value;

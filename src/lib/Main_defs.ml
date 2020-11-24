@@ -57,7 +57,7 @@ let parse_input (args : string array) =
   (* Translate the program to LLL *)
   let decls = Translate.translate_declarations decls in
   Printf.printf "Printing compiled program\n\n%s"
-    (ProbNv_lang.Printing.declarations_to_string ~show_types:false decls);
+    (ProbNv_lang.Printing.declarations_to_string ~show_types:true decls);
   (* Type check the LLL program *)
   let decls = Typing.LLLTypeInf.infer_declarations info decls in
   (cfg, info, file, decls, fs)

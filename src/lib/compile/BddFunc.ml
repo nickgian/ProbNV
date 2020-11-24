@@ -219,10 +219,77 @@ let applyN ~f ~args : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
   in
   let op =
     User.make_opN
-      ~memo:Cudd.(Cache (Cache.create (Array.length args)))
+      ~memo:
+        Cudd.(
+          Cache
+            (Cache.create ~size:67108864 ~maxsize:134217728
+               ~arity:(Array.length args)))
       0 (Array.length args) g
   in
   User.apply_opN op [||] args
+
+(* Used to cache functions and their closures *)
+module HashClosureMap = BatMap.Make (struct
+  type t = int * unit
+
+  (*NOTE: unit here is a placeholder for the closure type which is a tuple of OCaml variables*)
+
+  let compare = Pervasives.compare
+end)
+
+let map_cache = Obj.magic (ref HashClosureMap.empty)
+
+(*todo add cache and modify compiler *)
+
+let apply1 ~op_key ~f ~arg1 : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
+  let g v1 = f (Obj.magic (Mtbdd.get v1)) |> Mtbdd.unique B.tbl in
+  let op =
+    match HashClosureMap.Exceptionless.find (Obj.magic op_key) !map_cache with
+    | None ->
+        let o = User.make_op1 ~memo:Cudd.Memo.Global g in
+        map_cache := HashClosureMap.add (Obj.magic op_key) o !map_cache;
+        o
+    | Some op -> op
+  in
+  User.apply_op1 op arg1
+
+(* specialized version of applyN for two arguments*)
+let apply2 ~op_key ~f ~arg1 ~arg2 : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
+  let g v1 v2 =
+    Obj.magic (f (Obj.magic (Mtbdd.get v1))) (Mtbdd.get v2)
+    |> Mtbdd.unique B.tbl
+  in
+  let op =
+    match HashClosureMap.Exceptionless.find (Obj.magic op_key) !map_cache with
+    | None ->
+        let o =
+          User.make_op2 ~memo:Cudd.(Cache (Cache.create2 ~size:67108864 ())) g
+        in
+        map_cache := HashClosureMap.add (Obj.magic op_key) o !map_cache;
+        o
+    | Some op -> op
+  in
+  User.apply_op2 op arg1 arg2
+
+let apply3 ~op_key ~f ~arg1 ~arg2 ~arg3 : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
+  let g v1 v2 v3 =
+    Obj.magic
+      (Obj.magic
+         (Obj.magic (f (Obj.magic (Mtbdd.get v1))) (Mtbdd.get v2))
+         (Mtbdd.get v3))
+    |> Mtbdd.unique B.tbl
+  in
+  let op =
+    match HashClosureMap.Exceptionless.find (Obj.magic op_key) !map_cache with
+    | None ->
+        let o =
+          User.make_op3 ~memo:Cudd.(Cache (Cache.create3 ~size:67108864 ())) g
+        in
+        map_cache := HashClosureMap.add (Obj.magic op_key) o !map_cache;
+        o
+    | Some op -> op
+  in
+  User.apply_op3 op arg1 arg2 arg3
 
 (** ** Probabilistic part *)
 

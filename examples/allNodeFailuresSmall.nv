@@ -1,0 +1,41 @@
+let edges = {0=1;1=2;2=3;3=0;}
+
+let nodes = 4
+
+(* Each symbolic denotes a node failure *)
+symbolic b0: bool
+symbolic b1: bool
+symbolic b2: bool
+symbolic b3: bool
+
+let isFailed u =
+    match u with
+    | 0n -> b0
+    | 1n -> b1
+    | 2n -> b2
+    | 3n -> b3
+
+let trans e (route: [M](option[int]))  = 
+    match route with
+    | None -> None
+    | Some r -> Some (r+1)
+
+let merge u (r1 : [M](option[int])) (r2: [M](option[int])) =
+    if isFailed u then
+        None
+    else
+        (match (r1,r2) with
+         | (_, None) -> r1
+         | (None, _) -> r2
+         | (Some a, Some b) -> if a <= b then Some a else Some b)
+
+let init u =
+  if isFailed u then None
+  else if u = 0n then Some 0 else None
+
+let s = solution(init, trans, merge)
+
+assert ((match (s 1n) with
+        | None -> false
+        | Some _ -> true), 0.7)
+

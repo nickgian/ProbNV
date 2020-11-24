@@ -121,7 +121,10 @@ let rec translate (e : exp) : exp * BddBinds.t =
             BddBinds.union r1 (BddBinds.union r2 r3) )
       | Some Symbolic, _, _, Some Multivalue ->
           (* C-Ite-M2 *)
-          let b, r = BddBinds.fresh el1 in
+          let b, r =
+            BddBinds.fresh
+              { el1 with ety = Some (fty (OCamlUtils.oget el1.ety)) }
+          in
           let eb =
             aexp (evar b, Some { typ = TBool; mode = Some Concrete }, e1.espan)
           in
@@ -150,9 +153,7 @@ let rec translate (e : exp) : exp * BddBinds.t =
       | _ -> failwith "This case cannot occur per the type system" )
   | EFun { arg = x; body = e1; argty; resty; _ } ->
       (* C-Lambda *)
-      (* We assume we have inlined functions returning multi-values so we can
-           assume the set generated will be empty. *)
-      let el1, _ = translate e1 in
+      let el1, r = translate e1 in
       let argty' = fty (OCamlUtils.oget argty) in
       let resty' = fty (OCamlUtils.oget resty) in
       let ty' = fty (OCamlUtils.oget e.ety) in
@@ -166,7 +167,7 @@ let rec translate (e : exp) : exp * BddBinds.t =
         }
       in
       let el = aexp (efun f', Some (fty (OCamlUtils.oget e.ety)), e.espan) in
-      (el, BddBinds.empty ())
+      (el, r)
   | EApp (e1, e2) -> (
       let el1, r1 = translate e1 in
       let el2, r2 = translate e2 in
@@ -246,11 +247,10 @@ let rec translate (e : exp) : exp * BddBinds.t =
             BddBinds.union r1 r2 )
       | Some Concrete, Some Concrete, Some Multivalue ->
           (* Because of solutions being functions - change this when we introduce maps it's a total hack TODO*)
-          let b, r = BddBinds.fresh e in
-          let eb =
-            aexp
-              (evar b, Some { typ = resty.typ; mode = Some Concrete }, e1.espan)
+          let b, r =
+            BddBinds.fresh { e with ety = Some (fty (OCamlUtils.oget e.ety)) }
           in
+          let eb = aexp (evar b, Some (fty resty), e1.espan) in
           (eb, BddBinds.union r (BddBinds.union r1 r2))
       | _ -> failwith "This case cannot occur per the type system" )
   | ESome e1 -> (
@@ -373,10 +373,10 @@ let rec pattern_vars p =
         VarSet.empty ps
 
 (* | PRecord map ->
-   StringMap.fold
-     (fun _ p set -> PSet.union set (pattern_vars p))
-     map
-     (PSet.create Var.compare) *)
+    StringMap.fold
+      (fun _ p set -> PSet.union set (pattern_vars p))
+      map
+      (PSet.create Var.compare) *)
 
 (* Computing the free variables of an expression typed in multi-value mode  *)
 let rec free (seen : VarSet.t) (e : exp) : BddBinds.t =
@@ -503,12 +503,14 @@ let liftInit init_body aty =
 (** translates the [init] function, given the mode [m] of the computed routes.
   [m] can be affected by the other functions, such as trans and merge. *)
 let translateInit init aty =
+  Printf.printf "init aty: %s" (Printing.ty_to_string aty);
   let init', r = translate init in
   match init'.e with
   | EFun f ->
       let fv = free init in
       let rho = BddBinds.union r fv in
-      if BddBinds.isEmpty rho then
+      if BddBinds.isEmpty rho then (
+        Printf.printf "bdd binds is empty\n";
         if aty.mode = Some Concrete then init'
         else
           let e1' = etoMap f.body in
@@ -518,8 +520,16 @@ let translateInit init aty =
               Some
                 (concrete
                    (TArrow (concrete (OCamlUtils.oget f.argty).typ, resTy))),
-              init.espan )
-      else liftInit init' aty
+              init.espan ) )
+      else
+        let e1' = buildApply f.body rho in
+        let resTy = liftMultiTy (OCamlUtils.oget f.resty) in
+        aexp
+          ( efun { f with body = e1'; resty = Some resTy },
+            Some
+              (concrete
+                 (TArrow (concrete (OCamlUtils.oget f.argty).typ, resTy))),
+            init.espan )
   | _ -> (
       let init_ty = OCamlUtils.oget init.ety in
       match (get_mode init_ty, get_mode aty) with

@@ -1,0 +1,704 @@
+symbolic b0 : bool
+symbolic b1 : bool
+symbolic b2 : bool
+symbolic b3 : bool
+symbolic b4 : bool
+symbolic b5 : bool
+symbolic b6 : bool
+symbolic b7 : bool
+symbolic b8 : bool
+symbolic b9 : bool
+symbolic b10 : bool
+symbolic b11 : bool
+symbolic b12 : bool
+symbolic b13 : bool
+symbolic b14 : bool
+symbolic b15 : bool
+symbolic b16 : bool
+symbolic b17 : bool
+symbolic b18 : bool
+symbolic b19 : bool
+symbolic b20 : bool
+symbolic b21 : bool
+symbolic b22 : bool
+symbolic b23 : bool
+symbolic b24 : bool
+symbolic b25 : bool
+symbolic b26 : bool
+symbolic b27 : bool
+symbolic b28 : bool
+symbolic b29 : bool
+symbolic b30 : bool
+symbolic b31 : bool
+symbolic b32 : bool
+symbolic b33 : bool
+symbolic b34 : bool
+symbolic b35 : bool
+symbolic b36 : bool
+symbolic b37 : bool
+symbolic b38 : bool
+symbolic b39 : bool
+symbolic b40 : bool
+symbolic b41 : bool
+symbolic b42 : bool
+symbolic b43 : bool
+symbolic b44 : bool
+symbolic b45 : bool
+symbolic b46 : bool
+symbolic b47 : bool
+symbolic b48 : bool
+symbolic b49 : bool
+symbolic b50 : bool
+symbolic b51 : bool
+symbolic b52 : bool
+symbolic b53 : bool
+symbolic b54 : bool
+symbolic b55 : bool
+symbolic b56 : bool
+symbolic b57 : bool
+symbolic b58 : bool
+symbolic b59 : bool
+symbolic b60 : bool
+symbolic b61 : bool
+symbolic b62 : bool
+symbolic b63 : bool
+symbolic b64 : bool
+symbolic b65 : bool
+symbolic b66 : bool
+symbolic b67 : bool
+symbolic b68 : bool
+symbolic b69 : bool
+symbolic b70 : bool
+symbolic b71 : bool
+symbolic b72 : bool
+symbolic b73 : bool
+symbolic b74 : bool
+symbolic b75 : bool
+symbolic b76 : bool
+symbolic b77 : bool
+symbolic b78 : bool
+symbolic b79 : bool
+
+let edges = {
+  19-20; (*aggregation-32,Serial5 --> edge-37,Serial0*)
+  54-6; (*core-7,Serial5 --> aggregation-73,Serial3*)
+  11-20; (*aggregation-34,Serial1 --> edge-37,Serial2*)
+  60-49; (*aggregation-57,Serial1 --> core-5,Serial7*)
+  67-63; (*core-11,Serial7 --> aggregation-58,Serial3*)
+  39-37; (*aggregation-65,Serial3 --> edge-71,Serial1*)
+  65-49; (*aggregation-49,Serial1 --> core-5,Serial2*)
+  74-65; (*edge-53,Serial1 --> aggregation-49,Serial5*)
+  58-64; (*aggregation-51,Serial7 --> edge-55,Serial3*)
+  58-73; (*aggregation-51,Serial4 --> edge-52,Serial3*)
+  25-31; (*aggregation-27,Serial7 --> edge-31,Serial3*)
+  24-7; (*edge-78,Serial0 --> aggregation-72,Serial6*)
+  1-34; (*edge-29,Serial1 --> aggregation-25,Serial5*)
+  19-40; (*aggregation-32,Serial1 --> core-1,Serial0*)
+  68-15; (*core-10,Serial5 --> aggregation-74,Serial2*)
+  79-72; (*aggregation-43,Serial3 --> core-13,Serial3*)
+  3-44; (*edge-23,Serial1 --> aggregation-17,Serial7*)
+  35-37; (*aggregation-64,Serial7 --> edge-71,Serial0*)
+  34-55; (*aggregation-25,Serial2 --> core-6,Serial6*)
+  75-46; (*aggregation-48,Serial2 --> core-2,Serial1*)
+  59-64; (*aggregation-50,Serial7 --> edge-55,Serial2*)
+  41-28; (*core-0,Serial6 --> aggregation-24,Serial0*)
+  54-60; (*core-7,Serial7 --> aggregation-57,Serial3*)
+  60-16; (*aggregation-57,Serial4 --> edge-60,Serial1*)
+  6-52; (*aggregation-73,Serial0 --> core-4,Serial5*)
+  37-35; (*edge-71,Serial0 --> aggregation-64,Serial7*)
+  36-38; (*edge-70,Serial2 --> aggregation-66,Serial2*)
+  49-39; (*core-5,Serial1 --> aggregation-65,Serial1*)
+  79-48; (*aggregation-43,Serial4 --> edge-46,Serial3*)
+  22-11; (*edge-39,Serial2 --> aggregation-34,Serial3*)
+  63-16; (*aggregation-58,Serial4 --> edge-60,Serial2*)
+  55-6; (*core-6,Serial5 --> aggregation-73,Serial2*)
+  26-14; (*edge-79,Serial3 --> aggregation-75,Serial7*)
+  9-20; (*aggregation-35,Serial1 --> edge-37,Serial3*)
+  58-66; (*aggregation-51,Serial0 --> core-12,Serial0*)
+  51-79; (*edge-47,Serial3 --> aggregation-43,Serial7*)
+  11-68; (*aggregation-34,Serial6 --> core-10,Serial0*)
+  25-66; (*aggregation-27,Serial0 --> core-12,Serial7*)
+  52-39; (*core-4,Serial1 --> aggregation-65,Serial0*)
+  5-38; (*edge-69,Serial2 --> aggregation-66,Serial1*)
+  34-1; (*aggregation-25,Serial5 --> edge-29,Serial1*)
+  62-10; (*aggregation-59,Serial7 --> edge-63,Serial3*)
+  32-31; (*aggregation-26,Serial7 --> edge-31,Serial2*)
+  23-14; (*edge-77,Serial3 --> aggregation-75,Serial5*)
+  53-56; (*aggregation-18,Serial1 --> core-9,Serial3*)
+  61-16; (*aggregation-56,Serial4 --> edge-60,Serial0*)
+  35-5; (*aggregation-64,Serial5 --> edge-69,Serial0*)
+  40-28; (*core-1,Serial6 --> aggregation-24,Serial1*)
+  61-10; (*aggregation-56,Serial7 --> edge-63,Serial0*)
+  39-55; (*aggregation-65,Serial6 --> core-6,Serial1*)
+  29-34; (*edge-30,Serial1 --> aggregation-25,Serial6*)
+  60-10; (*aggregation-57,Serial7 --> edge-63,Serial1*)
+  59-73; (*aggregation-50,Serial4 --> edge-52,Serial2*)
+  72-14; (*core-13,Serial5 --> aggregation-75,Serial3*)
+  25-1; (*aggregation-27,Serial5 --> edge-29,Serial3*)
+  6-54; (*aggregation-73,Serial3 --> core-7,Serial5*)
+  57-77; (*core-8,Serial2 --> aggregation-42,Serial0*)
+  53-67; (*aggregation-18,Serial3 --> core-11,Serial3*)
+  63-10; (*aggregation-58,Serial7 --> edge-63,Serial2*)
+  34-31; (*aggregation-25,Serial7 --> edge-31,Serial1*)
+  58-70; (*aggregation-51,Serial3 --> core-15,Serial0*)
+  17-27; (*aggregation-33,Serial5 --> edge-36,Serial1*)
+  32-1; (*aggregation-26,Serial5 --> edge-29,Serial2*)
+  50-72; (*aggregation-19,Serial1 --> core-13,Serial6*)
+  47-40; (*aggregation-16,Serial1 --> core-1,Serial4*)
+  50-12; (*aggregation-19,Serial4 --> edge-20,Serial3*)
+  39-4; (*aggregation-65,Serial5 --> edge-68,Serial1*)
+  56-77; (*core-9,Serial2 --> aggregation-42,Serial1*)
+  4-38; (*edge-68,Serial2 --> aggregation-66,Serial0*)
+  31-34; (*edge-31,Serial1 --> aggregation-25,Serial7*)
+  70-62; (*core-15,Serial4 --> aggregation-59,Serial3*)
+  50-3; (*aggregation-19,Serial7 --> edge-23,Serial3*)
+  46-28; (*core-2,Serial6 --> aggregation-24,Serial2*)
+  63-67; (*aggregation-58,Serial3 --> core-11,Serial7*)
+  59-68; (*aggregation-50,Serial2 --> core-10,Serial4*)
+  49-60; (*core-5,Serial7 --> aggregation-57,Serial1*)
+  12-44; (*edge-20,Serial1 --> aggregation-17,Serial4*)
+  43-75; (*core-3,Serial1 --> aggregation-48,Serial3*)
+  44-13; (*aggregation-17,Serial5 --> edge-21,Serial1*)
+  52-17; (*core-4,Serial0 --> aggregation-33,Serial0*)
+  40-35; (*core-1,Serial3 --> aggregation-64,Serial1*)
+  66-14; (*core-12,Serial5 --> aggregation-75,Serial2*)
+  6-26; (*aggregation-73,Serial7 --> edge-79,Serial1*)
+  65-64; (*aggregation-49,Serial7 --> edge-55,Serial1*)
+  65-73; (*aggregation-49,Serial4 --> edge-52,Serial1*)
+  28-31; (*aggregation-24,Serial7 --> edge-31,Serial0*)
+  43-7; (*core-3,Serial7 --> aggregation-72,Serial3*)
+  6-33; (*aggregation-73,Serial4 --> edge-76,Serial1*)
+  41-35; (*core-0,Serial3 --> aggregation-64,Serial0*)
+  8-60; (*edge-62,Serial1 --> aggregation-57,Serial6*)
+  61-46; (*aggregation-56,Serial2 --> core-2,Serial5*)
+  63-56; (*aggregation-58,Serial1 --> core-9,Serial7*)
+  9-72; (*aggregation-35,Serial5 --> core-13,Serial2*)
+  53-3; (*aggregation-18,Serial7 --> edge-23,Serial2*)
+  70-79; (*core-15,Serial3 --> aggregation-43,Serial0*)
+  71-62; (*core-14,Serial4 --> aggregation-59,Serial2*)
+  7-26; (*aggregation-72,Serial7 --> edge-79,Serial0*)
+  30-37; (*aggregation-67,Serial3 --> edge-71,Serial3*)
+  28-41; (*aggregation-24,Serial0 --> core-0,Serial6*)
+  75-74; (*aggregation-48,Serial5 --> edge-53,Serial0*)
+  18-60; (*edge-61,Serial1 --> aggregation-57,Serial5*)
+  30-70; (*aggregation-67,Serial7 --> core-15,Serial1*)
+  49-17; (*core-5,Serial0 --> aggregation-33,Serial1*)
+  47-13; (*aggregation-16,Serial5 --> edge-21,Serial0*)
+  56-53; (*core-9,Serial3 --> aggregation-18,Serial1*)
+  17-54; (*aggregation-33,Serial4 --> core-7,Serial0*)
+  55-60; (*core-6,Serial7 --> aggregation-57,Serial2*)
+  10-62; (*edge-63,Serial3 --> aggregation-59,Serial7*)
+  75-73; (*aggregation-48,Serial4 --> edge-52,Serial0*)
+  77-42; (*aggregation-42,Serial4 --> edge-44,Serial2*)
+  15-26; (*aggregation-74,Serial7 --> edge-79,Serial2*)
+  15-33; (*aggregation-74,Serial4 --> edge-76,Serial2*)
+  75-64; (*aggregation-48,Serial7 --> edge-55,Serial0*)
+  30-72; (*aggregation-67,Serial5 --> core-13,Serial1*)
+  46-35; (*core-2,Serial3 --> aggregation-64,Serial2*)
+  8-62; (*edge-62,Serial3 --> aggregation-59,Serial6*)
+  0-34; (*edge-28,Serial1 --> aggregation-25,Serial4*)
+  46-7; (*core-2,Serial7 --> aggregation-72,Serial2*)
+  77-45; (*aggregation-42,Serial5 --> edge-45,Serial2*)
+  63-57; (*aggregation-58,Serial0 --> core-8,Serial7*)
+  70-9; (*core-15,Serial2 --> aggregation-35,Serial7*)
+  16-60; (*edge-60,Serial1 --> aggregation-57,Serial4*)
+  78-42; (*aggregation-41,Serial4 --> edge-44,Serial1*)
+  78-51; (*aggregation-41,Serial7 --> edge-47,Serial1*)
+  39-52; (*aggregation-65,Serial0 --> core-4,Serial1*)
+  11-57; (*aggregation-34,Serial4 --> core-8,Serial0*)
+  44-49; (*aggregation-17,Serial1 --> core-5,Serial4*)
+  38-37; (*aggregation-66,Serial3 --> edge-71,Serial2*)
+  44-3; (*aggregation-17,Serial7 --> edge-23,Serial1*)
+  52-60; (*core-4,Serial7 --> aggregation-57,Serial0*)
+  69-46; (*aggregation-40,Serial2 --> core-2,Serial2*)
+  73-65; (*edge-52,Serial1 --> aggregation-49,Serial4*)
+  64-65; (*edge-55,Serial1 --> aggregation-49,Serial7*)
+  79-51; (*aggregation-43,Serial7 --> edge-47,Serial3*)
+  78-45; (*aggregation-41,Serial5 --> edge-45,Serial1*)
+  18-62; (*edge-61,Serial3 --> aggregation-59,Serial5*)
+  57-59; (*core-8,Serial4 --> aggregation-50,Serial0*)
+  6-23; (*aggregation-73,Serial5 --> edge-77,Serial1*)
+  63-68; (*aggregation-58,Serial2 --> core-10,Serial7*)
+  7-33; (*aggregation-72,Serial4 --> edge-76,Serial0*)
+  2-44; (*edge-22,Serial1 --> aggregation-17,Serial6*)
+  43-47; (*core-3,Serial4 --> aggregation-16,Serial3*)
+  30-66; (*aggregation-67,Serial4 --> core-12,Serial1*)
+  35-46; (*aggregation-64,Serial2 --> core-2,Serial3*)
+  68-63; (*core-10,Serial7 --> aggregation-58,Serial2*)
+  76-65; (*edge-54,Serial1 --> aggregation-49,Serial6*)
+  69-45; (*aggregation-40,Serial5 --> edge-45,Serial0*)
+  14-26; (*aggregation-75,Serial7 --> edge-79,Serial3*)
+  43-35; (*core-3,Serial3 --> aggregation-64,Serial3*)
+  13-44; (*edge-21,Serial1 --> aggregation-17,Serial5*)
+  7-23; (*aggregation-72,Serial5 --> edge-77,Serial0*)
+  46-47; (*core-2,Serial4 --> aggregation-16,Serial2*)
+  77-51; (*aggregation-42,Serial7 --> edge-47,Serial2*)
+  25-70; (*aggregation-27,Serial3 --> core-15,Serial7*)
+  29-25; (*edge-30,Serial3 --> aggregation-27,Serial6*)
+  72-25; (*core-13,Serial7 --> aggregation-27,Serial1*)
+  4-39; (*edge-68,Serial1 --> aggregation-65,Serial5*)
+  71-50; (*core-14,Serial6 --> aggregation-19,Serial2*)
+  50-71; (*aggregation-19,Serial2 --> core-14,Serial6*)
+  61-43; (*aggregation-56,Serial3 --> core-3,Serial5*)
+  69-41; (*aggregation-40,Serial0 --> core-0,Serial2*)
+  38-4; (*aggregation-66,Serial0 --> edge-68,Serial2*)
+  38-56; (*aggregation-66,Serial5 --> core-9,Serial1*)
+  47-12; (*aggregation-16,Serial4 --> edge-20,Serial0*)
+  48-78; (*edge-46,Serial1 --> aggregation-41,Serial6*)
+  49-34; (*core-5,Serial6 --> aggregation-25,Serial1*)
+  9-70; (*aggregation-35,Serial7 --> core-15,Serial2*)
+  13-53; (*edge-21,Serial2 --> aggregation-18,Serial5*)
+  69-42; (*aggregation-40,Serial4 --> edge-44,Serial0*)
+  62-8; (*aggregation-59,Serial6 --> edge-62,Serial3*)
+  69-51; (*aggregation-40,Serial7 --> edge-47,Serial0*)
+  71-9; (*core-14,Serial2 --> aggregation-35,Serial6*)
+  33-6; (*edge-76,Serial1 --> aggregation-73,Serial4*)
+  67-53; (*core-11,Serial3 --> aggregation-18,Serial3*)
+  12-53; (*edge-20,Serial2 --> aggregation-18,Serial4*)
+  41-7; (*core-0,Serial7 --> aggregation-72,Serial0*)
+  66-25; (*core-12,Serial7 --> aggregation-27,Serial0*)
+  9-27; (*aggregation-35,Serial0 --> edge-36,Serial3*)
+  72-9; (*core-13,Serial2 --> aggregation-35,Serial5*)
+  38-67; (*aggregation-66,Serial7 --> core-11,Serial1*)
+  23-6; (*edge-77,Serial1 --> aggregation-73,Serial5*)
+  40-7; (*core-1,Serial7 --> aggregation-72,Serial1*)
+  31-25; (*edge-31,Serial3 --> aggregation-27,Serial7*)
+  68-53; (*core-10,Serial3 --> aggregation-18,Serial2*)
+  30-4; (*aggregation-67,Serial0 --> edge-68,Serial3*)
+  43-61; (*core-3,Serial5 --> aggregation-56,Serial3*)
+  35-36; (*aggregation-64,Serial6 --> edge-70,Serial0*)
+  66-9; (*core-12,Serial2 --> aggregation-35,Serial4*)
+  34-52; (*aggregation-25,Serial0 --> core-4,Serial6*)
+  27-11; (*edge-36,Serial2 --> aggregation-34,Serial0*)
+  63-8; (*aggregation-58,Serial6 --> edge-62,Serial2*)
+  10-60; (*edge-63,Serial1 --> aggregation-57,Serial7*)
+  71-25; (*core-14,Serial7 --> aggregation-27,Serial2*)
+  44-12; (*aggregation-17,Serial4 --> edge-20,Serial1*)
+  70-50; (*core-15,Serial6 --> aggregation-19,Serial3*)
+  47-46; (*aggregation-16,Serial2 --> core-2,Serial4*)
+  66-50; (*core-12,Serial6 --> aggregation-19,Serial0*)
+  70-25; (*core-15,Serial7 --> aggregation-27,Serial3*)
+  71-14; (*core-14,Serial5 --> aggregation-75,Serial6*)
+  19-22; (*aggregation-32,Serial7 --> edge-39,Serial0*)
+  53-12; (*aggregation-18,Serial4 --> edge-20,Serial2*)
+  28-43; (*aggregation-24,Serial3 --> core-3,Serial6*)
+  72-50; (*core-13,Serial6 --> aggregation-19,Serial1*)
+  68-77; (*core-10,Serial2 --> aggregation-42,Serial2*)
+  58-76; (*aggregation-51,Serial6 --> edge-54,Serial3*)
+  60-8; (*aggregation-57,Serial6 --> edge-62,Serial1*)
+  62-66; (*aggregation-59,Serial0 --> core-12,Serial4*)
+  6-49; (*aggregation-73,Serial1 --> core-5,Serial5*)
+  52-6; (*core-4,Serial5 --> aggregation-73,Serial0*)
+  67-77; (*core-11,Serial2 --> aggregation-42,Serial3*)
+  32-29; (*aggregation-26,Serial6 --> edge-30,Serial2*)
+  28-1; (*aggregation-24,Serial5 --> edge-29,Serial0*)
+  55-39; (*core-6,Serial1 --> aggregation-65,Serial6*)
+  20-17; (*edge-37,Serial1 --> aggregation-33,Serial7*)
+  9-21; (*aggregation-35,Serial2 --> edge-38,Serial3*)
+  75-41; (*aggregation-48,Serial0 --> core-0,Serial1*)
+  58-72; (*aggregation-51,Serial1 --> core-13,Serial0*)
+  20-11; (*edge-37,Serial2 --> aggregation-34,Serial1*)
+  79-71; (*aggregation-43,Serial6 --> core-14,Serial3*)
+  26-6; (*edge-79,Serial1 --> aggregation-73,Serial7*)
+  45-79; (*edge-45,Serial3 --> aggregation-43,Serial5*)
+  7-43; (*aggregation-72,Serial3 --> core-3,Serial7*)
+  68-38; (*core-10,Serial1 --> aggregation-66,Serial6*)
+  25-29; (*aggregation-27,Serial6 --> edge-30,Serial3*)
+  21-11; (*edge-38,Serial2 --> aggregation-34,Serial2*)
+  60-52; (*aggregation-57,Serial0 --> core-4,Serial7*)
+  11-27; (*aggregation-34,Serial0 --> edge-36,Serial2*)
+  14-24; (*aggregation-75,Serial4 --> edge-78,Serial3*)
+  54-34; (*core-7,Serial6 --> aggregation-25,Serial3*)
+  42-78; (*edge-44,Serial1 --> aggregation-41,Serial4*)
+  17-49; (*aggregation-33,Serial1 --> core-5,Serial0*)
+  45-78; (*edge-45,Serial1 --> aggregation-41,Serial5*)
+  55-34; (*core-6,Serial6 --> aggregation-25,Serial2*)
+  62-16; (*aggregation-59,Serial4 --> edge-60,Serial3*)
+  64-58; (*edge-55,Serial3 --> aggregation-51,Serial7*)
+  24-6; (*edge-78,Serial1 --> aggregation-73,Serial6*)
+  78-55; (*aggregation-41,Serial2 --> core-6,Serial3*)
+  27-17; (*edge-36,Serial1 --> aggregation-33,Serial5*)
+  67-38; (*core-11,Serial1 --> aggregation-66,Serial7*)
+  32-57; (*aggregation-26,Serial0 --> core-8,Serial6*)
+  60-55; (*aggregation-57,Serial2 --> core-6,Serial7*)
+  49-6; (*core-5,Serial5 --> aggregation-73,Serial1*)
+  17-20; (*aggregation-33,Serial7 --> edge-37,Serial1*)
+  37-38; (*edge-71,Serial2 --> aggregation-66,Serial3*)
+  73-58; (*edge-52,Serial3 --> aggregation-51,Serial4*)
+  57-63; (*core-8,Serial7 --> aggregation-58,Serial0*)
+  51-78; (*edge-47,Serial1 --> aggregation-41,Serial7*)
+  52-34; (*core-4,Serial6 --> aggregation-25,Serial0*)
+  74-58; (*edge-53,Serial3 --> aggregation-51,Serial5*)
+  68-32; (*core-10,Serial6 --> aggregation-26,Serial2*)
+  39-5; (*aggregation-65,Serial7 --> edge-69,Serial1*)
+  11-21; (*aggregation-34,Serial2 --> edge-38,Serial2*)
+  67-15; (*core-11,Serial5 --> aggregation-74,Serial3*)
+  14-70; (*aggregation-75,Serial0 --> core-15,Serial5*)
+  56-63; (*core-9,Serial7 --> aggregation-58,Serial1*)
+  32-68; (*aggregation-26,Serial2 --> core-10,Serial6*)
+  76-58; (*edge-54,Serial3 --> aggregation-51,Serial6*)
+  67-32; (*core-11,Serial6 --> aggregation-26,Serial3*)
+  7-40; (*aggregation-72,Serial1 --> core-1,Serial7*)
+  17-21; (*aggregation-33,Serial2 --> edge-38,Serial1*)
+  39-49; (*aggregation-65,Serial1 --> core-5,Serial1*)
+  53-2; (*aggregation-18,Serial6 --> edge-22,Serial2*)
+  15-67; (*aggregation-74,Serial3 --> core-11,Serial5*)
+  75-76; (*aggregation-48,Serial6 --> edge-54,Serial0*)
+  28-40; (*aggregation-24,Serial1 --> core-1,Serial6*)
+  41-69; (*core-0,Serial2 --> aggregation-40,Serial0*)
+  77-68; (*aggregation-42,Serial2 --> core-10,Serial2*)
+  7-24; (*aggregation-72,Serial6 --> edge-78,Serial0*)
+  55-17; (*core-6,Serial0 --> aggregation-33,Serial6*)
+  52-78; (*core-4,Serial3 --> aggregation-41,Serial0*)
+  42-77; (*edge-44,Serial2 --> aggregation-42,Serial4*)
+  30-71; (*aggregation-67,Serial6 --> core-14,Serial1*)
+  66-79; (*core-12,Serial3 --> aggregation-43,Serial2*)
+  33-14; (*edge-76,Serial3 --> aggregation-75,Serial1*)
+  54-44; (*core-7,Serial4 --> aggregation-17,Serial3*)
+  62-71; (*aggregation-59,Serial2 --> core-14,Serial4*)
+  65-76; (*aggregation-49,Serial6 --> edge-54,Serial1*)
+  15-56; (*aggregation-74,Serial1 --> core-9,Serial5*)
+  78-52; (*aggregation-41,Serial0 --> core-4,Serial3*)
+  45-77; (*edge-45,Serial2 --> aggregation-42,Serial5*)
+  10-63; (*edge-63,Serial2 --> aggregation-58,Serial7*)
+  12-50; (*edge-20,Serial3 --> aggregation-19,Serial4*)
+  72-79; (*core-13,Serial3 --> aggregation-43,Serial3*)
+  44-2; (*aggregation-17,Serial6 --> edge-22,Serial1*)
+  68-11; (*core-10,Serial0 --> aggregation-34,Serial6*)
+  8-63; (*edge-62,Serial2 --> aggregation-58,Serial6*)
+  55-44; (*core-6,Serial4 --> aggregation-17,Serial2*)
+  34-29; (*aggregation-25,Serial6 --> edge-30,Serial1*)
+  28-0; (*aggregation-24,Serial4 --> edge-28,Serial0*)
+  39-54; (*aggregation-65,Serial4 --> core-7,Serial1*)
+  5-39; (*edge-69,Serial1 --> aggregation-65,Serial7*)
+  49-44; (*core-5,Serial4 --> aggregation-17,Serial1*)
+  50-2; (*aggregation-19,Serial6 --> edge-22,Serial3*)
+  33-15; (*edge-76,Serial2 --> aggregation-74,Serial4*)
+  31-32; (*edge-31,Serial2 --> aggregation-26,Serial7*)
+  47-41; (*aggregation-16,Serial0 --> core-0,Serial4*)
+  17-55; (*aggregation-33,Serial6 --> core-6,Serial0*)
+  47-43; (*aggregation-16,Serial3 --> core-3,Serial4*)
+  59-67; (*aggregation-50,Serial3 --> core-11,Serial4*)
+  50-66; (*aggregation-19,Serial0 --> core-12,Serial6*)
+  50-70; (*aggregation-19,Serial3 --> core-15,Serial6*)
+  61-8; (*aggregation-56,Serial6 --> edge-62,Serial0*)
+  49-78; (*core-5,Serial3 --> aggregation-41,Serial1*)
+  14-72; (*aggregation-75,Serial3 --> core-13,Serial5*)
+  28-29; (*aggregation-24,Serial6 --> edge-30,Serial0*)
+  34-0; (*aggregation-25,Serial4 --> edge-28,Serial1*)
+  55-78; (*core-6,Serial3 --> aggregation-41,Serial2*)
+  77-57; (*aggregation-42,Serial0 --> core-8,Serial2*)
+  59-56; (*aggregation-50,Serial1 --> core-9,Serial4*)
+  73-75; (*edge-52,Serial0 --> aggregation-48,Serial4*)
+  35-40; (*aggregation-64,Serial1 --> core-1,Serial3*)
+  25-72; (*aggregation-27,Serial1 --> core-13,Serial7*)
+  11-56; (*aggregation-34,Serial5 --> core-9,Serial0*)
+  48-79; (*edge-46,Serial3 --> aggregation-43,Serial4*)
+  44-55; (*aggregation-17,Serial2 --> core-6,Serial4*)
+  2-47; (*edge-22,Serial0 --> aggregation-16,Serial6*)
+  2-50; (*edge-22,Serial3 --> aggregation-19,Serial6*)
+  59-76; (*aggregation-50,Serial6 --> edge-54,Serial2*)
+  70-30; (*core-15,Serial1 --> aggregation-67,Serial7*)
+  56-15; (*core-9,Serial5 --> aggregation-74,Serial1*)
+  16-63; (*edge-60,Serial2 --> aggregation-58,Serial4*)
+  32-0; (*aggregation-26,Serial4 --> edge-28,Serial2*)
+  40-61; (*core-1,Serial5 --> aggregation-56,Serial1*)
+  43-69; (*core-3,Serial2 --> aggregation-40,Serial3*)
+  13-50; (*edge-21,Serial3 --> aggregation-19,Serial5*)
+  65-54; (*aggregation-49,Serial3 --> core-7,Serial2*)
+  47-2; (*aggregation-16,Serial6 --> edge-22,Serial0*)
+  67-11; (*core-11,Serial0 --> aggregation-34,Serial7*)
+  0-28; (*edge-28,Serial0 --> aggregation-24,Serial4*)
+  19-27; (*aggregation-32,Serial4 --> edge-36,Serial0*)
+  29-32; (*edge-30,Serial2 --> aggregation-26,Serial6*)
+  11-67; (*aggregation-34,Serial7 --> core-11,Serial0*)
+  1-28; (*edge-29,Serial0 --> aggregation-24,Serial5*)
+  69-40; (*aggregation-40,Serial1 --> core-1,Serial2*)
+  34-49; (*aggregation-25,Serial1 --> core-5,Serial6*)
+  19-41; (*aggregation-32,Serial0 --> core-0,Serial0*)
+  61-40; (*aggregation-56,Serial1 --> core-1,Serial5*)
+  65-55; (*aggregation-49,Serial2 --> core-6,Serial2*)
+  9-71; (*aggregation-35,Serial6 --> core-14,Serial2*)
+  79-66; (*aggregation-43,Serial2 --> core-12,Serial3*)
+  3-47; (*edge-23,Serial0 --> aggregation-16,Serial7*)
+  69-48; (*aggregation-40,Serial6 --> edge-46,Serial0*)
+  6-24; (*aggregation-73,Serial6 --> edge-78,Serial1*)
+  3-50; (*edge-23,Serial3 --> aggregation-19,Serial7*)
+  46-61; (*core-2,Serial5 --> aggregation-56,Serial2*)
+  34-54; (*aggregation-25,Serial3 --> core-7,Serial6*)
+  18-63; (*edge-61,Serial2 --> aggregation-58,Serial5*)
+  57-15; (*core-8,Serial5 --> aggregation-74,Serial0*)
+  1-32; (*edge-29,Serial2 --> aggregation-26,Serial5*)
+  14-23; (*aggregation-75,Serial5 --> edge-77,Serial3*)
+  19-46; (*aggregation-32,Serial2 --> core-2,Serial0*)
+  41-47; (*core-0,Serial4 --> aggregation-16,Serial0*)
+  57-32; (*core-8,Serial6 --> aggregation-26,Serial0*)
+  35-43; (*aggregation-64,Serial3 --> core-3,Serial3*)
+  35-41; (*aggregation-64,Serial0 --> core-0,Serial3*)
+  39-36; (*aggregation-65,Serial2 --> edge-70,Serial1*)
+  0-25; (*edge-28,Serial3 --> aggregation-27,Serial4*)
+  13-47; (*edge-21,Serial0 --> aggregation-16,Serial5*)
+  25-71; (*aggregation-27,Serial2 --> core-14,Serial7*)
+  65-52; (*aggregation-49,Serial0 --> core-4,Serial2*)
+  76-75; (*edge-54,Serial0 --> aggregation-48,Serial6*)
+  77-48; (*aggregation-42,Serial6 --> edge-46,Serial2*)
+  3-53; (*edge-23,Serial2 --> aggregation-18,Serial7*)
+  56-32; (*core-9,Serial6 --> aggregation-26,Serial1*)
+  46-69; (*core-2,Serial2 --> aggregation-40,Serial2*)
+  78-48; (*aggregation-41,Serial6 --> edge-46,Serial1*)
+  1-25; (*edge-29,Serial3 --> aggregation-27,Serial5*)
+  44-54; (*aggregation-17,Serial3 --> core-7,Serial4*)
+  74-75; (*edge-53,Serial0 --> aggregation-48,Serial5*)
+  19-43; (*aggregation-32,Serial3 --> core-3,Serial0*)
+  15-24; (*aggregation-74,Serial6 --> edge-78,Serial2*)
+  41-61; (*core-0,Serial5 --> aggregation-56,Serial0*)
+  56-59; (*core-9,Serial4 --> aggregation-50,Serial1*)
+  16-62; (*edge-60,Serial3 --> aggregation-59,Serial4*)
+  2-53; (*edge-22,Serial2 --> aggregation-18,Serial6*)
+  40-69; (*core-1,Serial2 --> aggregation-40,Serial1*)
+  0-32; (*edge-28,Serial2 --> aggregation-26,Serial4*)
+  12-47; (*edge-20,Serial0 --> aggregation-16,Serial4*)
+  30-36; (*aggregation-67,Serial2 --> edge-70,Serial3*)
+  20-19; (*edge-37,Serial0 --> aggregation-32,Serial5*)
+  29-28; (*edge-30,Serial0 --> aggregation-24,Serial6*)
+  71-58; (*core-14,Serial0 --> aggregation-51,Serial2*)
+  32-67; (*aggregation-26,Serial3 --> core-11,Serial6*)
+  47-3; (*aggregation-16,Serial7 --> edge-23,Serial0*)
+  49-65; (*core-5,Serial2 --> aggregation-49,Serial1*)
+  61-41; (*aggregation-56,Serial0 --> core-0,Serial5*)
+  37-39; (*edge-71,Serial1 --> aggregation-65,Serial3*)
+  69-43; (*aggregation-40,Serial3 --> core-3,Serial2*)
+  40-47; (*core-1,Serial4 --> aggregation-16,Serial1*)
+  66-30; (*core-12,Serial1 --> aggregation-67,Serial4*)
+  66-62; (*core-12,Serial4 --> aggregation-59,Serial0*)
+  9-66; (*aggregation-35,Serial4 --> core-12,Serial2*)
+  64-75; (*edge-55,Serial0 --> aggregation-48,Serial7*)
+  21-9; (*edge-38,Serial3 --> aggregation-35,Serial2*)
+  54-39; (*core-7,Serial1 --> aggregation-65,Serial4*)
+  15-23; (*aggregation-74,Serial5 --> edge-77,Serial2*)
+  64-59; (*edge-55,Serial2 --> aggregation-50,Serial7*)
+  56-38; (*core-9,Serial1 --> aggregation-66,Serial5*)
+  40-75; (*core-1,Serial1 --> aggregation-48,Serial1*)
+  18-61; (*edge-61,Serial0 --> aggregation-56,Serial5*)
+  32-56; (*aggregation-26,Serial1 --> core-9,Serial6*)
+  22-9; (*edge-39,Serial3 --> aggregation-35,Serial3*)
+  41-75; (*core-0,Serial1 --> aggregation-48,Serial0*)
+  38-36; (*aggregation-66,Serial2 --> edge-70,Serial2*)
+  16-61; (*edge-60,Serial0 --> aggregation-56,Serial4*)
+  44-52; (*aggregation-17,Serial0 --> core-4,Serial4*)
+  75-40; (*aggregation-48,Serial1 --> core-1,Serial1*)
+  55-65; (*core-6,Serial2 --> aggregation-49,Serial2*)
+  79-45; (*aggregation-43,Serial5 --> edge-45,Serial3*)
+  24-14; (*edge-78,Serial3 --> aggregation-75,Serial4*)
+  57-38; (*core-8,Serial1 --> aggregation-66,Serial4*)
+  35-4; (*aggregation-64,Serial4 --> edge-68,Serial0*)
+  65-74; (*aggregation-49,Serial5 --> edge-53,Serial1*)
+  53-68; (*aggregation-18,Serial2 --> core-10,Serial3*)
+  14-66; (*aggregation-75,Serial2 --> core-12,Serial5*)
+  28-46; (*aggregation-24,Serial2 --> core-2,Serial6*)
+  20-9; (*edge-37,Serial3 --> aggregation-35,Serial1*)
+  25-0; (*aggregation-27,Serial4 --> edge-28,Serial3*)
+  60-18; (*aggregation-57,Serial5 --> edge-61,Serial1*)
+  15-57; (*aggregation-74,Serial0 --> core-8,Serial5*)
+  57-53; (*core-8,Serial3 --> aggregation-18,Serial0*)
+  41-19; (*core-0,Serial0 --> aggregation-32,Serial0*)
+  6-55; (*aggregation-73,Serial2 --> core-6,Serial5*)
+  62-72; (*aggregation-59,Serial1 --> core-13,Serial4*)
+  46-75; (*core-2,Serial1 --> aggregation-48,Serial2*)
+  8-61; (*edge-62,Serial0 --> aggregation-56,Serial6*)
+  79-70; (*aggregation-43,Serial0 --> core-15,Serial3*)
+  70-14; (*core-15,Serial5 --> aggregation-75,Serial0*)
+  43-19; (*core-3,Serial0 --> aggregation-32,Serial3*)
+  52-65; (*core-4,Serial2 --> aggregation-49,Serial0*)
+  19-21; (*aggregation-32,Serial6 --> edge-38,Serial0*)
+  21-19; (*edge-38,Serial0 --> aggregation-32,Serial6*)
+  53-13; (*aggregation-18,Serial5 --> edge-21,Serial2*)
+  72-62; (*core-13,Serial4 --> aggregation-59,Serial1*)
+  58-71; (*aggregation-51,Serial2 --> core-14,Serial0*)
+  53-57; (*aggregation-18,Serial0 --> core-8,Serial3*)
+  15-68; (*aggregation-74,Serial2 --> core-10,Serial5*)
+  27-9; (*edge-36,Serial3 --> aggregation-35,Serial0*)
+  77-67; (*aggregation-42,Serial3 --> core-11,Serial2*)
+  59-57; (*aggregation-50,Serial0 --> core-8,Serial4*)
+  4-30; (*edge-68,Serial3 --> aggregation-67,Serial0*)
+  43-28; (*core-3,Serial6 --> aggregation-24,Serial3*)
+  71-30; (*core-14,Serial1 --> aggregation-67,Serial6*)
+  46-19; (*core-2,Serial0 --> aggregation-32,Serial2*)
+  4-35; (*edge-68,Serial0 --> aggregation-64,Serial4*)
+  50-13; (*aggregation-19,Serial5 --> edge-21,Serial3*)
+  58-74; (*aggregation-51,Serial5 --> edge-53,Serial3*)
+  27-19; (*edge-36,Serial0 --> aggregation-32,Serial4*)
+  31-28; (*edge-31,Serial0 --> aggregation-24,Serial7*)
+  10-61; (*edge-63,Serial0 --> aggregation-56,Serial7*)
+  59-74; (*aggregation-50,Serial5 --> edge-53,Serial2*)
+  61-18; (*aggregation-56,Serial5 --> edge-61,Serial0*)
+  5-30; (*edge-69,Serial3 --> aggregation-67,Serial1*)
+  72-30; (*core-13,Serial1 --> aggregation-67,Serial5*)
+  40-19; (*core-1,Serial0 --> aggregation-32,Serial1*)
+  5-35; (*edge-69,Serial0 --> aggregation-64,Serial5*)
+  17-22; (*aggregation-33,Serial3 --> edge-39,Serial1*)
+  30-5; (*aggregation-67,Serial1 --> edge-69,Serial3*)
+  57-11; (*core-8,Serial0 --> aggregation-34,Serial4*)
+  22-17; (*edge-39,Serial1 --> aggregation-33,Serial3*)
+  74-59; (*edge-53,Serial2 --> aggregation-50,Serial5*)
+  36-30; (*edge-70,Serial3 --> aggregation-67,Serial2*)
+  38-68; (*aggregation-66,Serial6 --> core-10,Serial1*)
+  54-78; (*core-7,Serial3 --> aggregation-41,Serial3*)
+  77-56; (*aggregation-42,Serial1 --> core-9,Serial2*)
+  51-77; (*edge-47,Serial2 --> aggregation-42,Serial7*)
+  63-18; (*aggregation-58,Serial5 --> edge-61,Serial2*)
+  52-44; (*core-4,Serial4 --> aggregation-17,Serial0*)
+  45-69; (*edge-45,Serial0 --> aggregation-40,Serial5*)
+  75-43; (*aggregation-48,Serial3 --> core-3,Serial1*)
+  79-42; (*aggregation-43,Serial1 --> edge-44,Serial3*)
+  54-17; (*core-7,Serial0 --> aggregation-33,Serial4*)
+  23-15; (*edge-77,Serial2 --> aggregation-74,Serial5*)
+  14-71; (*aggregation-75,Serial6 --> core-14,Serial5*)
+  38-57; (*aggregation-66,Serial4 --> core-8,Serial1*)
+  22-19; (*edge-39,Serial0 --> aggregation-32,Serial7*)
+  71-79; (*core-14,Serial3 --> aggregation-43,Serial6*)
+  24-15; (*edge-78,Serial2 --> aggregation-74,Serial6*)
+  37-30; (*edge-71,Serial3 --> aggregation-67,Serial3*)
+  21-17; (*edge-38,Serial1 --> aggregation-33,Serial2*)
+  42-79; (*edge-44,Serial3 --> aggregation-43,Serial1*)
+  62-18; (*aggregation-59,Serial5 --> edge-61,Serial3*)
+  56-11; (*core-9,Serial0 --> aggregation-34,Serial5*)
+  36-35; (*edge-70,Serial0 --> aggregation-64,Serial6*)
+  78-49; (*aggregation-41,Serial1 --> core-5,Serial3*)
+  62-70; (*aggregation-59,Serial3 --> core-15,Serial4*)
+  14-33; (*aggregation-75,Serial1 --> edge-76,Serial3*)
+  33-7; (*edge-76,Serial0 --> aggregation-72,Serial4*)
+  26-15; (*edge-79,Serial2 --> aggregation-74,Serial7*)
+  42-69; (*edge-44,Serial0 --> aggregation-40,Serial4*)
+  48-77; (*edge-46,Serial2 --> aggregation-42,Serial6*)
+  23-7; (*edge-77,Serial0 --> aggregation-72,Serial5*)
+  67-59; (*core-11,Serial4 --> aggregation-50,Serial3*)
+  7-46; (*aggregation-72,Serial2 --> core-2,Serial7*)
+  38-5; (*aggregation-66,Serial1 --> edge-69,Serial2*)
+  70-58; (*core-15,Serial0 --> aggregation-51,Serial3*)
+  17-52; (*aggregation-33,Serial0 --> core-4,Serial0*)
+  54-65; (*core-7,Serial2 --> aggregation-49,Serial3*)
+  76-59; (*edge-54,Serial2 --> aggregation-50,Serial6*)
+  36-39; (*edge-70,Serial1 --> aggregation-65,Serial2*)
+  66-58; (*core-12,Serial0 --> aggregation-51,Serial0*)
+  78-54; (*aggregation-41,Serial3 --> core-7,Serial3*)
+  7-41; (*aggregation-72,Serial0 --> core-0,Serial7*)
+  26-7; (*edge-79,Serial0 --> aggregation-72,Serial7*)
+  60-54; (*aggregation-57,Serial3 --> core-7,Serial7*)
+  48-69; (*edge-46,Serial0 --> aggregation-40,Serial6*)
+  9-22; (*aggregation-35,Serial3 --> edge-39,Serial3*)
+  73-59; (*edge-52,Serial2 --> aggregation-50,Serial4*)
+  72-58; (*core-13,Serial0 --> aggregation-51,Serial1*)
+  68-59; (*core-10,Serial4 --> aggregation-50,Serial2*)
+  11-22; (*aggregation-34,Serial3 --> edge-39,Serial2*)
+  51-69; (*edge-47,Serial0 --> aggregation-40,Serial7*)
+}
+
+
+let nodes = 80
+
+let isFailed u =
+match u with
+ |0n -> b0
+ |1n -> b1
+ |2n -> b2
+ |3n -> b3
+ |4n -> b4
+ |5n -> b5
+ |6n -> b6
+ |7n -> b7
+ |8n -> b8
+ |9n -> b9
+ |10n -> b10
+ |11n -> b11
+ |12n -> b12
+ |13n -> b13
+ |14n -> b14
+ |15n -> b15
+ |16n -> b16
+ |17n -> b17
+ |18n -> b18
+ |19n -> b19
+ |20n -> b20
+ |21n -> b21
+ |22n -> b22
+ |23n -> b23
+ |24n -> b24
+ |25n -> b25
+ |26n -> b26
+ |27n -> b27
+ |28n -> b28
+ |29n -> b29
+ |30n -> b30
+ |31n -> b31
+ |32n -> b32
+ |33n -> b33
+ |34n -> b34
+ |35n -> b35
+ |36n -> b36
+ |37n -> b37
+ |38n -> b38
+ |39n -> b39
+ |40n -> b40
+ |41n -> b41
+ |42n -> b42
+| 43n -> b43
+| 44n -> b44
+| 45n -> b45
+| 46n -> b46
+| 47n -> b47
+| 48n -> b48
+| 49n -> b49
+| 50n -> b50
+| 51n -> b51
+| 52n -> b52
+| 53n -> b53
+| 54n -> b54
+| 55n -> b55
+| 56n -> b56
+| 57n -> b57
+| 58n -> b58
+| 59n -> b59
+| 60n -> b60
+| 61n -> b61
+| 62n -> b62
+| 63n -> b63
+| 64n -> b64
+| 65n -> b65
+| 66n -> b66
+| 67n -> b67
+| 68n -> b68
+| 69n -> b69
+| 70n -> b70
+| 71n -> b71
+| 72n -> b72
+| 73n -> b73
+| 74n -> b74
+| 75n -> b75
+| 76n -> b76
+| 77n -> b77
+| 78n -> b78
+| 79n -> b79
+
+
+let trans e (route:[M](option[int])) =
+      if (match e with | a~b -> (isFailed a) || (isFailed b)) then None
+      else
+        match route with
+        | None -> None
+        | Some r -> Some (r+1)
+
+let merge u (r1 : [M](option[int])) (r2: [M](option[int])) =
+        (match (r1,r2) with
+         | (_, None) -> r1
+         | (None, _) -> r2
+         | (Some a, Some b) -> if a <= b then Some a else Some b)
+
+let init u =
+  if isFailed u then None else
+  if u = 0n then Some 0 else None
+
+
+
+let s = solution(init, trans, merge)
+

@@ -195,10 +195,10 @@ let rec cubeProbability (cube : Cudd.Man.tbool array)
       (* compute the probability for one variable *)
       let p = symbolicProbability cube xstart xend xdistribution in
       (* debugging code *)
-      Printf.printf "range:(%d,%d) " xstart xend;
+      (* Printf.printf "range:(%d,%d) " xstart xend;
       Printf.printf "cube: ";
       printCube cube;
-      Printf.printf " symbProb: %f\n" p;
+      Printf.printf " symbProb: %f\n" p; *)
       p *. cubeProbability cube bounds
 
 let rec computeTrueProbability (assertion : bool Cudd.Mtbdd.t) bounds =

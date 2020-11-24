@@ -244,10 +244,11 @@ let pick_default_value map =
   OCamlUtils.oget !value
 
 (* Basic version *)
-let bindings (map : mtbdd) : value list * value =
+(* : value list * value *)
+let bindings (map : mtbdd) =
   let bs = ref [] in
   let dv = pick_default_value map in
-  Mtbdd.iter_cube (fun _ v -> bs := v :: !bs) map;
+  Mtbdd.iter_cube (fun k v -> bs := (k, v) :: !bs) map;
   (!bs, dv)
 
 let rec value_env_to_string ~show_types env =
@@ -320,9 +321,17 @@ and value_to_string_p ~show_types prec v =
   | VClosure cl -> closure_to_string_p ~show_types prec cl
 
 and map_to_string ~show_types term_s m =
-  let binding_to_string v =
-    (* BddMap.multiValue_to_string k *)
-    value_to_string_p ~show_types max_prec v
+  let binding_to_string (k, v) =
+    let key =
+      Array.fold_right
+        (fun x acc ->
+          match x with
+          | Man.True -> Printf.sprintf "1%s" acc
+          | Man.False -> Printf.sprintf "0%s" acc
+          | Man.Top -> Printf.sprintf "*%s" acc)
+        k ""
+    in
+    Printf.sprintf "(%s, %s)" key (value_to_string_p ~show_types max_prec v)
   in
   let bs, _ = bindings m in
   Printf.sprintf "{ %s }" (term term_s binding_to_string bs)

@@ -45,3 +45,24 @@ val applyN :
   f:'b ->
   args:'a Cudd.Mtbdd.unique Cudd.Vdd.t array ->
   'a Cudd.Mtbdd.unique Cudd.Vdd.t
+
+  val apply1 :
+  op_key:int*'f ->
+  f:('c -> 'd) ->
+  arg1:'c Cudd.Mtbdd.unique Cudd.Vdd.t ->
+  'd Cudd.Mtbdd.unique Cudd.Vdd.t
+
+  val apply2 :
+  op_key:int*'f ->
+  f:('c -> 'd) ->
+  arg1:'c Cudd.Mtbdd.unique Cudd.Vdd.t ->
+  arg2:'y Cudd.Mtbdd.unique Cudd.Vdd.t ->
+  'd Cudd.Mtbdd.unique Cudd.Vdd.t
+
+  val apply3 :
+  op_key:int*'f ->
+  f:('c -> 'd) ->
+  arg1:'x Cudd.Mtbdd.unique Cudd.Vdd.t ->
+  arg2:'y Cudd.Mtbdd.unique Cudd.Vdd.t ->
+  arg3: 'z Cudd.Mtbdd.unique Cudd.Vdd.t ->
+  'a Cudd.Mtbdd.unique Cudd.Vdd.t
