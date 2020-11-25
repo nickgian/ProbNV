@@ -578,12 +578,15 @@ and infer_declaration isHLL infer_exp i info env record_types d :
   let infer_exp = infer_exp (i + 1) info env record_types in
   let open ProbNv_utils.OCamlUtils in
   match d with
-  | DLet (x, e1) ->
+  | DLet (x, e1) when isHLL ->
       enter_level ();
       let e1, ty_e1 = infer_exp e1 |> textract in
       leave_level ();
       let ty = generalize ty_e1 in
       (Env.update env x ty, DLet (x, texp (e1, ty, e1.espan)))
+  | DLet (x, e1) ->
+      let e1, ty_e1 = infer_exp e1 |> textract in
+      (Env.update env x ty_e1, DLet (x, texp (e1, ty_e1, e1.espan)))
   | DSymbolic (x, ty, prob) -> (Env.update env x ty, DSymbolic (x, ty, prob))
   | DAssert (e, prob) -> (
       let e' = infer_exp e in
@@ -1082,13 +1085,8 @@ module LLLTypeInf = struct
           | None ->
               Console.error_position info e.espan
                 ("unbound variable " ^ Var.to_string x)
-          | Some t ->
-              Printf.printf "var: %s is subst with type: %s\n" (Var.name x)
-                (Printing.ty_to_string t);
-              texp (e, substitute t, e.espan) )
-      | EVal v ->
-          let v, t = infer_value v |> textractv in
-          texp (e_val v, t, e.espan)
+          | Some t -> texp (e, substitute t, e.espan) )
+      | EVal _ -> e
       | EOp (o, es) -> (
           match (o, es) with
           | Eq, [ e1; e2 ] ->
@@ -1137,33 +1135,30 @@ module LLLTypeInf = struct
           let arg_mode =
             match argty with None -> Some Concrete | Some typ -> typ.mode
           in
-          let ty_x = mty arg_mode (fresh_tyvar ()) in
           let e, ty_e =
-            _infer_exp (i + 1) info (Env.update env x ty_x) record_types body
+            _infer_exp (i + 1) info
+              (Env.update env x (OCamlUtils.oget argty))
+              record_types body
             |> textract
           in
-          unify_opt info e argty ty_x;
           unify_opt info e resty ty_e;
           (* Functions are always typed as Concrete *)
           texp
             ( efun
                 {
                   arg = x;
-                  argty = Some ty_x;
+                  argty;
                   resty = Some ty_e;
                   body = e;
                   fmode = Some Concrete;
                 },
-              mty (Some Concrete) (TArrow (ty_x, ty_e)),
+              mty (Some Concrete) (TArrow (OCamlUtils.oget argty, ty_e)),
               e.espan )
       | EApp (e1, e2) ->
           (* Based on rules App-C and App-M*)
           (* Type check e1 and e2 *)
           let e1, ty_fun = infer_exp e1 |> textract in
           let e2, ty_arg = infer_exp e2 |> textract in
-          Printf.printf "APP(%s,%s)\n"
-            (Printing.exp_to_string e1)
-            (Printing.exp_to_string e2);
           let fun_arg, fun_res =
             match (get_inner_type ty_fun).typ with
             | TArrow (fun_arg, fun_res) -> (fun_arg, fun_res)
@@ -1213,12 +1208,9 @@ module LLLTypeInf = struct
               Console.error_position info e.espan
                 "Symbolic/Multivalue guard - mistyped mode in Ite" )
       | ELet (x, e1, e2) ->
-          enter_level ();
           let e1, ty_e1 = infer_exp e1 |> textract in
-          leave_level ();
-          let ty = generalize ty_e1 in
           let e2, ty_e2 =
-            _infer_exp (i + 1) info (Env.update env x ty) record_types e2
+            _infer_exp (i + 1) info (Env.update env x ty_e1) record_types e2
             |> textract
           in
           texp (elet x e1 e2, ty_e2, e.espan)
