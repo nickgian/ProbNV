@@ -10,7 +10,7 @@ open OCamlUtils
 
 let load_srp name =
   let () = Findlib.init () in
-  try Fl_dynload.load_packages [name]
+  try Fl_dynload.load_packages [ name ]
   with Dynlink.Error err -> Printf.printf "%s\n" (Dynlink.error_message err)
 
 let simulate name decls =
@@ -35,7 +35,8 @@ let simulate name decls =
   Collections.ExpIds.seal pred_store;
 
   (* Build a simulator for SRPs *)
-  let module SrpSimulator = (val (module SrpSimulation (G)) : SrpSimulationSig) in
+  let module SrpSimulator = (val (module SrpLazySimulation (G)) : SrpSimulationSig)
+  in
   (* Load compiled NV program*)
   let module CompleteSRP = (val get_srp ()) in
   (* Plug everything together to simulate the SRPs - this is where simulation occurs*)
@@ -43,7 +44,8 @@ let simulate name decls =
   let start_time = Sys.time () in
   let module Srp = (val (module CompleteSRP (SrpSimulator)) : NATIVE_SRP) in
   let finish_time = Sys.time () in
-  Printf.printf "Native simulation took: %f secs to complete\n%!" (finish_time -. start_time);
+  Printf.printf "Native simulation took: %f secs to complete\n%!"
+    (finish_time -. start_time);
   (* Get the computed solutions *)
   build_solutions (AdjGraph.nb_vertex graph) Srp.record_fns !SrpSimulator.solved
     !SrpSimulator.assertions

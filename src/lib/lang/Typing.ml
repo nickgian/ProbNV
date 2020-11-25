@@ -198,32 +198,34 @@ let rec unify info e t1 t2 : unit =
   let rec try_unifies ts1 ts2 : bool =
     match (ts1, ts2) with
     | [], [] -> true
-    | t1 :: ts1, t2 :: ts2 -> try_unify t1 t2 && try_unifies ts1 ts2
+    | t1 :: ts1, t2 :: ts2 ->
+        try_unify t1 t2 t1.mode t2.mode && try_unifies ts1 ts2
     | _, _ -> false
-  and try_unify t1 t2 : bool =
+  and try_unify t1 t2 m1 m2 : bool =
     if t1 == t2 then true (* t1 and t2 are physically the same *)
     else
       match (t1.typ, t2.typ) with
-      | TVar { contents = Link t1 }, _ -> try_unify t1 t2
-      | _, TVar { contents = Link t2 } -> try_unify t1 t2
+      | TVar { contents = Link t1 }, _ -> try_unify t1 t2 m1 m2
+      | _, TVar { contents = Link t2 } -> try_unify t1 t2 m1 m2
       | TVar ({ contents = Unbound _ } as tv), t' ->
           occurs tv t';
-          tv := Link t2;
+          tv := Link { t2 with mode = m1 };
           true
       | t', TVar ({ contents = Unbound _ } as tv) ->
           occurs tv t';
-          tv := Link t1;
+          tv := Link { t1 with mode = m2 };
           true
       (* | TVar {contents= Link t1}, t2 -> try_unify t1 t2
        * | t1, TVar {contents= Link t2} -> try_unify t1 t2 *)
       | TArrow (tyl1, tyl2), TArrow (tyr1, tyr2) ->
-          try_unify tyl1 tyr1 && try_unify tyl2 tyr2
+          try_unify tyl1 tyr1 tyl1.mode tyr1.mode
+          && try_unify tyl2 tyr2 tyl2.mode tyr2.mode
       | TBool, TBool -> true
       | TInt i, TInt j when i = j -> true
       | TNode, TNode -> true
       | TEdge, TEdge -> true
       | TTuple ts1, TTuple ts2 -> try_unifies ts1 ts2
-      | TOption t1, TOption t2 -> try_unify t1 t2
+      | TOption t1, TOption t2 -> try_unify t1 t2 m1 m2
       (*
 
           | TMap (t1, t2), TMap (t3, t4) -> try_unify t1 t3 && try_unify t2 t4
@@ -238,7 +240,9 @@ let rec unify info e t1 t2 : unit =
              (get_record_labels map1) *)
       | _, _ -> false
   in
-  if try_unify t1 t2 then ()
+  let m1 = t1.mode in
+  let m2 = t2.mode in
+  if try_unify t1 t2 m1 m2 then ()
   else
     let msg =
       Printf.sprintf "unable to unify types: %s and\n %s" (ty_to_string t1)
@@ -733,12 +737,17 @@ module HLLTypeInf = struct
             match argty with None -> Some Concrete | Some typ -> get_mode typ
           in
           let ty_x = mty arg_mode (fresh_tyvar ()) in
+          Printf.printf "x : %s with ty = %s\n" (Var.to_string x)
+            (Printing.ty_to_string ty_x);
           let e, ty_e =
             _infer_exp (i + 1) info (Env.update env x ty_x) record_types body
             |> textract
           in
           unify_opt info e argty ty_x;
           unify_opt info e resty ty_e;
+          Printf.printf "after unify:\n";
+          Printf.printf "x : %s with ty = %s\n" (Var.to_string x)
+            (Printing.ty_to_string ty_x);
           (* Functions are always typed as Concrete *)
           texp
             ( efun
@@ -1073,7 +1082,10 @@ module LLLTypeInf = struct
           | None ->
               Console.error_position info e.espan
                 ("unbound variable " ^ Var.to_string x)
-          | Some t -> texp (e, substitute t, e.espan) )
+          | Some t ->
+              Printf.printf "var: %s is subst with type: %s\n" (Var.name x)
+                (Printing.ty_to_string t);
+              texp (e, substitute t, e.espan) )
       | EVal v ->
           let v, t = infer_value v |> textractv in
           texp (e_val v, t, e.espan)
@@ -1123,7 +1135,7 @@ module LLLTypeInf = struct
           )
       | EFun { arg = x; argty; resty; body } ->
           let arg_mode =
-            match argty with None -> Some Concrete | Some typ -> get_mode typ
+            match argty with None -> Some Concrete | Some typ -> typ.mode
           in
           let ty_x = mty arg_mode (fresh_tyvar ()) in
           let e, ty_e =
@@ -1301,10 +1313,13 @@ module LLLTypeInf = struct
                 "Concrete/Multivalue guard - mistyped mode in Ite-S" )
       | EToBdd e1 -> (
           (* Based on rule ToBdd of LLL*)
+          Printf.printf "toBdd before infer: %s\n"
+            (Printing.exp_to_string ~show_types:true e1);
           let e1, ty1 = infer_exp e1 |> textract in
+          Printf.printf "toBdd: %s\n"
+            (Printing.exp_to_string ~show_types:true e1);
           match get_mode ty1 with
-          | Some Concrete ->
-              texp (etoBdd e1, mty (Some Symbolic) ty1.typ, e.espan)
+          | Some Concrete -> etoBdd e1
           | _ ->
               Console.error_position info e.espan
                 "ToBdd applied to non concrete expression" )

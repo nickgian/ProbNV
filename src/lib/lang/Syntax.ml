@@ -743,7 +743,7 @@ let liftSymbolicMode m =
 let rec liftSymbolicTy ty =
   match ty.typ with
   | TVar { contents = Link typ } -> liftSymbolicTy typ
-  | TVar _ | QVar _ -> failwith "Should be an instantiated type"
+  | TVar _ | QVar _ -> { ty with mode = Some Symbolic }
   | TBool | TInt _ | TNode | TEdge ->
       { ty with mode = Some (liftSymbolicMode (OCamlUtils.oget ty.mode)) }
   | TTuple ts ->

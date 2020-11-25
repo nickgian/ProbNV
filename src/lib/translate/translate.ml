@@ -32,6 +32,23 @@ let rec fty (ty : ty) : ty =
       let ty2 = fty ty2 in
       { typ = TArrow (ty1, ty2); mode = fty_mode (get_mode ty) }
 
+(* Used for the function arguments when building applyN expressions *)
+let rec set_concrete_mode ty =
+  match ty.typ with
+  | TVar { contents = Link ty } -> set_concrete_mode ty
+  | TVar _ | QVar _ | TBool | TInt _ | TNode | TEdge ->
+      { ty with mode = Some Concrete }
+  | TOption ty -> { typ = TOption (set_concrete_mode ty); mode = Some Concrete }
+  | TTuple ts ->
+      {
+        typ = TTuple (List.map (fun ty1 -> set_concrete_mode ty1) ts);
+        mode = Some Concrete;
+      }
+  | TArrow (ty1, ty2) ->
+      let ty1 = set_concrete_mode ty1 in
+      let ty2 = set_concrete_mode ty2 in
+      { typ = TArrow (ty1, ty2); mode = Some Concrete }
+
 (* Converting normal operations to BDD operations *)
 let opToBddOp op =
   match op with
@@ -441,9 +458,7 @@ let buildApply e r =
     BddBinds.fold
       (fun x e1 (acc, es) ->
         let resty = acc.ety in
-        let argty =
-          { typ = (OCamlUtils.oget e1.ety).typ; mode = Some Concrete }
-        in
+        let argty = set_concrete_mode (OCamlUtils.oget e1.ety) in
         let f =
           {
             arg = x;
