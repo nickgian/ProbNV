@@ -127,11 +127,12 @@ let merge u (r1 : [M](option[int])) (r2: [M](option[int])) =
          | (Some a, Some b) -> if a <= b then Some a else Some b)
 
 let init u =
-  if u = 0n then Some 0 else None
+  if isFailed u then None
+  else if u = 0n then Some 0 else None
 
 let s = solution(init, trans, merge)
 
-assert ((match (s 1n) with
+(*assert ((match (s 1n) with
         | None -> false
         | Some _ -> true), 0.7)
-
+*)

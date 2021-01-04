@@ -7,7 +7,7 @@ open Cudd
 
 type node = int [@@deriving eq, ord]
 
-let tnode_sz = 12
+let tnode_sz = 7
 
 type edge = node * node [@@deriving eq, ord]
 
@@ -56,42 +56,19 @@ type baseTy =
   | TArrow of ty * ty
   | TTuple of ty list
   | TOption of ty
+  | TMap of ty * ty
 [@@deriving ord, eq]
 
 and ty = { typ : baseTy; mode : mode option }
 
 and tyvar = Unbound of tyname * level | Link of ty
 
-let rec join_ty ty1 ty2 =
-  match (ty1.typ, ty2.typ) with
-  | TInt sz1, TInt sz2 when sz1 = sz2 ->
-      { ty1 with mode = join_opts ty1.mode ty2.mode }
-  | TBool, TBool | TNode, TNode | TEdge, TEdge ->
-      { ty1 with mode = join_opts ty1.mode ty2.mode }
-  | TOption tyo1, TOption tyo2 ->
-      let tyo = join_ty tyo1 tyo2 in
-      { typ = TOption tyo; mode = join_opts ty1.mode ty2.mode }
-  | TTuple ts1, TTuple ts2 ->
-      {
-        typ = TTuple (List.map2 (fun ty1 ty2 -> join_ty ty1 ty2) ts1 ts2);
-        mode = join_opts ty1.mode ty2.mode;
-      }
-  | TArrow _, TArrow _ ->
-      if ty1 = ty2 then ty1 else failwith "cannot join unequal arrow types"
-  | TVar { contents = Link ty3 }, _ ->
-      join_ty { ty3 with mode = join_opts ty1.mode ty3.mode } ty2
-  | _, TVar { contents = Link ty3 } ->
-      join_ty ty1 { ty3 with mode = join_opts ty2.mode ty3.mode }
-  | TVar _, _
-  | QVar _, _
-  | TBool, _
-  | TInt _, _
-  | TArrow _, _
-  | TTuple _, _
-  | TOption _, _
-  | TEdge, _
-  | TNode, _ ->
-      failwith "Cannot join the given types"
+(* Getting the mode of a type is a bit trickier because of Links. We need to search through
+all the links and make sure their modes are compatible and return the most specific one *)
+let rec get_mode ty =
+  match ty.typ with
+  | TVar { contents = Link ty2 } -> join_opts (get_mode ty2) ty.mode
+  | _ -> ty.mode
 
 type pattern =
   | PWild
@@ -151,6 +128,9 @@ type op =
   | ULeq of bitwidth
   | NLess
   | NLeq
+  | MGet
+  | MSet
+  | MCreate
   (* Low-Level Language BDD operations *)
   | BddAnd
   | BddOr
@@ -348,8 +328,9 @@ let rec equal_base_tys ty1 ty2 =
       | _ -> false )
   | QVar n1, QVar n2 -> Var.equals n1 n2
   | TTuple ts1, TTuple ts2 -> List.for_all2 equal_tys ts1 ts2
+  | TMap (t1, t2), TMap (s1, s2) -> equal_tys t1 s1 && equal_tys t2 s2
   | ( ( TBool | TNode | TEdge | TInt _ | TArrow _ | TVar _ | QVar _ | TTuple _
-      | TOption _ ),
+      | TMap _ | TOption _ ),
       _ ) ->
       false
 
@@ -519,6 +500,7 @@ let rec hash_ty ty =
   | TArrow (ty1, ty2) -> 6 + hash_ty ty1 + hash_ty ty2
   | TTuple ts -> List.fold_left (fun acc t -> acc + hash_ty t) 0 ts + 7
   | TOption t -> 8 + hash_ty t
+  | TMap (ty1, ty2) -> 9 + hash_ty ty1 + hash_ty ty2
   | TNode -> 12
   | TEdge -> 13
 
@@ -614,6 +596,9 @@ and hash_op op =
   | Or -> 2
   | Not -> 3
   | Eq -> 4
+  | MCreate -> 5
+  | MGet -> 6
+  | MSet -> 7
   | UAdd n -> 11 + n + 256
   | ULess n -> 11 + n + (256 * 3)
   | ULeq n -> 11 + n + (256 * 4)
@@ -667,6 +652,9 @@ let arity op =
   | UAdd _ -> 2
   | Eq -> 2
   | ULess _ | ULeq _ | NLeq | NLess -> 2
+  | MCreate -> 1
+  | MGet -> 2
+  | MSet -> 3
   | BddAdd _ | BddAnd | BddOr | BddEq | BddLess _ | BddLeq _ -> 2
   | BddNot -> 1
 
@@ -756,7 +744,7 @@ let rec liftSymbolicTy ty =
         typ = TOption (liftSymbolicTy ty);
         mode = Some (liftSymbolicMode (OCamlUtils.oget ty.mode));
       }
-  | TArrow (_, _) -> failwith "Cannot lift to symbolic"
+  | TMap (_, _) | TArrow (_, _) -> failwith "Cannot lift to symbolic"
 
 let etoBdd e1 =
   let e1' = exp (EToBdd e1) in
@@ -786,6 +774,8 @@ let rec liftMultiTy ty =
         typ = TOption (liftMultiTy ty);
         mode = Some (liftMultiMode (OCamlUtils.oget ty.mode));
       }
+  | TMap (_, _) ->
+      { ty with mode = Some (liftMultiMode (OCamlUtils.oget @@ get_mode ty)) }
   | TArrow (_, _) -> failwith "Cannot lift to multivalue"
 
 let etoMap e1 =
@@ -886,12 +876,50 @@ let get_symbolics ds =
     [] ds
   |> List.rev
 
-(* Getting the mode of a type is a bit trickier because of Links. We need to search through
-all the links and make sure their modes are compatible and return the most specific one *)
-let rec get_mode ty =
-  match ty.typ with
-  | TVar { contents = Link ty2 } -> join_opts (get_mode ty2) ty.mode
-  | _ -> ty.mode
+let rec join_ty ty1 ty2 =
+  match (ty1.typ, ty2.typ) with
+  | TInt sz1, TInt sz2 when sz1 = sz2 ->
+      { ty1 with mode = join_opts ty1.mode ty2.mode }
+  | TBool, TBool | TNode, TNode | TEdge, TEdge ->
+      { ty1 with mode = join_opts ty1.mode ty2.mode }
+  | TOption tyo1, TOption tyo2 ->
+      let tyo = join_ty tyo1 tyo2 in
+      { typ = TOption tyo; mode = join_opts ty1.mode ty2.mode }
+  | TTuple ts1, TTuple ts2 ->
+      {
+        typ = TTuple (List.map2 (fun ty1 ty2 -> join_ty ty1 ty2) ts1 ts2);
+        mode = join_opts ty1.mode ty2.mode;
+      }
+  | TArrow _, TArrow _ ->
+      if ty1 = ty2 then ty1 else failwith "cannot join unequal arrow types"
+  | TMap (kty1, vty1), TMap (kty2, vty2) ->
+      if equal_base_tys kty1.typ kty2.typ && get_mode vty1 = get_mode vty2 then
+        if get_mode vty1 = Some Concrete then
+          {
+            typ = TMap (join_ty kty1 kty2, join_ty vty1 vty2);
+            mode = join_opts ty1.mode ty2.mode;
+          }
+        else
+          {
+            typ = TMap (join_ty kty1 kty2, join_ty vty1 vty2);
+            mode = Some Concrete;
+          }
+      else failwith "Failed to join map types"
+  | TVar { contents = Link ty3 }, _ ->
+      join_ty { ty3 with mode = join_opts ty1.mode ty3.mode } ty2
+  | _, TVar { contents = Link ty3 } ->
+      join_ty ty1 { ty3 with mode = join_opts ty2.mode ty3.mode }
+  | TVar _, _
+  | QVar _, _
+  | TBool, _
+  | TInt _, _
+  | TArrow _, _
+  | TTuple _, _
+  | TMap _, _
+  | TOption _, _
+  | TEdge, _
+  | TNode, _ ->
+      failwith "Cannot join the given types"
 
 let rec get_inner_type t : ty =
   match t.typ with TVar { contents = Link t } -> get_inner_type t | _ -> t

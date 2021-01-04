@@ -104,6 +104,7 @@
 %token <ProbNv_datastructures.Span.t> COMMA
 %token <ProbNv_datastructures.Span.t> TILDE
 %token <ProbNv_datastructures.Span.t> UNDERSCORE
+%token <ProbNv_datastructures.Span.t> CREATEMAP
 %token <ProbNv_datastructures.Span.t> TOPTION
 %token <ProbNv_datastructures.Span.t> SOLUTION
 %token <ProbNv_datastructures.Span.t> ASSERT
@@ -247,8 +248,10 @@ expr:
     /* | MAP exprsspace                    { exp (eop MMap $2) $1 }
     | MAPIF exprsspace                  { exp (eop MMapFilter $2) $1 }
     | MAPITE exprsspace                 { exp (eop MMapIte $2) $1 }
-    | COMBINE exprsspace                { exp (eop MMerge $2) $1 }
-    | CREATEMAP exprsspace              { exp (eop MCreate $2) $1 } */
+    | COMBINE exprsspace                { exp (eop MMerge $2) $1 } */
+    | CREATEMAP expr                    { exp (eop MCreate [$2]) $1 }
+    | expr LBRACKET expr RBRACKET       { exp (eop MGet [$1;$3]) (Span.extend $1.espan $4) }
+    | expr LBRACKET expr COLON EQ expr RBRACKET { exp (eop MSet [$1;$3;$6]) (Span.extend $1.espan $7) }
     | SOME expr                         { exp (esome $2) (Span.extend $1 $2.espan) }
     | NOT expr                          { exp (eop Not [$2]) (Span.extend $1 $2.espan) }
     | expr AND expr                     { exp (eop And [$1;$3]) (Span.extend $1.espan $3.espan) }

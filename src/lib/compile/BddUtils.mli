@@ -43,3 +43,5 @@ val computeTrueProbability :
   bool Cudd.Mtbdd.t ->
   (int * int * ProbNv_lang.Syntax.ty * float Cudd.Mtbdd.t) list ->
   float
+
+val get_statistics: unit -> unit

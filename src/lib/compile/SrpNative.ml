@@ -89,7 +89,10 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
         loop next_n next_q next_m
       else (m, q)
     in
-    loop n (QueueSet.empty Pervasives.compare) AdjGraph.VertexMap.empty
+    let s =
+      loop n (QueueSet.empty Pervasives.compare) AdjGraph.VertexMap.empty
+    in
+    s
 
   exception Require_false
 
@@ -102,6 +105,8 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
 
   let merges = ref 0
 
+  let incr_merges = ref 0
+
   let transfers = ref 0
 
   let simulate_step trans merge (s : 'a extendedSolution) (origin : int) =
@@ -109,7 +114,6 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
       let edge = (origin, neighbor) in
       (* Compute the incoming attribute from origin *)
       let n_incoming_attribute = trans edge initial_attribute in
-      incr transfers;
       let n_received, n_old_attribute = get_attribute neighbor s in
       match AdjGraph.VertexMap.Exceptionless.find origin n_received with
       | None ->
@@ -142,7 +146,7 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
           in
           (*if the merge between new and old route from origin is equal to the new route from origin*)
           if compare_routes = dummy_new then (
-            incr merges;
+            incr incr_merges;
             (*we can incrementally compute in this case*)
             let n_new_attribute =
               merge neighbor n_old_attribute n_incoming_attribute
@@ -182,7 +186,6 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
     match QueueSet.pop q with
     | None -> s
     | Some (next, rest) ->
-        Printf.printf "%d," next;
         let s', more = simulate_step trans merge s next in
         simulate_init trans merge (s', QueueSet.add_all rest more)
 
@@ -203,13 +206,31 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
   let solved : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list ref =
     ref []
 
+  let transfer_time = ref 0.0
+
+  let merge_time = ref 0.0
+
   let simulate_solve record_fns attr_ty_id name init trans merge =
     let s = create_state (AdjGraph.nb_vertex G.graph) init in
+    let trans e x =
+      incr transfers;
+      Profile.time_profile_total transfer_time (fun () -> trans e x)
+    in
+    let merge u x y =
+      incr merges;
+      Profile.time_profile_total merge_time (fun () -> merge u x y)
+    in
     let vals =
       simulate_init trans merge s |> AdjGraph.VertexMap.map (fun (_, v) -> v)
     in
-    Printf.printf "Number of incremental merges: %d\n" !merges;
+
+    Printf.printf "Number of incremental merges: %d\n" !incr_merges;
+    Printf.printf "Number of calls to merge: %d\n" !merges;
     Printf.printf "Number of transfers: %d\n" !transfers;
+    Printf.printf "Transfer time: %f\n" !transfer_time;
+    Printf.printf "Merge time: %f\n" !merge_time;
+    Printf.printf "Apply2 time: %f\n" !BddFunc.apply2_time;
+    Printf.printf "Apply3 time: %f\n" !BddFunc.apply3_time;
     let default = AdjGraph.VertexMap.choose vals |> snd in
     (* Constructing a function from the solutions *)
     let base _ = default in
@@ -248,7 +269,10 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
 
   let create_initial_state (n : int) : 'a state =
     let q = BatQueue.create () in
-    for i = n downto 1 do
+    (* for i = n downto 1 do
+         BatQueue.add (i - 1) q
+       done; *)
+    for i = 1 to n do
       BatQueue.add (i - 1) q
     done;
     let initGlobal =
@@ -272,9 +296,15 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
 
   let attr_equal = ref (fun _ _ -> true)
 
+  let incr_merges = ref 0
+
   let merges = ref 0
 
   let transfers = ref 0
+
+  let transfer_time = ref 0.0
+
+  let merge_time = ref 0.0
 
   let updateNeighbors u global =
     let neighbors = AdjGraph.succ G.graph u in
@@ -284,6 +314,19 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
           BatQueueExt.add v global.queue;
         global.worklist.(v) <- AdjGraph.VertexSet.add u global.worklist.(v))
       neighbors
+
+  let rec printBdd distr =
+    match Mtbdd.inspect distr with
+    | Leaf _ -> (
+        match Obj.magic (Mtbdd.dval distr) with
+        | None -> Printf.printf "Leaf: None\n"
+        | Some v -> Printf.printf "Leaf: Some %d\n" v )
+    | Ite (i, t, e) ->
+        Printf.printf "top: %d: \n" i;
+        Printf.printf "  dthen: ";
+        printBdd t;
+        Printf.printf "  delse: ";
+        printBdd e
 
   (* Performs the sending of message from every node [v] in [todoSet] to [u].*)
   let simulate_step init trans merge local global u todoSet =
@@ -296,7 +339,9 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
       let n_incoming_attribute =
         if u = v then init u
         else (
-          incr transfers;
+          Printf.printf "  Size of message from %d: %d\n" v
+            (Cudd.Mtbdd.size (Obj.magic (get_attribute_exn v local)));
+          printBdd (Obj.magic (get_attribute_exn v local));
           trans edge (get_attribute_exn v local) )
       in
 
@@ -347,7 +392,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
               in
               (*if the merge between new and old route from origin is equal to the new route from v*)
               if compare_routes = dummy_new then (
-                incr merges;
+                incr incr_merges;
                 (*we can incrementally compute in this case*)
                 let u_new_attribute = merge u labu n_incoming_attribute in
                 (* add the new message from v to u's inbox *)
@@ -377,6 +422,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
                     { labels = u_new_attribute; received = inbox_u' }
                     local ) )
     in
+    Printf.printf "Processing node: %d\n" u;
     let change, local' =
       AdjGraph.VertexSet.fold
         (fun v (changed, local) ->
@@ -386,11 +432,14 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     in
     (* empty the worklist for u, it should have been fully processed *)
     global.worklist.(u) <- AdjGraph.VertexSet.empty;
+
     (* Remove next from the queue schedule *)
     (* Printf.printf "Queue before removing next";
        BatQueue.iter (fun i -> Printf.printf "%d," i) global.queue;
        Printf.printf "\n"; *)
     BatQueueExt.filter_first (fun i -> i = u) global.queue;
+
+    (* BatQueue.pop global.queue; *)
 
     (* Printf.printf "Queue after removing next";
        BatQueue.iter (fun i -> Printf.printf "%d," i) global.queue;
@@ -421,17 +470,14 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     (* Check that the node only depends on nodes that are not in the schedule
            (with the exception of the node itself) *)
     let pred v = v = next || wklist.(v) = AdjGraph.VertexSet.empty in
-    if i = 0 then simulate_step init trans merge local global next todoSet
+    (* how many steps to skip, i = 1 allows 1 skip *)
+    if i = 1 then simulate_step init trans merge local global next todoSet
     else
       match findMin pred todoSet with
-      | None ->
-          (* Printf.printf "Executing node: %d, with todoset: %s\n" next
-             (AdjGraph.VertexSet.to_string todoSet); *)
-          simulate_step init trans merge local global next todoSet
+      | None -> simulate_step init trans merge local global next todoSet
       | Some x ->
           (* If next depends on x and x needs to be processed, then skip
               the queue and process x *)
-          (* Printf.printf "%d\n%!" i; *)
           processNode x init trans merge local global (i + 1)
 
   (* simulate_init s q simulates srp starting with initial state (s,q) *)
@@ -450,12 +496,25 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
 
   let simulate_solve record_fns attr_ty_id name init trans merge =
     let local, global = create_initial_state (AdjGraph.nb_vertex G.graph) in
+    let trans e x =
+      incr transfers;
+      Profile.time_profile_total transfer_time (fun () -> trans e x)
+    in
+    let merge u x y =
+      incr merges;
+      Profile.time_profile_total merge_time (fun () -> merge u x y)
+    in
     let vals =
       simulate_init init trans merge global local
       |> AdjGraph.VertexMap.map (fun v -> v.labels)
     in
-    Printf.printf "Number of incremental merges: %d\n" !merges;
+    Printf.printf "Number of incremental merges: %d\n" !incr_merges;
+    Printf.printf "Number of calls to merge: %d\n" !merges;
     Printf.printf "Number of transfers: %d\n" !transfers;
+    Printf.printf "Transfer time: %f\n" !transfer_time;
+    Printf.printf "Merge time: %f\n" !merge_time;
+    Printf.printf "Apply2 time: %f\n" !BddFunc.apply2_time;
+    Printf.printf "Apply3 time: %f\n" !BddFunc.apply3_time;
     let default = AdjGraph.VertexMap.choose vals |> snd in
     (* Constructing a function from the solutions *)
     let base _ = default in

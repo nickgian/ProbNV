@@ -253,6 +253,9 @@ let apply1 ~op_key ~f ~arg1 : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
   in
   User.apply_op1 op arg1
 
+let apply2_time = ref 0.0
+let apply3_time = ref 0.0
+
 (* specialized version of applyN for two arguments*)
 let apply2 ~op_key ~f ~arg1 ~arg2 : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
   let g v1 v2 =
@@ -269,7 +272,7 @@ let apply2 ~op_key ~f ~arg1 ~arg2 : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
         o
     | Some op -> op
   in
-  User.apply_op2 op arg1 arg2
+  Profile.time_profile_total apply2_time (fun () -> User.apply_op2 op arg1 arg2)
 
 let apply3 ~op_key ~f ~arg1 ~arg2 ~arg3 : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
   let g v1 v2 v3 =
@@ -289,7 +292,7 @@ let apply3 ~op_key ~f ~arg1 ~arg2 ~arg3 : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
         o
     | Some op -> op
   in
-  User.apply_op3 op arg1 arg2 arg3
+  Profile.time_profile_total apply3_time (fun () -> User.apply_op3 op arg1 arg2 arg3)
 
 (** ** Probabilistic part *)
 
@@ -332,7 +335,7 @@ let uniform_distribution (res : t) ty (g : AdjGraph.t) :
               let bs1 = BInt (mk_int (AdjGraph.Edge.src e) tnode_sz) in
               let bs2 = BInt (mk_int (AdjGraph.Edge.dst e) tnode_sz) in
               Bdd.dor acc (Bdd.dand (eqBdd u bs1) (eqBdd v bs2)))
-            g (Bdd.dtrue B.mgr)
+            g (Bdd.dfalse B.mgr)
         in
         (* If it's not a valid edge assign a 0 probability *)
         Mtbdd.ite isValidEdge prob (Mtbdd.cst B.mgr B.tbl_probabilities 0.0)

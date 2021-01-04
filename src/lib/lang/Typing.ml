@@ -177,11 +177,11 @@ let occurs tvr (ty : baseTy) : unit =
     | TBool | TInt _ | TNode | TEdge -> ()
     | TTuple ts -> BatList.iter (fun ty -> occ tvr ty.typ) ts
     | TOption t -> occ tvr t.typ
+    | TMap (t1, t2) ->
+        occ tvr t1.typ;
+        occ tvr t2.typ
     (* | TRecord map -> StringMap.iter (fun _ -> occ tvr) map
-
-       | TMap (t1, t2) ->
-       occ tvr t1;
-       occ tvr t2 *)
+ *)
   in
 
   try occ tvr ty
@@ -226,9 +226,9 @@ let rec unify info e t1 t2 : unit =
       | TEdge, TEdge -> true
       | TTuple ts1, TTuple ts2 -> try_unifies ts1 ts2
       | TOption t1, TOption t2 -> try_unify t1 t2 m1 m2
+      | TMap (t1, t2), TMap (t3, t4) ->
+          try_unify t1 t3 t1.mode t3.mode && try_unify t2 t4 t2.mode t4.mode
       (*
-
-          | TMap (t1, t2), TMap (t3, t4) -> try_unify t1 t3 && try_unify t2 t4
           | TRecord map1, TRecord map2 ->
           let open RecordUtils in
           if not (same_labels map1 map2)
@@ -280,12 +280,13 @@ let generalize ty =
     | TOption t ->
         let t' = gen t in
         { ty with typ = TOption t' }
+    | TMap (ty1, ty2) ->
+        let ty1 = gen ty1 in
+        let ty2 = gen ty2 in
+        { ty with typ = TMap (ty1, ty2) }
     (* | TRecord map -> TRecord (StringMap.map gen map)
 
-       | TMap (ty1, ty2) ->
-       let ty1 = gen ty1 in
-       let ty2 = gen ty2 in
-       TMap (ty1, ty2) *)
+ *)
   in
 
   match ty.typ with TArrow _ -> gen ty | _ -> ty
@@ -313,13 +314,14 @@ let inst subst ty =
     | TOption t ->
         let t = loop subst t in
         { ty with typ = TOption t }
+    | TMap (ty1, ty2) ->
+        let ty1 = loop subst ty1 in
+        let ty2 = loop subst ty2 in
+        { ty with typ = TMap (ty1, ty2) }
   (*
       | TRecord map -> TRecord (StringMap.map (loop subst) map)
 
-      | TMap (ty1, ty2) ->
-      let ty1 = loop subst ty1 in
-      let ty2 = loop subst ty2 in
-      TMap (ty1, ty2) *)
+ *)
   and loops subst tys =
     match tys with
     | [] -> []
@@ -347,9 +349,11 @@ let substitute (ty : ty) : ty =
     | TTuple ts ->
         { ty with typ = TTuple (BatList.map (fun ty -> substitute_aux ty) ts) }
     | TOption t -> { ty with typ = TOption (substitute_aux t) }
+    | TMap (ty1, ty2) ->
+        { ty with typ = TMap (substitute_aux ty1, substitute_aux ty2) }
     (* | TRecord map -> TRecord (StringMap.map substitute_aux map)
 
-       | TMap (ty1, ty2) -> TMap (substitute_aux ty1, substitute_aux ty2) *)
+     *)
   in
 
   substitute_aux ty
@@ -376,17 +380,14 @@ let op_typ op =
   | NLeq -> ([ concrete TNode; concrete TNode ], concrete TBool)
   (* | TGet _ | TSet _ -> failwith "internal error (op_typ): tuple op" *)
   (* Map operations *)
-  (* | MCreate
-     | MGet
-     | MSet
-     | MMap
+  (* | MMap
      | MMerge
      | MMapFilter
      | MMapIte
      | MFoldNode
      | MFoldEdge
      | MForAll *)
-  | Eq ->
+  | MCreate | MGet | MSet | Eq ->
       failwith
         (Printf.sprintf "(op_typ): %s should be handled elsewhere"
            (Printing.op_to_string op))
@@ -432,6 +433,10 @@ let canonicalize_type (ty : ty) : ty =
     | TOption t ->
         let t', map, count = aux t map count in
         ({ ty with typ = TOption t' }, map, count)
+    | TMap (t1, t2) ->
+        let t1', map, count = aux t1 map count in
+        let t2', map, count = aux t2 map count in
+        ({ ty with typ = TMap (t1', t2') }, map, count)
     (*
         | TRecord tmap ->
         let open RecordUtils in
@@ -445,10 +450,7 @@ let canonicalize_type (ty : ty) : ty =
            (get_record_entries tmap)
         in
         TRecord tmap', map, count
-        | TMap (t1, t2) ->
-        let t1', map, count = aux t1 map count in
-        let t2', map, count = aux t2 map count in
-        TMap (t1', t2'), map, count *)
+ *)
     | QVar tyname -> (
         match VarMap.Exceptionless.find tyname map with
         | None ->
@@ -674,11 +676,9 @@ and infer_declaration isHLL infer_exp i info env record_types d :
       | Symbolic ->
           Console.error_position info trans.espan "Solution cannot be symbolic"
       | _ ->
-          (* we don't have maps so I will do it as a function *)
-          (* let ety = TMap (TNode, solve_aty) in *)
           let solve_aty = { solve_aty with mode = Some m } in
           let ety =
-            { typ = TArrow (concrete TNode, solve_aty); mode = Some Concrete }
+            { typ = TMap (concrete TNode, solve_aty); mode = Some Concrete }
           in
           ( Env.update env var ety,
             DSolve
@@ -723,6 +723,92 @@ module HLLTypeInf = struct
                   (OCamlUtils.oget (get_mode ty2))
               in
               texp (eop o [ e1; e2 ], mty (Some m) TBool, e.espan)
+          | MGet, [ e1; e2 ] -> (
+              let e1, mapty = infer_exp e1 |> textract in
+              let e2, keyty = infer_exp e2 |> textract in
+              let valvar = fresh_tyvar () in
+              let keyMode, retMode =
+                match (get_inner_type mapty).typ with
+                | TMap (kty, vty) -> (get_mode kty, get_mode vty)
+                | _ -> failwith "Expected a map type"
+              in
+              let valty = mty retMode valvar in
+              unify info e1 mapty
+                { typ = TMap (keyty, valty); mode = get_mode mapty };
+              let argMode = get_mode keyty in
+
+              (* check that key mode is concrete *)
+              if keyMode = Some Concrete then ()
+              else failwith "Non concrete key mode in map";
+
+              match retMode with
+              | Some Concrete ->
+                  (* Map-Get-C case *)
+                  let valMode = join_opts (get_mode mapty) argMode in
+                  (* check last premise of rule, i.e. m is C or M *)
+                  if valMode = Some Multivalue || valMode = Some Concrete then
+                    texp
+                      (eop o [ e1; e2 ], { valty with mode = valMode }, e.espan)
+                  else failwith "map get cannot return a symbolic"
+              | Some Multivalue ->
+                  (* Map-Get-M case *)
+                  (* check that the argument and the map mode are Concrete *)
+                  if argMode = Some Concrete && get_mode mapty = Some Concrete
+                  then
+                    texp
+                      ( eop o [ e1; e2 ],
+                        { valty with mode = Some Multivalue },
+                        e.espan )
+                  else failwith "incompatible modes in map get"
+              | _ -> failwith "incompatible mode for map type" )
+          | MSet, [ e1; e2; e3 ] ->
+              let e1, mapty = infer_exp e1 |> textract in
+              let e2, keyty = infer_exp e2 |> textract in
+              let e3, valty = infer_exp e3 |> textract in
+
+              let keyMode, retMode =
+                match (get_inner_type mapty).typ with
+                | TMap (kty, vty) -> (get_mode kty, get_mode vty)
+                | _ -> failwith "Expected map type"
+              in
+              (* Check that the map key and value are in concrete mode *)
+              if keyMode = Some Concrete && retMode = Some Concrete then (
+                let argKeyMode = get_mode keyty in
+                let argValMode = get_mode valty in
+
+                unify info e mapty
+                  { typ = TMap (keyty, valty); mode = get_mode mapty };
+
+                match
+                  (join_opts keyMode argKeyMode, join_opts retMode argValMode)
+                with
+                | Some _, Some _ -> (
+                    let m = join_opts argKeyMode argValMode in
+                    match m with
+                    | Some Concrete | Some Multivalue ->
+                        texp
+                          ( eop o [ e1; e2; e3 ],
+                            { mapty with mode = m },
+                            e.espan )
+                    | _ -> failwith "resulting mode for map set is unsupported"
+                    )
+                | _ ->
+                    failwith
+                      "map and map set arguments (key/val) have incompatible \
+                       modes" )
+              else failwith "Incompatible mode types for map set"
+          | MCreate, [ e1 ] ->
+              let e1, valty = infer_exp e1 |> textract in
+              let keyty = concrete @@ fresh_tyvar () in
+              (* Compute resulting map mode *)
+              let m = get_mode valty in
+              texp
+                ( eop o [ e1 ],
+                  {
+                    typ = TMap (keyty, mty (Some Concrete) valty.typ);
+                    mode = m;
+                  },
+                  e.espan )
           | _ ->
               let argtys, resty = op_typ o in
               let es, tys = infer_exps (i + 1) info env record_types es in
@@ -806,13 +892,16 @@ module HLLTypeInf = struct
               | Some res_mode ->
                   (* modes should not matter for unification *)
                   unify info e ty_fun
-                    (mty None (TArrow (ty_arg, mty None ty_res)));
+                    (mty (Some Concrete)
+                       (TArrow (ty_arg, mty (get_mode fun_res) ty_res)));
                   (* set result mode to m2 U m3 *)
                   texp (eapp e1 e2, mty (Some res_mode) ty_res, e.espan) )
           | Multivalue ->
               (* If rule App-M applies *)
               (* modes should not matter for unification *)
-              unify info e ty_fun (mty None (TArrow (ty_arg, mty None ty_res)));
+              unify info e ty_fun
+                (mty (get_mode ty_fun)
+                   (TArrow (ty_arg, mty (get_mode fun_res) ty_res)));
               (* Resulting mode is always Multivalue *)
               texp (eapp e1 e2, mty (Some Multivalue) ty_res, e.espan)
           | Symbolic -> failwith "Impossible case" )
@@ -1117,6 +1206,89 @@ module LLLTypeInf = struct
                   (Printf.sprintf "Mode mismatch in operation: %s and %s"
                      (Printing.mode_to_string m1)
                      (Printing.mode_to_string m2))
+          | MGet, [ e1; e2 ] -> (
+              let _, mapty = e1 |> textract in
+              let _, keyty = e2 |> textract in
+              let kty, vty =
+                match (get_inner_type mapty).typ with
+                | TMap (kty, vty) -> (kty, vty)
+                | _ -> failwith "Expected a map type"
+              in
+
+              (* Check that the key type matches *)
+              unify info e2 kty keyty;
+              (* Check that the return type matches *)
+              unify info e (OCamlUtils.oget e.ety) vty;
+
+              let argMode = get_mode keyty in
+
+              (* check that key and arg mode is concrete *)
+              if get_mode kty = Some Concrete && argMode = Some Concrete then ()
+              else failwith "Non concrete key mode in map";
+
+              match get_mode vty with
+              | Some Concrete ->
+                  (* Map-Get-C case *)
+                  let valMode = get_mode mapty in
+                  (* check that the map is in Concrete mode, i.e. m is C *)
+                  if valMode = Some Concrete then
+                    texp (eop o [ e1; e2 ], { vty with mode = Some Concrete }, e.espan)
+                  else
+                    failwith
+                      "LLL: map-get-c cannot return a symbolic or multivalue"
+              | Some Multivalue ->
+                  (* Map-Get-M case *)
+                  (* check that the map mode is Concrete *)
+                  if get_mode mapty = Some Concrete then
+                    texp
+                      ( eop o [ e1; e2 ],
+                        { vty with mode = Some Multivalue },
+                        e.espan )
+                  else failwith "incompatible modes in map get"
+              | _ -> failwith "incompatible mode for map type" )
+          | MSet, [ e1; e2; e3 ] ->
+              let _, mapty = e1 |> textract in
+              let _, keyty = e2 |> textract in
+              let _, valty = e3 |> textract in
+
+              let keyMode, retMode =
+                match (get_inner_type mapty).typ with
+                | TMap (kty, vty) -> (get_mode kty, get_mode vty)
+                | _ -> failwith "Expected map type"
+              in
+              (* Check that the map key and value are in concrete mode *)
+              if
+                keyMode = Some Concrete && retMode = Some Concrete
+                && get_mode mapty = Some Concrete
+              then (
+                unify info e mapty
+                  { typ = TMap (keyty, valty); mode = get_mode mapty };
+
+                let argKeyMode = get_mode keyty in
+                let argValMode = get_mode valty in
+                if argKeyMode = Some Concrete && argValMode = Some Concrete then
+                  texp
+                    ( eop o [ e1; e2; e3 ],
+                      { mapty with mode = Some Concrete },
+                      e.espan )
+                else failwith "LLL: Map key and value set must be concrete." )
+              else failwith "LLL: Map set, map must be concrete."
+          | MCreate, [ e1 ] -> (
+              let _, valty = e1 |> textract in
+              match OCamlUtils.oget e.ety with
+              | { typ = TMap (kty, vty); mode = _ } as mapty ->
+                  unify info e vty valty;
+                  if
+                    get_mode mapty = Some Concrete
+                    && get_mode vty = Some Concrete
+                    && get_mode valty = Some Concrete
+                  then
+                    texp
+                      ( eop o [ e1 ],
+                        { typ = TMap (kty, valty); mode = Some Concrete },
+                        e.espan )
+                  else failwith "Mode mismatch in MCreate"
+              | _ -> failwith "Type mismatch in MCreate" )
           | _ ->
               let argtys, resty = op_typ o in
               let es, tys = infer_exps (i + 1) info env record_types es in

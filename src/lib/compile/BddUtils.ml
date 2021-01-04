@@ -186,6 +186,17 @@ let printCube cube =
       else Printf.printf "*")
     cube
 
+    let rec printBdd distr =
+      match Mtbdd.inspect distr with
+      | Leaf v -> 
+          Printf.printf "Leaf: %f\n" (Mtbdd.dval distr)
+      | Ite (i, t, e) ->
+          Printf.printf "top: %d: \n" i;
+          Printf.printf "  dthen: ";
+          printBdd t;
+          Printf.printf "  delse: ";
+          printBdd e
+
 (* Computes the probability of a cube happening - includes all symbolics *)
 let rec cubeProbability (cube : Cudd.Man.tbool array)
     (bounds : (int * int * Syntax.ty * float Cudd.Mtbdd.t) list) =
@@ -193,6 +204,7 @@ let rec cubeProbability (cube : Cudd.Man.tbool array)
   | [] -> 1.0
   | (xstart, xend, _, xdistribution) :: bounds ->
       (* compute the probability for one variable *)
+      (* printBdd xdistribution; *)
       let p = symbolicProbability cube xstart xend xdistribution in
       (* debugging code *)
       (* Printf.printf "range:(%d,%d) " xstart xend;
@@ -208,3 +220,6 @@ let rec computeTrueProbability (assertion : bool Cudd.Mtbdd.t) bounds =
       if v then ptrue := !ptrue +. cubeProbability cube bounds else ())
     assertion;
   !ptrue
+
+let get_statistics () =
+  Man.print_info mgr

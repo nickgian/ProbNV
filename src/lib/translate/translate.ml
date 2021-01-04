@@ -31,6 +31,7 @@ let rec fty (ty : ty) : ty =
       let ty1 = fty ty1 in
       let ty2 = fty ty2 in
       { typ = TArrow (ty1, ty2); mode = fty_mode (get_mode ty) }
+  | TMap (kty, vty) -> { typ = TMap (kty, vty); mode = fty_mode (get_mode ty) }
 
 (* Used for the function arguments when building applyN expressions *)
 let rec set_concrete_mode ty =
@@ -48,6 +49,7 @@ let rec set_concrete_mode ty =
       let ty1 = set_concrete_mode ty1 in
       let ty2 = set_concrete_mode ty2 in
       { typ = TArrow (ty1, ty2); mode = Some Concrete }
+  | TMap (kty, vty) -> { typ = TMap (kty, vty); mode = Some Concrete }
 
 (* Converting normal operations to BDD operations *)
 let opToBddOp op =
@@ -62,6 +64,8 @@ let opToBddOp op =
   | NLess -> BddLess tnode_sz
   | NLeq -> BddLeq tnode_sz
   | BddAnd | BddAdd _ | BddOr | BddNot | BddEq | BddLess _ | BddLeq _ -> op
+  | MCreate | MGet | MSet ->
+      failwith "Can't convert map operations to symbolic operations"
 
 let liftBdd e1 =
   let typ = OCamlUtils.oget e1.ety in
@@ -85,32 +89,85 @@ let rec translate (e : exp) : exp * BddBinds.t =
       ({ e with ety = Some (fty (OCamlUtils.oget e.ety)) }, BddBinds.empty ())
   | EVal _ -> (e, BddBinds.empty ())
   | EOp (op, es) -> (
-      let esl, rs =
-        List.fold_right
-          (fun e (esl, rs) ->
-            let el, r = translate e in
-            (el :: esl, BddBinds.union r rs))
-          es
-          ([], BddBinds.empty ())
-      in
-      match get_mode (OCamlUtils.oget e.ety) with
-      | None -> failwith "cannot translate without a mode"
-      | Some Symbolic ->
-          (* C-BinOp-S *)
+      match (op, es) with
+      | MGet, [ eh1; eh2 ] -> (
+          match eh1.ety with
+          | Some { typ = TMap (_, _); mode = Some Multivalue } ->
+              (* C-Map-Get-M*)
+              let b, r = BddBinds.fresh e in
+              let eb =
+                aexp (evar b, Some (fty (OCamlUtils.oget e.ety)), e.espan)
+              in
+              ({ e with e = eb.e; ety = Some (fty (OCamlUtils.oget e.ety)) }, r)
+          | Some { typ = TMap (_, _); mode = Some Concrete } ->
+              let el1, r1 = translate eh1 in
+              let el2, r2 = translate eh2 in
+              ( {
+                  e with
+                  e = (eop MGet [ el1; el2 ]).e;
+                  ety = Some (fty (OCamlUtils.oget e.ety));
+                },
+                BddBinds.union r1 r2 )
+          | _ -> failwith "Expected a map type" )
+      | MGet, _ -> failwith "invalid number of arguments to MGet"
+      | MSet, [ eh1; eh2; eh3 ] ->
+          let el1, r1 = translate eh1 in
+          let el2, r2 = translate eh2 in
+          let el3, r3 = translate eh3 in
           ( {
               e with
-              e = (eop (opToBddOp op) (List.map liftBdd esl)).e;
+              e = (eop MSet [ el1; el2; el3 ]).e;
               ety = Some (fty (OCamlUtils.oget e.ety));
             },
-            BddBinds.empty () )
-      | _ ->
-          (* C-BinOp-M *)
+            BddBinds.union r1 (BddBinds.union r2 r3) )
+      | MSet, _ -> failwith "invalid number of arguments to MSet"
+      | MCreate, [ eh1 ] ->
+          let el1, r1 = translate eh1 in
           ( {
               e with
-              e = (eop op esl).e;
+              e = (eop MCreate [ el1 ]).e;
               ety = Some (fty (OCamlUtils.oget e.ety));
             },
-            rs ) )
+            r1 )
+      | MCreate, _ -> failwith "invalid number of arguments to MCreate"
+      | And, _
+      | Or, _
+      | Not, _
+      | Eq, _
+      | UAdd _, _
+      | ULess _, _
+      | ULeq _, _
+      | NLess, _
+      | NLeq, _ -> (
+          let esl, rs =
+            List.fold_right
+              (fun e (esl, rs) ->
+                let el, r = translate e in
+                (el :: esl, BddBinds.union r rs))
+              es
+              ([], BddBinds.empty ())
+          in
+          match get_mode (OCamlUtils.oget e.ety) with
+          | None -> failwith "cannot translate without a mode"
+          | Some Symbolic ->
+              (* C-BinOp-S *)
+              ( {
+                  e with
+                  e = (eop (opToBddOp op) (List.map liftBdd esl)).e;
+                  ety = Some (fty (OCamlUtils.oget e.ety));
+                },
+                BddBinds.empty () )
+          | _ ->
+              (* C-BinOp-M *)
+              ( {
+                  e with
+                  e = (eop op esl).e;
+                  ety = Some (fty (OCamlUtils.oget e.ety));
+                },
+                rs ) )
+      | (BddAnd | BddOr | BddNot | BddEq | BddAdd _ | BddLess _ | BddLeq _), _
+        ->
+          failwith "Translation does not apply to LLL constructs" )
   | EIf (e1, e2, e3) -> (
       let el1, r1 = translate e1 in
       let el2, r2 = translate e2 in
@@ -207,6 +264,8 @@ let rec translate (e : exp) : exp * BddBinds.t =
             BddBinds.empty () )
       | Some Concrete, Some Concrete, Some Symbolic ->
           (* C-App-S1*)
+          Printf.printf "C-App-S1: %s\n"
+            (Printing.exp_to_string ~show_types:true e);
           ( {
               e with
               e = (eapp el1 el2).e;

@@ -21,6 +21,9 @@ let prec_op op =
   | UAdd _ | BddAdd _ -> 4
   (* | USub _ -> 4 *)
   | Eq | BddEq -> 5
+  | MCreate -> 5
+  | MGet -> 5
+  | MSet -> 3
   | ULess _ | BddLess _ | NLess | ULeq _ | NLeq | BddLeq _ -> 5
 
 let prec_exp e =
@@ -136,12 +139,11 @@ let rec base_ty_to_string t =
   | TTuple ts ->
       if List.is_empty ts then "TEmptyTuple"
       else "(" ^ sep "," ty_to_string ts ^ ")"
-  | TOption t ->
-      "option[" ^ ty_to_string t ^ "]"
+  | TOption t -> "option[" ^ ty_to_string t ^ "]"
+  | TMap (t1, t2) ->
+      "dict[" ^ ty_to_string t1 ^ "," ^ ty_to_string t2 ^ "]"
       (*
-          | TMap (t1, t2) ->
-            "dict[" ^ ty_to_string t1 ^ "," ^ ty_to_string t2
-            ^ "]"
+          
           | TRecord map -> print_record ":" (ty_to_string) map *)
   | TArrow (t1, t2) ->
       let leftside =
@@ -154,7 +156,7 @@ let rec base_ty_to_string t =
 and ty_to_string ty =
   (* let ty = canonicalize_type ty in *)
   match ty.mode with
-  | None -> base_ty_to_string ty.typ
+  | None -> Printf.sprintf "[None]%s" (base_ty_to_string ty.typ)
   | Some m ->
       Printf.sprintf "[%s]%s" (mode_to_string m) (base_ty_to_string ty.typ)
 
@@ -183,6 +185,9 @@ let op_to_string op =
   | ULeq n -> "<=" ^ "u" ^ string_of_int n
   | NLess -> "<n"
   | NLeq -> "<=n"
+  | MCreate -> "createMap"
+  | MGet -> "at"
+  | MSet -> "set"
 
 let rec pattern_to_string pattern =
   match pattern with
@@ -247,9 +252,9 @@ let pick_default_value map =
 (* : value list * value *)
 let bindings (map : mtbdd) =
   let bs = ref [] in
-  let dv = pick_default_value map in
+  (* let dv = pick_default_value map in *)
   Mtbdd.iter_cube (fun k v -> bs := (k, v) :: !bs) map;
-  (!bs, dv)
+  !bs
 
 let rec value_env_to_string ~show_types env =
   Env.to_string (value_to_string_p ~show_types max_prec) env.value
@@ -333,7 +338,7 @@ and map_to_string ~show_types term_s m =
     in
     Printf.sprintf "(%s, %s)" key (value_to_string_p ~show_types max_prec v)
   in
-  let bs, _ = bindings m in
+  let bs = bindings m in
   Printf.sprintf "{ %s }" (term term_s binding_to_string bs)
 
 and exp_to_string_p ~show_types prec e =

@@ -35,7 +35,8 @@ let simulate name decls =
   Collections.ExpIds.seal pred_store;
 
   (* Build a simulator for SRPs *)
-  let module SrpSimulator = (val (module SrpLazySimulation (G)) : SrpSimulationSig)
+  let module SrpSimulator = ( val (module SrpSimulation (G))
+                                : SrpSimulationSig )
   in
   (* Load compiled NV program*)
   let module CompleteSRP = (val get_srp ()) in
@@ -46,6 +47,7 @@ let simulate name decls =
   let finish_time = Sys.time () in
   Printf.printf "Native simulation took: %f secs to complete\n%!"
     (finish_time -. start_time);
+  BddUtils.get_statistics ();
   (* Get the computed solutions *)
   build_solutions (AdjGraph.nb_vertex graph) Srp.record_fns !SrpSimulator.solved
     !SrpSimulator.assertions

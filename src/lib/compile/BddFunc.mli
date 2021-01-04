@@ -66,3 +66,6 @@ val applyN :
   arg2:'y Cudd.Mtbdd.unique Cudd.Vdd.t ->
   arg3: 'z Cudd.Mtbdd.unique Cudd.Vdd.t ->
   'a Cudd.Mtbdd.unique Cudd.Vdd.t
+
+val apply2_time: float ref
+val apply3_time: float ref
