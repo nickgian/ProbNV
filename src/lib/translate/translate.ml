@@ -7,6 +7,7 @@ open ProbNv_datastructures
 open Collections
 open ProbNv_utils
 open BddBinds
+open Typing
 
 (* The function ψ on just the mode part of a type*)
 let fty_mode m =
@@ -31,7 +32,11 @@ let rec fty (ty : ty) : ty =
       let ty1 = fty ty1 in
       let ty2 = fty ty2 in
       { typ = TArrow (ty1, ty2); mode = fty_mode (get_mode ty) }
-  | TMap (kty, vty) -> { typ = TMap (kty, vty); mode = fty_mode (get_mode ty) }
+  | TMap (kty, vty) ->
+      (* For maps we just canonicalize the types to remove links. *)
+      let kty = canonicalize_type kty in
+      let vty = canonicalize_type vty in
+      { typ = TMap (kty, vty); mode = fty_mode (get_mode ty) }
 
 (* Used for the function arguments when building applyN expressions *)
 let rec set_concrete_mode ty =
@@ -91,15 +96,20 @@ let rec translate (e : exp) : exp * BddBinds.t =
   | EOp (op, es) -> (
       match (op, es) with
       | MGet, [ eh1; eh2 ] -> (
-          match eh1.ety with
-          | Some { typ = TMap (_, _); mode = Some Multivalue } ->
+          let vty =
+            match eh1.ety with
+            | Some { typ = TMap (_, vty); mode = _ } -> vty
+            | _ -> failwith "Expected a map type"
+          in
+          match get_mode vty with
+          | Some Multivalue ->
               (* C-Map-Get-M*)
               let b, r = BddBinds.fresh e in
               let eb =
                 aexp (evar b, Some (fty (OCamlUtils.oget e.ety)), e.espan)
               in
               ({ e with e = eb.e; ety = Some (fty (OCamlUtils.oget e.ety)) }, r)
-          | Some { typ = TMap (_, _); mode = Some Concrete } ->
+          | Some Concrete ->
               let el1, r1 = translate eh1 in
               let el2, r2 = translate eh2 in
               ( {
@@ -176,14 +186,11 @@ let rec translate (e : exp) : exp * BddBinds.t =
       let ty2 = OCamlUtils.oget e2.ety in
       let ty3 = OCamlUtils.oget e3.ety in
       let ty = OCamlUtils.oget e.ety in
+      Printf.printf "fty: %s \n\n" (Printing.ty_to_string (fty ty));
       match (get_mode ty1, get_mode ty2, get_mode ty3, get_mode ty) with
       | Some Concrete, Some Concrete, Some Concrete, _ ->
           (* C-Ite-C*)
-          ( {
-              e with
-              e = (eif el1 el2 el3).e;
-              ety = Some (fty (OCamlUtils.oget e.ety));
-            },
+          ( { e with e = (eif el1 el2 el3).e; ety = Some (fty ty) },
             BddBinds.empty () )
       | Some Concrete, _, _, Some Multivalue | Some Multivalue, _, _, _ ->
           (* C-Ite-M1*)

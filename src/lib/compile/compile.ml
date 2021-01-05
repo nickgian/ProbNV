@@ -102,7 +102,9 @@ let build_constructors () =
 
 let is_prefix_op op =
   match op with
-  | BddAnd | BddOr | BddAdd _ | BddNot | BddLess _ | BddLeq _ | BddEq -> true
+  | BddAnd | BddOr | BddAdd _ | BddNot | BddLess _ | BddLeq _ | BddEq | MGet
+  | MCreate | MSet ->
+      true
   | And | Or | Not | UAdd _ | Eq | ULess _ | ULeq _ | NLess | NLeq -> false
 
 (** Translating LLL operators to OCaml operators*)
@@ -119,8 +121,9 @@ let op_to_ocaml_string op =
   | ULeq _ -> "<="
   | NLess -> "<"
   | NLeq -> "<="
-  | BddAnd | BddOr | BddNot | BddEq | BddAdd _ | BddLess _ | BddLeq _ ->
-      failwith "BDD operations are handled elsewhere"
+  | BddAnd | BddOr | BddNot | BddEq | BddAdd _ | BddLess _ | BddLeq _ | MGet
+  | MSet | MCreate ->
+      failwith "Prefix operations are handled elsewhere"
 
 (** Translating patterns to OCaml patterns*)
 
@@ -168,15 +171,14 @@ let rec ty_to_ocaml_string t =
         (fun ty -> Printf.sprintf "%s" (ty_to_ocaml_string ty))
         ts "(" "," tup_typ
   | TOption t -> Printf.sprintf "(%s) option" (ty_to_ocaml_string t)
+  | TMap (kty, vty) ->
+      ignore (ty_to_ocaml_string kty);
+      (* NOTE: doing this for the side effect in the case of TTuple, i.e. adding to record_table *)
+      ignore (ty_to_ocaml_string vty);
+      let vty = ty_to_ocaml_string vty in
+      Printf.sprintf "(%s) CompileBDDs.t" vty
 
 (* 
-   
-   | TMap (kty, vty) ->
-       ignore (ty_to_ocaml_string kty);
-       (* NOTE: doing this for the side effect in the case of TTuple, i.e. adding to record_table *)
-       ignore (ty_to_ocaml_string vty);
-       let vty = ty_to_ocaml_string vty in
-       Printf.sprintf "(%s) CompileBDDs.t" vty
    | TRecord map -> record_to_ocaml_record ":" ty_to_ocaml_string map *)
 
 let rec pattern_vars p =
@@ -324,14 +326,14 @@ let rec value_to_ocaml_string v =
   | VClosure _ -> failwith "Closures shouldn't appear here."
   | VTotalMap _ ->
       failwith
-        "Total maps are only used to store simulation results and should not \
-         appear here."
+        "Total maps do not have a syntactic value and should not appear here."
 
 and exp_to_ocaml_string e =
   match e.e with
   | EVar x -> varname x
   | EVal v -> value_to_ocaml_string v
-  | EOp (op, es) when is_prefix_op op -> prefix_op_to_ocaml_string op es
+  | EOp (op, es) when is_prefix_op op ->
+      prefix_op_to_ocaml_string op es (OCamlUtils.oget e.ety)
   | EOp (op, es) -> op_args_to_ocaml_string op es
   | EFun f -> func_to_ocaml_string f
   | EApp (e1, e2) ->
@@ -423,12 +425,22 @@ and op_args_to_ocaml_string op es =
         (op_to_ocaml_string op) (exp_to_ocaml_string e2)
   | _ -> failwith "Should be a keyword op"
 
-and prefix_op_to_ocaml_string op es =
+and prefix_op_to_ocaml_string op es ty =
   match es with
   | [] -> failwith "Operation with empty arguments"
   | [ e ] -> (
       match op with
       | BddNot -> Printf.sprintf "(BddFunc.bnot %s)" (exp_to_ocaml_string e)
+      | MCreate -> (
+          match ty.typ with
+          | TMap (kty, vty) ->
+              Printf.sprintf
+                "(Obj.magic (BddMap.create ~key_ty_id:(%d) ~val_ty_id:(%d) \
+                 (Obj.magic (%s))))"
+                (get_fresh_type_id type_store kty)
+                (get_fresh_type_id type_store vty)
+                (exp_to_ocaml_string (BatList.hd es))
+          | _ -> failwith "Wrong type for map operation" )
       | _ -> failwith "Wrong number of arguments" )
   | [ e1; e2 ] -> (
       match op with
@@ -450,9 +462,27 @@ and prefix_op_to_ocaml_string op es =
       | BddEq ->
           Printf.sprintf "(BddFunc.eq %s %s)" (exp_to_ocaml_string e1)
             (exp_to_ocaml_string e2)
+      | MGet ->
+          Printf.sprintf
+            "(Obj.magic (BddMap.find record_fns (%s) (Obj.magic (%s))))"
+            (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
+      | MSet | MCreate ->
+          failwith "Wrong number of arguments to MSet/MCreate operation"
       | Eq | UAdd _ | ULess _ | NLess | ULeq _ | NLeq | And | Or | Not | BddNot
         ->
           failwith "not applicable" )
+  | [ e1; e2; e3 ] -> (
+      match op with
+      | MSet ->
+          Printf.sprintf
+            "(Obj.magic (BddMap.update record_fns (%s) (Obj.magic (%s)) \
+             (Obj.magic (%s))))"
+            (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
+            (exp_to_ocaml_string e3)
+      | And | Or | Not | Eq | NLess | NLeq | MGet | MCreate | BddAnd | BddOr
+      | BddNot | BddEq | UAdd _ | ULess _ | ULeq _ | BddAdd _ | BddLess _
+      | BddLeq _ ->
+          failwith "Wrong number of arguments to operation." )
   | _ -> failwith "too many arguments to operation"
 
 and func_to_ocaml_string f =
@@ -462,197 +492,6 @@ and branch_to_ocaml_string (p, e) =
   Printf.sprintf "| %s -> %s\n"
     (pattern_to_ocaml_string p)
     (exp_to_ocaml_string e)
-
-(* BDD based maps *)
-(* and map_to_ocaml_string op es ty =
-  match op with
-  | MCreate -> (
-      match ty with
-      | TMap (kty, vty) ->
-          Printf.sprintf
-            "(Obj.magic (NativeBdd.create ~key_ty_id:(%d) ~val_ty_id:(%d) (Obj.magic (%s))))"
-            (get_fresh_type_id type_store kty)
-            (get_fresh_type_id type_store vty)
-            (exp_to_ocaml_string (BatList.hd es))
-      | _ -> failwith "Wrong type for map operation" )
-  | MSet -> (
-      match es with
-      | [e1; e2; e3] ->
-          Printf.sprintf
-            "(Obj.magic (NativeBdd.update record_fns (%s) (Obj.magic (%s)) (Obj.magic (%s))))"
-            (exp_to_ocaml_string e1) (exp_to_ocaml_string e2) (exp_to_ocaml_string e3)
-      | _ -> failwith "Wrong number of arguments to MSet operation" )
-  | MGet -> (
-      match es with
-      | [e1; e2] ->
-          Printf.sprintf "(Obj.magic (NativeBdd.find record_fns (%s) (Obj.magic (%s))))"
-            (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
-      | _ -> failwith "Wrong number of arguments to MGet operation" )
-  | MMap -> (
-      match es with
-      | [e1; e2] -> (
-          match get_inner_type (OCamlUtils.oget e1.ety) with
-          | TArrow (_, newty) ->
-              (* Get e1's hashcons and closure *)
-              let op_key = getFuncCache e1 in
-              (*FIXME: this needs to be fresh, to avoid the case where it is
-                       used inside e1 but our separator is not OCaml friendly*)
-              let op_key_var = "op_key" in
-              (*need the Obj.magic to op_key_var arg here because tuple may have
-                       different type/size depending on the free vars*)
-              Printf.sprintf
-                "(Obj.magic (let %s = %s in \n\
-                \ NativeBdd.map (Obj.magic %s) (%d) (Obj.magic (%s)) (Obj.magic (%s))))" op_key_var
-                op_key op_key_var
-                (get_fresh_type_id type_store newty)
-                (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
-          | _ ->
-              failwith
-                ("Wrong type for function argument" ^ Printing.ty_to_string (OCamlUtils.oget e1.ety))
-          )
-      | _ -> failwith "Wrong number of arguments to map operation" )
-  | MMerge -> (
-      match es with
-      | e1 :: e2 :: e3 :: rest ->
-          let op_key = getFuncCache e1 in
-          let op_key_var = "op_key" in
-          let opt =
-            match rest with
-            | [el0; el1; er0; er1] ->
-                Printf.sprintf "~opt:(Obj.magic (Some (%s,%s,%s,%s)))" (exp_to_ocaml_string el0)
-                  (exp_to_ocaml_string el1) (exp_to_ocaml_string er0) (exp_to_ocaml_string er1)
-            | _ -> ""
-          in
-          Printf.sprintf
-            "(Obj.magic (let %s = %s in \n\
-             NativeBdd.merge %s (Obj.magic %s) (Obj.magic (%s)) (Obj.magic (%s)) (Obj.magic (%s))))"
-            op_key_var op_key opt op_key_var (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
-            (exp_to_ocaml_string e3)
-      | _ -> failwith "Wrong number of arguments for merge operation" )
-  | MMapFilter -> (
-      match es with
-      | [pred; f; m] -> (
-          let pred_closure =
-            match pred.e with
-            | EFun predF ->
-                (* Call track_tuples_exp to record any tuple types used in this predicate *)
-                Visitors.iter_exp track_tuples_exp predF.body;
-                let freeVars =
-                  Syntax.free_ty (BatSet.PSet.singleton ~cmp:Var.compare predF.arg) predF.body
-                in
-                let freeList = BatSet.PSet.to_list freeVars in
-                Collections.printList
-                  (fun (x, ty) ->
-                    Printf.sprintf "(%s,%d)" (varname x) (get_fresh_type_id type_store ty))
-                  freeList "(" "," ")"
-            | _ -> failwith "Predicate is not a function expression, try inlining"
-          in
-          let pred_id = Collections.ExpIds.fresh_id pred_store pred in
-          match get_inner_type (OCamlUtils.oget f.ety) with
-          | TArrow (_, newty) ->
-              (* Get e1's hashcons and closure *)
-              let op_key = getFuncCache f in
-              let op_key_var = "op_key" in
-              let pred_key = Printf.sprintf "(%d, %s)" pred_id pred_closure in
-              (*need the Obj.magic to op_key_var arg here because tuple may
-                         have different type/size depending on the free vars*)
-              Printf.sprintf
-                "(Obj.magic (let %s = %s in \n\
-                 let pred_key = %s in \n\
-                 NativeBdd.mapIf (Obj.magic pred_key) (Obj.magic %s) (%d) (Obj.magic (%s)) \
-                 (Obj.magic (%s))))"
-                op_key_var op_key (*first let*) pred_key op_key_var
-                (get_fresh_type_id type_store newty)
-                (exp_to_ocaml_string f) (exp_to_ocaml_string m)
-          | _ ->
-              failwith
-                ("Wrong type for function argument" ^ Printing.ty_to_string (OCamlUtils.oget f.ety))
-          )
-      | _ -> failwith "Wrong number of arguments to mapIf operation" )
-  | MMapIte -> (
-      match es with
-      | [pred; f1; f2; m] -> (
-          let pred_closure =
-            match pred.e with
-            | EFun predF ->
-                (* Call track_tuples_exp to record any tuple types used in this predicate *)
-                Visitors.iter_exp track_tuples_exp predF.body;
-                let freeVars =
-                  Syntax.free_ty (BatSet.PSet.singleton ~cmp:Var.compare predF.arg) predF.body
-                in
-                let freeList = BatSet.PSet.to_list freeVars in
-                Collections.printList
-                  (fun (x, ty) ->
-                    Printf.sprintf "(%s,%d)" (varname x) (get_fresh_type_id type_store ty))
-                  freeList "(" "," ")"
-            | _ -> failwith "Predicate is not a function expression, try inlining"
-          in
-          let pred_id = Collections.ExpIds.fresh_id pred_store pred in
-          match get_inner_type (OCamlUtils.oget f1.ety) with
-          | TArrow (_, newty) ->
-              (* Get e1's and e2's hashcons and closure *)
-              let op_key1 = getFuncCache f1 in
-              let op_key_var1 = "op_key1" in
-              let op_key2 = getFuncCache f2 in
-              let op_key_var2 = "op_key2" in
-              let pred_key = Printf.sprintf "(%d, %s)" pred_id pred_closure in
-              (*need the Obj.magic to op_key_var arg here because tuple may
-                        have different type/size depending on the free vars*)
-              Printf.sprintf
-                "(Obj.magic (let %s = %s in \n\
-                 let %s = %s in \n\
-                 let pred_key = %s in \n\
-                 NativeBdd.mapIte (Obj.magic pred_key) (Obj.magic %s) (Obj.magic %s) (%d) \
-                 (Obj.magic (%s)) (Obj.magic (%s)) (Obj.magic (%s))))"
-                op_key_var1 op_key1 (*first let*) op_key_var2 op_key2 (*snd let*) pred_key
-                op_key_var1 op_key_var2
-                (get_fresh_type_id type_store newty)
-                (exp_to_ocaml_string f1) (exp_to_ocaml_string f2) (exp_to_ocaml_string m)
-          | _ ->
-              failwith
-                ("Wrong type for function argument" ^ Printing.ty_to_string (OCamlUtils.oget f1.ety))
-          )
-      | _ -> failwith "Wrong number of arguments to mapIf operation" )
-  | MForAll -> (
-      match es with
-      | [pred; f; m] -> (
-          let pred_closure =
-            match pred.e with
-            | EFun predF ->
-                (* Call track_tuples_exp to record any tuple types used in this predicate *)
-                Visitors.iter_exp track_tuples_exp predF.body;
-                let freeVars =
-                  Syntax.free_ty (BatSet.PSet.singleton ~cmp:Var.compare predF.arg) predF.body
-                in
-                let freeList = BatSet.PSet.to_list freeVars in
-                Collections.printList
-                  (fun (x, ty) ->
-                    Printf.sprintf "(%s,%d)" (varname x) (get_fresh_type_id type_store ty))
-                  freeList "(" "," ")"
-            | _ -> failwith "Predicate is not a function expression, try inlining"
-          in
-          let pred_id = Collections.ExpIds.fresh_id pred_store pred in
-          match get_inner_type (OCamlUtils.oget f.ety) with
-          | TArrow (_, newty) ->
-              (* Get e1's hashcons and closure *)
-              let op_key = getFuncCache f in
-              let op_key_var = "op_key" in
-              let pred_key = Printf.sprintf "(%d, %s)" pred_id pred_closure in
-              (*need the Obj.magic to op_key_var arg here because tuple may
-                        have different type/size depending on the free vars*)
-              Printf.sprintf
-                "(let %s = %s in \n\
-                 let pred_key = %s in \n\
-                 NativeBdd.forall (Obj.magic pred_key) (Obj.magic %s) (%d) (%s) (%s))" op_key_var
-                op_key (*first let*) pred_key op_key_var
-                (get_fresh_type_id type_store newty)
-                (exp_to_ocaml_string f) (exp_to_ocaml_string m)
-          | _ ->
-              failwith
-                ("Wrong type for function argument" ^ Printing.ty_to_string (OCamlUtils.oget f.ety))
-          )
-      | _ -> failwith "Wrong number of arguments to forall operation" )
-  | _ -> failwith "Not yet implemented" *)
 
 (** Translate a declaration to an OCaml program*)
 let compile_decl decl =
@@ -790,11 +629,11 @@ let compile_decls decls =
   let tuple_s = build_record_types () in
   let record_fns = build_proj_funcs () in
   let record_cnstrs = build_constructors () in
-  let embeddings =
-    "let _ = Embeddings.build_embed_cache record_fns\n\
-    \ let _ = Embeddings.build_unembed_cache record_cnstrs record_fns\n\n"
-  in
+  let embeddings = "let _ = Embeddings.build_embed_cache record_fns\n\n" in
+
   Printf.sprintf "%s %s %s %s %s" tuple_s record_cnstrs record_fns embeddings s
+
+(* let _ = Embeddings.build_unembed_cache record_cnstrs record_fns *)
 
 let set_entry (name : string) =
   Printf.sprintf

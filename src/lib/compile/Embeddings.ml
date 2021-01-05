@@ -35,16 +35,16 @@ let rec embed_value (record_fns : int * int -> 'a -> 'b) (typ : Syntax.ty) :
         match Obj.magic v with
         | None -> Syntax.voption None
         | Some v' -> Syntax.voption (Some (f v')) )
-  (*
-
-      | TMap (kty, vty) ->
-        (* trivial as we represent maps with the same mtbdd + key type id + value type id*)
-        (* no longer trivial *)
-        let g x = embed_value record_fns vty (Mtbdd.get x) |> Mtbdd.unique B.tbl_nv in
-        fun v ->
-          let omap = Obj.magic v in
-          let vbdd = Mapleaf.mapleaf1 g omap.bdd in
-          Syntax.vmap (vbdd, kty) *)
+  | TMap (kty, vty) ->
+      (* trivial as we represent maps with the same mtbdd + key type id + value type id*)
+      (* no longer trivial *)
+      let g x =
+        embed_value record_fns vty (Mtbddc.get x) |> Mtbddc.unique B.tbl_nv
+      in
+      fun v ->
+        let omap = Obj.magic v in
+        let vbdd = Mapleaf.mapleaf1 g omap.bdd in
+        Syntax.vmap (vbdd, Some kty) (Some typ)
   | TArrow _ ->
       failwith
         (Printf.sprintf "Function %s computed as value"
@@ -132,21 +132,12 @@ let rec unembed_value (record_cnstrs : int -> 'c)
   | TVar { contents = Link ty } -> unembed_value record_cnstrs record_proj ty
   | TVar _ | QVar _ -> failwith "TVars and QVars should not show up here"
 
-(* Lifts embed_value to a multivalue *)
+(* Lifts embed_value to a multivalue - We don't assign a key type here. *)
 let embed_multivalue (record_fns : int * int -> 'a -> 'b) (typ : Syntax.ty) v =
-  let g x = embed_value record_fns typ (Mtbdd.get x) |> Mtbdd.unique B.tbl_nv in
-  Syntax.vmap (Mapleaf.mapleaf1 g (Obj.magic v)) (Some typ)
-
-(* Only memoizing outermost call on type. There is probably little merit to
-   memoize the recursive calls. TODO: memoize based on values too?*)
-
-(* NOTE: Using hashing memoization degrades performance probably because hashing
-   the type takes time.
-   NOTE: Using ordered (i.e. a tree) comparison is much
-   faster but still slightly degrades performance.
-   TODO: Instead we should assign each type an integer/tag and then look that up in a
-   memoized table.
-*)
+  let g x =
+    embed_value record_fns typ (Mtbddc.get x) |> Mtbddc.unique B.tbl_nv
+  in
+  Syntax.vmap (Mapleaf.mapleaf1 g (Obj.magic v), None) (Some typ)
 
 (* Cache of embed functions based on type. The size here is an arbitrary number,
    the size of the type array is what is eventually used. *)

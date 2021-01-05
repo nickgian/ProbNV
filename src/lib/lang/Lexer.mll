@@ -46,7 +46,6 @@ rule token = parse
   | "match"           { MATCH (position lexbuf) }
   | "with"            { WITH (position lexbuf) }
  (* | "require"         { REQUIRE (position lexbuf) }
-  | "createDict"      { CREATEMAP (position lexbuf) }
   | "foldNodes"       { FOLDNODE (position lexbuf) }
   | "foldEdges"       { FOLDEDGE (position lexbuf) }
   | "map"             { MAP (position lexbuf) }
@@ -56,9 +55,10 @@ rule token = parse
   | "union"           { UNION (position lexbuf) }
   | "inter"           { INTER (position lexbuf) }
   | "filter"          { FILTER (position lexbuf) }
-  | "minus"           { MINUS (position lexbuf) }
+  | "minus"           { MINUS (position lexbuf) } *)
+  | "createDict"      { CREATEMAP (position lexbuf) }
   | "set"             { TSET (position lexbuf) }
-  | "dict"            { TDICT (position lexbuf) }*)
+  | "dict"            { TDICT (position lexbuf) }
   | "option"          { TOPTION (position lexbuf) } 
   | "int" num as s    { TINT (position lexbuf, int_of_string @@ String.lchop ~n:3 s) }
   | "int"             { TINT (position lexbuf, 32) }

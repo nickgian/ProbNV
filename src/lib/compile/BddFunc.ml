@@ -33,25 +33,28 @@ let rec equal_t x y =
   | Tuple ts1, Tuple ts2 -> List.for_all2 equal_t ts1 ts2
   | _, _ -> false
 
-let bdd_of_bool b = if b then Bdd.dtrue B.mgr else Bdd.dfalse B.mgr
-
 (* given a BDD converts it to a MTBDD*)
 let wrap_mtbdd bdd =
   match bdd with
   | BBool bdd ->
-      let tru = Mtbdd.cst B.mgr B.tbl true in
-      let fal = Mtbdd.cst B.mgr B.tbl false in
-      Mtbdd.ite bdd tru fal
+      let tru = Mtbddc.cst B.mgr B.tbl true in
+      let fal = Mtbddc.cst B.mgr B.tbl false in
+      Mtbddc.ite bdd tru fal
   | _ -> failwith "Expected a boolean BDD"
 
 (* given a boolean MTBDD converts it to a BDD*)
-let bdd_of_mtbdd (map : bool Cudd.Mtbdd.unique Cudd.Vdd.t) =
-  Mtbdd.guard_of_leaf B.tbl map true
+let bdd_of_mtbdd (map : bool Cudd.Mtbddc.unique Cudd.Vdd.t) =
+  Mtbddc.guard_of_leaf B.tbl map true
+
+(*Gets i-th bit of the integer n *)
+let get_bit (n : int) (i : int) : bool =
+  let marker = Z.shift_left Z.one i in
+  Z.logand (Z.of_int n) marker <> Z.zero
 
 let mk_int n sz =
   Array.init sz (fun j ->
-      let bit = B.get_bit n j in
-      bdd_of_bool bit)
+      let bit = get_bit n j in
+      B.bdd_of_bool bit)
 
 let rec default_value ty =
   match ty.typ with
@@ -63,13 +66,14 @@ let rec default_value ty =
   | TEdge ->
       Tuple [ default_value (concrete TNode); default_value (concrete TNode) ]
   | TVar { contents = Link t } -> default_value t
-  | TVar _ | QVar _ | TArrow _ -> failwith "internal error (default_value)"
+  | TVar _ | QVar _ | TArrow _ | TMap _ ->
+      failwith "internal error (default_value)"
 
 (** Lifts a value to a BDD*)
 let rec toBdd_typ (record_fns : int * int -> 'a -> 'b) (val_ty : ty) (v : 'v) :
     t =
   match val_ty.typ with
-  | TBool -> BBool (bdd_of_bool (Obj.magic v))
+  | TBool -> BBool (B.bdd_of_bool (Obj.magic v))
   | TInt i ->
       let bs = mk_int (Obj.magic v) i in
       BInt bs
@@ -201,20 +205,20 @@ let bor x y =
 
 (** ** Multivalue operations *)
 
-let toMap ~value = Mtbdd.cst B.mgr B.tbl (Obj.magic value)
+let toMap ~value = Mtbddc.cst B.mgr B.tbl (Obj.magic value)
 
 (* applyN takes as argument an OCaml function over concrete OCaml values and a nu*)
-let applyN ~f ~args : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
-  let g _ (arr : 'a Cudd.Mtbdd.unique Cudd.Vdd.t array) :
-      'a Cudd.Mtbdd.unique Cudd.Vdd.t option =
-    let cst = Array.for_all (fun add -> Mtbdd.is_cst add) arr in
+let applyN ~f ~args : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
+  let g _ (arr : 'a Cudd.Mtbddc.unique Cudd.Vdd.t array) :
+      'a Cudd.Mtbddc.unique Cudd.Vdd.t option =
+    let cst = Array.for_all (fun add -> Mtbddc.is_cst add) arr in
     if cst then
       let res =
         Array.fold_left
-          (fun facc add -> Obj.magic (facc (Obj.magic (Mtbdd.dval add))))
+          (fun facc add -> Obj.magic (facc (Obj.magic (Mtbddc.dval add))))
           (Obj.magic f) arr
       in
-      Some (Mtbdd.cst B.mgr B.tbl (Obj.magic res))
+      Some (Mtbddc.cst B.mgr B.tbl (Obj.magic res))
     else None
   in
   let op =
@@ -241,8 +245,8 @@ let map_cache = Obj.magic (ref HashClosureMap.empty)
 
 (*todo add cache and modify compiler *)
 
-let apply1 ~op_key ~f ~arg1 : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
-  let g v1 = f (Obj.magic (Mtbdd.get v1)) |> Mtbdd.unique B.tbl in
+let apply1 ~op_key ~f ~arg1 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
+  let g v1 = f (Obj.magic (Mtbddc.get v1)) |> Mtbddc.unique B.tbl in
   let op =
     match HashClosureMap.Exceptionless.find (Obj.magic op_key) !map_cache with
     | None ->
@@ -254,13 +258,14 @@ let apply1 ~op_key ~f ~arg1 : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
   User.apply_op1 op arg1
 
 let apply2_time = ref 0.0
+
 let apply3_time = ref 0.0
 
 (* specialized version of applyN for two arguments*)
-let apply2 ~op_key ~f ~arg1 ~arg2 : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
+let apply2 ~op_key ~f ~arg1 ~arg2 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
   let g v1 v2 =
-    Obj.magic (f (Obj.magic (Mtbdd.get v1))) (Mtbdd.get v2)
-    |> Mtbdd.unique B.tbl
+    Obj.magic (f (Obj.magic (Mtbddc.get v1))) (Mtbddc.get v2)
+    |> Mtbddc.unique B.tbl
   in
   let op =
     match HashClosureMap.Exceptionless.find (Obj.magic op_key) !map_cache with
@@ -274,13 +279,13 @@ let apply2 ~op_key ~f ~arg1 ~arg2 : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
   in
   Profile.time_profile_total apply2_time (fun () -> User.apply_op2 op arg1 arg2)
 
-let apply3 ~op_key ~f ~arg1 ~arg2 ~arg3 : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
+let apply3 ~op_key ~f ~arg1 ~arg2 ~arg3 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
   let g v1 v2 v3 =
     Obj.magic
       (Obj.magic
-         (Obj.magic (f (Obj.magic (Mtbdd.get v1))) (Mtbdd.get v2))
-         (Mtbdd.get v3))
-    |> Mtbdd.unique B.tbl
+         (Obj.magic (f (Obj.magic (Mtbddc.get v1))) (Mtbddc.get v2))
+         (Mtbddc.get v3))
+    |> Mtbddc.unique B.tbl
   in
   let op =
     match HashClosureMap.Exceptionless.find (Obj.magic op_key) !map_cache with
@@ -292,7 +297,8 @@ let apply3 ~op_key ~f ~arg1 ~arg2 ~arg3 : 'a Cudd.Mtbdd.unique Cudd.Vdd.t =
         o
     | Some op -> op
   in
-  Profile.time_profile_total apply3_time (fun () -> User.apply_op3 op arg1 arg2 arg3)
+  Profile.time_profile_total apply3_time (fun () ->
+      User.apply_op3 op arg1 arg2 arg3)
 
 (** ** Probabilistic part *)
 
@@ -305,29 +311,30 @@ let uniform_probability_ty ty (g : AdjGraph.t) =
   | TEdge -> 1.0 /. float (AdjGraph.nb_edges g)
   | TTuple _ -> failwith "Only applicable over base types"
   | TOption _ -> failwith "Todo"
-  | TArrow _ | QVar _ | TVar _ ->
+  | TArrow _ | QVar _ | TVar _ | TMap _ ->
       failwith "No probabilities over arrow types or type variables"
 
 (* Creates a uniform distribution represented as a MTBDD, 
    given the type of the value.*)
 let uniform_distribution (res : t) ty (g : AdjGraph.t) :
-    float Cudd.Mtbdd.unique Cudd.Vdd.t =
+    float Cudd.Mtbddc.unique Cudd.Vdd.t =
   let rec aux ty res =
     match (ty.typ, res) with
     | TInt _, _ | TBool, _ ->
-        Mtbdd.cst B.mgr B.tbl_probabilities (uniform_probability_ty ty g)
+        Mtbddc.cst B.mgr B.tbl_probabilities (uniform_probability_ty ty g)
     | TNode, res -> (
         let prob =
-          Mtbdd.cst B.mgr B.tbl_probabilities (uniform_probability_ty ty g)
+          Mtbddc.cst B.mgr B.tbl_probabilities (uniform_probability_ty ty g)
         in
         (* If it's a node type, assign 0 probability to invalid nodes *)
         match lt res (BInt (mk_int (AdjGraph.nb_vertex g) tnode_sz)) with
         | BBool isValidNode ->
-            Mtbdd.ite isValidNode prob (Mtbdd.cst B.mgr B.tbl_probabilities 0.0)
+            Mtbddc.ite isValidNode prob
+              (Mtbddc.cst B.mgr B.tbl_probabilities 0.0)
         | _ -> failwith "Expected a boolean result from lt computation" )
     | TEdge, Tuple [ u; v ] ->
         let prob =
-          Mtbdd.cst B.mgr B.tbl_probabilities (uniform_probability_ty ty g)
+          Mtbddc.cst B.mgr B.tbl_probabilities (uniform_probability_ty ty g)
         in
         let isValidEdge =
           AdjGraph.fold_edges_e
@@ -338,21 +345,22 @@ let uniform_distribution (res : t) ty (g : AdjGraph.t) :
             g (Bdd.dfalse B.mgr)
         in
         (* If it's not a valid edge assign a 0 probability *)
-        Mtbdd.ite isValidEdge prob (Mtbdd.cst B.mgr B.tbl_probabilities 0.0)
+        Mtbddc.ite isValidEdge prob (Mtbddc.cst B.mgr B.tbl_probabilities 0.0)
     | TTuple ts, Tuple rs ->
         let distrs = List.map2 (fun t r -> aux t r) ts rs in
         User.map_opN
-          (fun _ (arr : float Cudd.Mtbdd.unique Cudd.Vdd.t array) ->
-            let cst = Array.for_all (fun add -> Mtbdd.is_cst add) arr in
+          (fun _ (arr : float Cudd.Mtbddc.unique Cudd.Vdd.t array) ->
+            let cst = Array.for_all (fun add -> Mtbddc.is_cst add) arr in
             if cst then
               let res =
-                Array.fold_left (fun acc add -> acc *. Mtbdd.dval add) 1.0 arr
+                Array.fold_left (fun acc add -> acc *. Mtbddc.dval add) 1.0 arr
               in
-              Some (Mtbdd.cst B.mgr B.tbl_probabilities res)
+              Some (Mtbddc.cst B.mgr B.tbl_probabilities res)
             else None)
           [||] (Array.of_list distrs)
     | TOption _, _ -> failwith "todo: probability for options"
-    | TTuple _, _ | TEdge, _ | TVar _, _ | QVar _, _ | TArrow _, _ ->
+    | TTuple _, _ | TEdge, _ | TVar _, _ | QVar _, _ | TArrow _, _ | TMap _, _
+      ->
         failwith "Impossible cases"
   in
   aux ty res
@@ -379,7 +387,7 @@ let create_value (ty : ty) (g : AdjGraph.t) : t =
         BOption (tag, aux ty)
     (* | TRecord map -> aux i (TTuple (RecordUtils.get_record_entries map))
  *)
-    | TArrow _ | QVar _ | TVar _ ->
+    | TArrow _ | QVar _ | TVar _ | TMap _ ->
         failwith
           (Printf.sprintf "internal error (create_value) type:%s\n"
              (Printing.ty_to_string (get_inner_type ty)))

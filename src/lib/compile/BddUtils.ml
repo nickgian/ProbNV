@@ -5,9 +5,11 @@ open ProbNv_utils
 open ProbNv_datastructures
 open Batteries
 
-type distribution = float Mtbdd.t
+type distribution = float Mtbddc.t
 
 let mgr = Man.make_v ()
+
+let bdd_of_bool b = if b then Bdd.dtrue mgr else Bdd.dfalse mgr
 
 let rec ty_to_size ty =
   match (get_inner_type ty).typ with
@@ -19,7 +21,7 @@ let rec ty_to_size ty =
       | TRecord tmap -> ty_to_size (TTuple (RecordUtils.get_record_entries tmap)) *)
   | TNode -> ty_to_size (concrete (TInt tnode_sz)) (* Encode as int *)
   | TEdge -> 2 * ty_to_size (concrete TNode) (*Encode as node pair*)
-  | TArrow _ | TVar _ | QVar _ ->
+  | TArrow _ | TVar _ | QVar _ | TMap _ ->
       failwith ("internal error (ty_to_size): " ^ Printing.ty_to_string ty)
 
 (* A list of the range of BDD variables, the type and the distribution, of every symbolic *)
@@ -38,22 +40,17 @@ let freshvar () = Bdd.newvar mgr
 
 let getVarsNb () = Man.get_bddvar_nb mgr
 
-let tbl = Obj.magic (Mtbdd.make_table ~hash:Hashtbl.hash ~equal:( = ))
+let tbl = Obj.magic (Mtbddc.make_table ~hash:Hashtbl.hash ~equal:( = ))
+
+let tbl_probabilities : float Mtbddc.table =
+  Mtbddc.make_table ~hash:Hashtbl.hash ~equal:( = )
 
 let tbl_nv =
-  Mtbdd.make_table
+  Mtbddc.make_table
     ~hash:(hash_value ~hash_meta:false)
     ~equal:(equal_values ~cmp_meta:false)
 
-let tbl_probabilities : float Mtbdd.table =
-  Mtbdd.make_table ~hash:Hashtbl.hash ~equal:( = )
-
-(* let tbl_bool = Mtbdd.make_table ~hash:(fun b -> if b then 1 else 0) ~equal:( = ) *)
-
-(*Gets i-th bit of the integer n *)
-let get_bit (n : int) (i : int) : bool =
-  let marker = Z.shift_left Z.one i in
-  Z.logand (Z.of_int n) marker <> Z.zero
+(* let tbl_bool = Mtbddc.make_table ~hash:(fun b -> if b then 1 else 0) ~equal:( = ) *)
 
 let tbool_to_bool tb =
   match tb with Man.False | Man.Top -> false | Man.True -> true
@@ -140,8 +137,8 @@ let tbool_to_obool tb =
 (* Moves through the distribution diagram towards a leaf *)
 let move v distr =
   if v = Man.True then (*Move left or right *)
-    Mtbdd.dthen distr
-  else Mtbdd.delse distr
+    Mtbddc.dthen distr
+  else Mtbddc.delse distr
 
 (* Counts the number of Top in cube from i to sz.*)
 let count_tops cube i sz =
@@ -154,22 +151,22 @@ let count_tops cube i sz =
 (* Computes the probability of a slice of a cube - only for a single symbolic *)
 let rec symbolicProbability cube i j distr =
   (* Optimization: if we have reached a uniform distribution, just count tops. *)
-  if Mtbdd.is_cst distr then
-    float (1 lsl count_tops cube i j) *. Mtbdd.dval distr
+  if Mtbddc.is_cst distr then
+    float (1 lsl count_tops cube i j) *. Mtbddc.dval distr
   else if
     (* If we have examined all variables of this symbolic the distribution must be a leaf*)
     i > j
-  then Mtbdd.dval distr
+  then Mtbddc.dval distr
   else if
     (*If this variable is determined, then procceed down the appropriate path.
       Also move the distribution if necessary.*)
     cube.(i) = Man.True || cube.(i) = Man.False
   then
     symbolicProbability cube (i + 1) j
-      (if Mtbdd.topvar distr = i then move cube.(i) distr else distr)
+      (if Mtbddc.topvar distr = i then move cube.(i) distr else distr)
   else if
     (* Otherwise it's Top, and it can be both true and false.*)
-    (not (Mtbdd.is_cst distr)) && Mtbdd.topvar distr = i
+    (not (Mtbddc.is_cst distr)) && Mtbddc.topvar distr = i
   then
     (*If the top variable in the distribution matches the given variable, then recurse on both cases, and move the distribution accordingly. *)
     symbolicProbability cube (i + 1) j (move Man.True distr)
@@ -186,20 +183,19 @@ let printCube cube =
       else Printf.printf "*")
     cube
 
-    let rec printBdd distr =
-      match Mtbdd.inspect distr with
-      | Leaf v -> 
-          Printf.printf "Leaf: %f\n" (Mtbdd.dval distr)
-      | Ite (i, t, e) ->
-          Printf.printf "top: %d: \n" i;
-          Printf.printf "  dthen: ";
-          printBdd t;
-          Printf.printf "  delse: ";
-          printBdd e
+let rec printBdd distr =
+  match Mtbddc.inspect distr with
+  | Leaf v -> Printf.printf "Leaf: %f\n" (Mtbddc.dval distr)
+  | Ite (i, t, e) ->
+      Printf.printf "top: %d: \n" i;
+      Printf.printf "  dthen: ";
+      printBdd t;
+      Printf.printf "  delse: ";
+      printBdd e
 
 (* Computes the probability of a cube happening - includes all symbolics *)
 let rec cubeProbability (cube : Cudd.Man.tbool array)
-    (bounds : (int * int * Syntax.ty * float Cudd.Mtbdd.t) list) =
+    (bounds : (int * int * Syntax.ty * float Cudd.Mtbddc.t) list) =
   match bounds with
   | [] -> 1.0
   | (xstart, xend, _, xdistribution) :: bounds ->
@@ -208,18 +204,17 @@ let rec cubeProbability (cube : Cudd.Man.tbool array)
       let p = symbolicProbability cube xstart xend xdistribution in
       (* debugging code *)
       (* Printf.printf "range:(%d,%d) " xstart xend;
-      Printf.printf "cube: ";
-      printCube cube;
-      Printf.printf " symbProb: %f\n" p; *)
+         Printf.printf "cube: ";
+         printCube cube;
+         Printf.printf " symbProb: %f\n" p; *)
       p *. cubeProbability cube bounds
 
-let rec computeTrueProbability (assertion : bool Cudd.Mtbdd.t) bounds =
+let rec computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds =
   let ptrue = ref 0.0 in
-  Mtbdd.iter_cube
+  Mtbddc.iter_cube
     (fun cube v ->
       if v then ptrue := !ptrue +. cubeProbability cube bounds else ())
     assertion;
   !ptrue
 
-let get_statistics () =
-  Man.print_info mgr
+let get_statistics () = Man.print_info mgr

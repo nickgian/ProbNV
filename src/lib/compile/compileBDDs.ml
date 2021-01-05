@@ -3,7 +3,7 @@ open Syntax
 open Cudd
 
 (* BddMap plus the type of the values*)
-type 'a t = { bdd : 'a Mtbdd.t; val_ty_id : int }
+type 'a t = { bdd : 'a Mtbddc.t; key_ty_id : int; val_ty_id : int }
 
 (** ** Support for MapIf*)
 

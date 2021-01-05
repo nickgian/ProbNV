@@ -25,8 +25,7 @@ module type SrpSimulationSig = sig
     (int -> 'a) ->
     (int * int -> 'a -> 'a) ->
     (int -> 'a -> 'a -> 'a) ->
-    int ->
-    'a
+    'a CompileBDDs.t
   (** Takes as input record_fns, the attribute type id, the name of the
      variable storing the solutions, the init trans and merge functions and
      computes the solutions.*)
@@ -36,7 +35,7 @@ module type SrpSimulationSig = sig
   val solved : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list ref
   (** List of solutions, each entry is the name of the SRP, a map from nodes to solutions, and the type of routes *)
 
-  val assertions : (bool Mtbdd.t * float) list ref
+  val assertions : (bool Mtbddc.t * float) list ref
   (** List of assertions and the desired probability. To be checked if they hold. *)
 
   (*TODO: maybe make it a variant to distinguish between a boolean and an Mtbdd boolean. *)
@@ -233,12 +232,20 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
     Printf.printf "Apply3 time: %f\n" !BddFunc.apply3_time;
     let default = AdjGraph.VertexMap.choose vals |> snd in
     (* Constructing a function from the solutions *)
-    let base _ = default in
-    let full =
-      AdjGraph.VertexMap.fold
-        (fun n v acc u -> if u = n then v else acc u)
-        vals base
+    let bdd_base =
+      BddMap.create
+        ~key_ty_id:
+          (Collections.TypeIds.get_id CompileBDDs.type_store
+             Syntax.(concrete TNode))
+        ~val_ty_id:attr_ty_id default
     in
+    let bdd_full =
+      AdjGraph.VertexMap.fold
+        (fun n v acc ->
+          BddMap.update (Obj.magic record_fns) acc (Obj.magic n) (Obj.magic v))
+        vals bdd_base
+    in
+
     (* Storing the AdjGraph.VertexMap in the solved list, but returning
        the function to the ProbNV program *)
     solved :=
@@ -246,9 +253,9 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
         ( Obj.magic vals,
           Collections.TypeIds.get_elt CompileBDDs.type_store attr_ty_id ) )
       :: !solved;
-    full
+    bdd_full
 
-  let assertions : (bool Mtbdd.t * float) list ref = ref []
+  let assertions : (bool Mtbddc.t * float) list ref = ref []
 end
 
 module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
@@ -316,9 +323,9 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
       neighbors
 
   let rec printBdd distr =
-    match Mtbdd.inspect distr with
+    match Mtbddc.inspect distr with
     | Leaf _ -> (
-        match Obj.magic (Mtbdd.dval distr) with
+        match Obj.magic (Mtbddc.dval distr) with
         | None -> Printf.printf "Leaf: None\n"
         | Some v -> Printf.printf "Leaf: Some %d\n" v )
     | Ite (i, t, e) ->
@@ -340,7 +347,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
         if u = v then init u
         else (
           Printf.printf "  Size of message from %d: %d\n" v
-            (Cudd.Mtbdd.size (Obj.magic (get_attribute_exn v local)));
+            (Cudd.Mtbddc.size (Obj.magic (get_attribute_exn v local)));
           printBdd (Obj.magic (get_attribute_exn v local));
           trans edge (get_attribute_exn v local) )
       in
@@ -517,12 +524,20 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     Printf.printf "Apply3 time: %f\n" !BddFunc.apply3_time;
     let default = AdjGraph.VertexMap.choose vals |> snd in
     (* Constructing a function from the solutions *)
-    let base _ = default in
-    let full =
-      AdjGraph.VertexMap.fold
-        (fun n v acc u -> if u = n then v else acc u)
-        vals base
+    let bdd_base =
+      BddMap.create
+        ~key_ty_id:
+          (Collections.TypeIds.get_id CompileBDDs.type_store
+             Syntax.(concrete TNode))
+        ~val_ty_id:attr_ty_id default
     in
+    let bdd_full =
+      AdjGraph.VertexMap.fold
+        (fun n v acc ->
+          BddMap.update (Obj.magic record_fns) acc (Obj.magic n) (Obj.magic v))
+        vals bdd_base
+    in
+
     (* Storing the AdjGraph.VertexMap in the solved list, but returning
        the function to the ProbNV program *)
     solved :=
@@ -530,9 +545,9 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
         ( Obj.magic vals,
           Collections.TypeIds.get_elt CompileBDDs.type_store attr_ty_id ) )
       :: !solved;
-    full
+    bdd_full
 
-  let assertions : (bool Mtbdd.t * float) list ref = ref []
+  let assertions : (bool Mtbddc.t * float) list ref = ref []
 end
 
 (** Given the attribute type of the network constructs an OCaml function
@@ -547,13 +562,13 @@ let ocaml_to_nv_value record_fns (attr_ty : Syntax.ty) v : Syntax.value =
 let build_solution record_fns (vals, ty) =
   AdjGraph.VertexMap.map (fun v -> ocaml_to_nv_value record_fns ty v) vals
 
-let check_assertion (a : bool Cudd.Mtbdd.t * float) bounds =
+let check_assertion (a : bool Cudd.Mtbddc.t * float) bounds =
   let prob = BddUtils.computeTrueProbability (fst a) bounds in
   (prob >= snd a, prob)
 
 let build_solutions nodes record_fns
     (sols : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list)
-    (assertions : (bool Cudd.Mtbdd.t * float) list) =
+    (assertions : (bool Cudd.Mtbddc.t * float) list) =
   let open Solution in
   let assertions = List.rev assertions in
   let symbolic_bounds = List.rev !BddUtils.vars_list in

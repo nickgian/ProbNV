@@ -169,7 +169,7 @@ and closure =
 and env = { ty : ty Env.t; value : value Env.t }
 
 and mtbdd =
-  (value Mtbdd.t
+  (value Mtbddc.t * ty option
   [@compare fun _ _ -> failwith "Map value comparison not supported"])
 
 (** Expression Language for both HLL + LLL combined *)
@@ -355,7 +355,7 @@ and equal_vs ~cmp_meta v1 v2 =
       Env.equal equal_tys ty1 ty2
       && Env.equal (equal_values ~cmp_meta) value1 value2
       && equal_funcs ~cmp_meta f1 f2
-  | VTotalMap m1, VTotalMap m2 -> Mtbdd.is_equal m1 m2
+  | VTotalMap (m1, _), VTotalMap (m2, _) -> Mtbddc.is_equal m1 m2
   | VOption vo1, VOption vo2 -> (
       match (vo1, vo2) with
       | None, None -> true
@@ -516,7 +516,7 @@ let hash_string str =
   done;
   !acc
 
-let hash_map vdd = Mtbdd.size vdd
+let hash_map vdd = Mtbddc.size vdd
 
 let rec hash_value ~hash_meta v : int =
   let m =
@@ -548,7 +548,7 @@ and hash_v ~hash_meta v =
           0 vs
       in
       (19 * acc) + 5
-  | VTotalMap m -> (19 * hash_map m) + 2
+  | VTotalMap (m, _) -> (19 * hash_map m) + 2
 
 and hash_exp ~hash_meta e =
   let m =

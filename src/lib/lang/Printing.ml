@@ -104,11 +104,11 @@ let canonicalize_type (ty : ty) : ty =
                  (get_record_entries tmap)
              in
              TRecord tmap', map, count
-
-           | TMap (t1, t2) ->
-             let t1', map, count = aux t1 map count in
-             let t2', map, count = aux t2 map count in
-             TMap (t1', t2'), map, count *)
+        *)
+    | TMap (t1, t2) ->
+        let t1', map, count = aux t1 map count in
+        let t2', map, count = aux t2 map count in
+        ({ ty with typ = TMap (t1', t2') }, map, count)
     | QVar tyname -> (
         match VarMap.Exceptionless.find tyname map with
         | None ->
@@ -253,8 +253,10 @@ let pick_default_value map =
 let bindings (map : mtbdd) =
   let bs = ref [] in
   (* let dv = pick_default_value map in *)
-  Mtbdd.iter_cube (fun k v -> bs := (k, v) :: !bs) map;
-  !bs
+  match map with
+  | m, _ ->
+      Mtbddc.iter_cube (fun k v -> bs := (k, v) :: !bs) m;
+      !bs
 
 let rec value_env_to_string ~show_types env =
   Env.to_string (value_to_string_p ~show_types max_prec) env.value

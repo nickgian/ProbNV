@@ -583,6 +583,8 @@ and infer_declaration isHLL infer_exp i info env record_types d :
   | DLet (x, e1) when isHLL ->
       enter_level ();
       let e1, ty_e1 = infer_exp e1 |> textract in
+      Printf.printf "Dlet : %s with ty = %s\n" (Var.to_string x)
+        (Printing.ty_to_string ty_e1);
       leave_level ();
       let ty = generalize ty_e1 in
       (Env.update env x ty, DLet (x, texp (e1, ty, e1.espan)))
@@ -604,17 +606,9 @@ and infer_declaration isHLL infer_exp i info env record_types d :
       | None | Some Symbolic ->
           Console.error_position info e.espan "Wrong mode for assertion" )
   | DSolve { aty; var_names; init; trans; merge } -> (
-      let solve_aty =
-        match aty with
-        | Some ty -> ty
-        | None -> { typ = fresh_tyvar (); mode = None }
-      in
       let init' = infer_exp init in
       let trans' = infer_exp trans in
       let merge' = infer_exp merge in
-      unify info init (oget init'.ety) (init_ty solve_aty);
-      unify info trans (oget trans'.ety) (trans_ty solve_aty);
-      unify info merge (oget merge'.ety) (merge_ty solve_aty);
       let var =
         match var_names.e with
         | EVar x -> x
@@ -672,6 +666,15 @@ and infer_declaration isHLL infer_exp i info env record_types d :
           Console.error_position info trans.espan
             "Modes of solution declarations do not match"
       in
+      let solve_aty =
+        match aty with
+        | Some ty -> ty
+        | None -> { typ = fresh_tyvar (); mode = Some m }
+      in
+      unify info init (oget init'.ety) (init_ty solve_aty);
+      unify info trans (oget trans'.ety) (trans_ty solve_aty);
+      unify info merge (oget merge'.ety) (merge_ty solve_aty);
+
       match m with
       | Symbolic ->
           Console.error_position info trans.espan "Solution cannot be symbolic"
@@ -828,11 +831,12 @@ module HLLTypeInf = struct
           let ty_x = mty arg_mode (fresh_tyvar ()) in
           Printf.printf "x : %s with ty = %s\n" (Var.to_string x)
             (Printing.ty_to_string ty_x);
+          unify_opt info e argty ty_x;
+
           let e, ty_e =
             _infer_exp (i + 1) info (Env.update env x ty_x) record_types body
             |> textract
           in
-          unify_opt info e argty ty_x;
           unify_opt info e resty ty_e;
           Printf.printf "after unify:\n";
           Printf.printf "x : %s with ty = %s\n" (Var.to_string x)
@@ -1232,7 +1236,10 @@ module LLLTypeInf = struct
                   let valMode = get_mode mapty in
                   (* check that the map is in Concrete mode, i.e. m is C *)
                   if valMode = Some Concrete then
-                    texp (eop o [ e1; e2 ], { vty with mode = Some Concrete }, e.espan)
+                    texp
+                      ( eop o [ e1; e2 ],
+                        { vty with mode = Some Concrete },
+                        e.espan )
                   else
                     failwith
                       "LLL: map-get-c cannot return a symbolic or multivalue"
@@ -1362,6 +1369,11 @@ module LLLTypeInf = struct
           unify info e1 (mty None TBool) tcond;
           unify info e ty2 ty3;
 
+          (* if not (Syntax.equal_tys ty2 ty3) then (
+             Printf.printf "true branch: %s\n" (Printing.ty_to_string ty2);
+             Printf.printf "false branch: %s\n" (Printing.ty_to_string ty3);
+             failwith "If-Then-Else branch types do not match" ); *)
+
           (* Check the mode *)
           match get_mode tcond with
           | None -> Console.error_position info e.espan "No mode computed"
@@ -1380,12 +1392,21 @@ module LLLTypeInf = struct
               Console.error_position info e.espan
                 "Symbolic/Multivalue guard - mistyped mode in Ite" )
       | ELet (x, e1, e2) ->
+          enter_level ();
           let e1, ty_e1 = infer_exp e1 |> textract in
+          leave_level ();
+          let ty = generalize ty_e1 in
           let e2, ty_e2 =
-            _infer_exp (i + 1) info (Env.update env x ty_e1) record_types e2
+            _infer_exp (i + 1) info (Env.update env x ty) record_types e2
             |> textract
           in
           texp (elet x e1 e2, ty_e2, e.espan)
+          (* let e1, ty_e1 = infer_exp e1 |> textract in
+             let e2, ty_e2 =
+               _infer_exp (i + 1) info (Env.update env x ty_e1) record_types e2
+               |> textract
+             in
+             texp (elet x e1 e2, ty_e2, e.espan) *)
       | ETuple es ->
           let es, tys = infer_exps (i + 1) info env record_types es in
           let m = get_mode (List.hd tys) in
@@ -1489,10 +1510,12 @@ module LLLTypeInf = struct
                 "ToBdd applied to non concrete expression" )
       | EToMap e1 -> (
           (* Based on rule ToMap of LLL*)
-          let e1, ty1 = infer_exp e1 |> textract in
+          Printf.printf "ETomap: %s\n"
+            (Printing.ty_to_string (OCamlUtils.oget e1.ety));
+          let e1, ty1 = e1 |> textract in
+          Printf.printf "ETomap: %s\n" (Printing.ty_to_string ty1);
           match get_mode ty1 with
-          | Some Concrete ->
-              texp (etoMap e1, mty (Some Multivalue) ty1.typ, e.espan)
+          | Some Concrete -> texp (etoMap e1, liftMultiTy ty1, e.espan)
           | _ ->
               Console.error_position info e.espan
                 "ToBdd applied to non concrete expression" )

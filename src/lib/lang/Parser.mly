@@ -114,6 +114,8 @@
 %token <ProbNv_datastructures.Span.t> TNODE
 %token <ProbNv_datastructures.Span.t> TEDGE
 %token <ProbNv_datastructures.Span.t * int> TINT
+%token <ProbNv_datastructures.Span.t> TDICT
+%token <ProbNv_datastructures.Span.t> TSET
 %token <ProbNv_datastructures.Span.t> EDGES
 %token <ProbNv_datastructures.Span.t> NODES
 %token <ProbNv_datastructures.Span.t> SYMBOLIC
@@ -121,6 +123,7 @@
 %token <ProbNv_datastructures.Span.t> SYMB
 %token <ProbNv_datastructures.Span.t> MULTI
 %token <ProbNv_datastructures.Span.t> CONCRETE
+
 
 
 %token EOF
@@ -156,9 +159,11 @@ bty:
    | LPAREN bty RPAREN                  { $2 }
    | LPAREN tys RPAREN                  { if List.length $2 = 1 then failwith "impossible" else TTuple $2 }
    | TOPTION LBRACKET ty RBRACKET       { TOption $3 }
+   | TDICT LBRACKET ty COMMA ty RBRACKET{ TMap ($3,$5) }
+   | TSET LBRACKET ty RBRACKET          { TMap ($3,{typ = TBool; mode = Some Concrete}) }
    /*
-   | TDICT LBRACKET ty COMMA ty RBRACKET{ TMap ($3,$5) } */
-   /* | TSET LBRACKET ty RBRACKET          { TMap ($3,TBool) }
+    */
+   /* 
    | LBRACE record_entry_tys RBRACE     { TRecord (make_record_map $2) }
    | ID                                 { get_user_type (snd $1) } */
 ;

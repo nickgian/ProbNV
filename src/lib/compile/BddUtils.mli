@@ -2,19 +2,22 @@ open ProbNv_datastructures
 open ProbNv_lang
 open Cudd
 
-type distribution = float Mtbdd.t
+type distribution = float Mtbddc.t
+
+val bdd_of_bool : bool -> Cudd.Man.v Cudd.Bdd.t
+(** Convert bool to bdd *)
 
 val mgr : Cudd.Man.v Cudd.Man.t
 (** BDD/MTBDD manager *)
 
-val tbl : 'a Cudd.Mtbdd.table
+val tbl : 'a Cudd.Mtbddc.table
 
-val tbl_nv : Syntax.value Cudd.Mtbdd.table
+val tbl_probabilities : float Cudd.Mtbddc.table
 
-val tbl_probabilities : float Cudd.Mtbdd.table
+val tbl_nv : Syntax.value Cudd.Mtbddc.table
 
 (* 
-val tbl_bool : bool Cudd.Mtbdd.table *)
+val tbl_bool : bool Cudd.Mtbddc.table *)
 
 (* Given a type returns the number of decision variables required to represent its values *)
 val ty_to_size : Syntax.ty -> int
@@ -32,16 +35,13 @@ val freshvar : unit -> Cudd.Man.v Cudd.Bdd.t
 
 val getVarsNb : unit -> int
 
-val get_bit : int -> int -> bool
-(** Given an integer n and an int i returns the ith-bit of n. *)
-
 val tbool_to_bool : Cudd.Man.tbool -> bool
 
 val tbool_to_obool : Cudd.Man.tbool -> bool option
 
 val computeTrueProbability :
-  bool Cudd.Mtbdd.t ->
-  (int * int * ProbNv_lang.Syntax.ty * float Cudd.Mtbdd.t) list ->
+  bool Cudd.Mtbddc.t ->
+  (int * int * ProbNv_lang.Syntax.ty * float Cudd.Mtbddc.t) list ->
   float
 
-val get_statistics: unit -> unit
+val get_statistics : unit -> unit
