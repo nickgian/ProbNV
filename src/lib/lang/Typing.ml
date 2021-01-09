@@ -378,7 +378,7 @@ let op_typ op =
         concrete TBool )
   | NLess -> ([ concrete TNode; concrete TNode ], concrete TBool)
   | NLeq -> ([ concrete TNode; concrete TNode ], concrete TBool)
-  (* | TGet _ | TSet _ -> failwith "internal error (op_typ): tuple op" *)
+  | TGet _ -> failwith "internal error (op_typ): tuple op"
   (* Map operations *)
   (* | MMap
      | MMerge
@@ -812,6 +812,18 @@ module HLLTypeInf = struct
                     mode = m;
                   },
                   e.espan )
+          | TGet (idx, _), [ e1 ] -> (
+              (* we don't need to do inference here, because this operation
+                 is not exposed to the user so type inference will
+                 have already happened. *)
+              let e1, tty = e1 |> textract in
+              match tty.typ with
+              | TTuple ts ->
+                  texp
+                    ( eop o [ e1 ],
+                      mty (get_mode tty) (List.nth ts idx).typ,
+                      e.espan )
+              | _ -> failwith "Expected a tuple type" )
           | _ ->
               let argtys, resty = op_typ o in
               let es, tys = infer_exps (i + 1) info env record_types es in
@@ -1170,7 +1182,6 @@ module LLLTypeInf = struct
     let _infer_exp = infer_exp in
     (* Alias in case we need to modify the usually-static args *)
     let infer_exp = infer_exp (i + 1) info env record_types in
-    let infer_value = infer_value info env record_types in
     let exp =
       match e.e with
       | EVar x -> (
@@ -1296,6 +1307,18 @@ module LLLTypeInf = struct
                         e.espan )
                   else failwith "Mode mismatch in MCreate"
               | _ -> failwith "Type mismatch in MCreate" )
+          | TGet (idx, _), [ e1 ] -> (
+              (* we don't need to do inference here, because this operation
+                  is not exposed to the user so type inference will
+                  have already happened. *)
+              let e1, tty = e1 |> textract in
+              match tty.typ with
+              | TTuple ts ->
+                  texp
+                    ( eop o [ e1 ],
+                      mty (get_mode tty) (List.nth ts idx).typ,
+                      e.espan )
+              | _ -> failwith "Expected a tuple type" )
           | _ ->
               let argtys, resty = op_typ o in
               let es, tys = infer_exps (i + 1) info env record_types es in

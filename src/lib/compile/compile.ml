@@ -105,7 +105,8 @@ let is_prefix_op op =
   | BddAnd | BddOr | BddAdd _ | BddNot | BddLess _ | BddLeq _ | BddEq | MGet
   | MCreate | MSet ->
       true
-  | And | Or | Not | UAdd _ | Eq | ULess _ | ULeq _ | NLess | NLeq -> false
+  | And | Or | Not | UAdd _ | Eq | ULess _ | ULeq _ | NLess | NLeq | TGet _ ->
+      false
 
 (** Translating LLL operators to OCaml operators*)
 let op_to_ocaml_string op =
@@ -122,7 +123,7 @@ let op_to_ocaml_string op =
   | NLess -> "<"
   | NLeq -> "<="
   | BddAnd | BddOr | BddNot | BddEq | BddAdd _ | BddLess _ | BddLeq _ | MGet
-  | MSet | MCreate ->
+  | MSet | MCreate | TGet _ ->
       failwith "Prefix operations are handled elsewhere"
 
 (** Translating patterns to OCaml patterns*)
@@ -242,6 +243,8 @@ let rec free (seen : Var.t BatSet.PSet.t) (e : exp) : Var.t BatSet.PSet.t =
           bs1 bs.plist
       in
       BatSet.PSet.union (free seen e) bs
+  | EBddIf _ | EToBdd _ | EToMap _ | EApplyN _ ->
+      failwith "Does not apply to non-concrete expressions"
 
 (** Returns an OCaml string that contains the hashconsed int of the function
    body and a tuple with the free variables that appear in the function. Used
@@ -441,6 +444,9 @@ and prefix_op_to_ocaml_string op es ty =
                 (get_fresh_type_id type_store vty)
                 (exp_to_ocaml_string (BatList.hd es))
           | _ -> failwith "Wrong type for map operation" )
+      | TGet (idx, sz) ->
+          let proj = proj_rec idx sz in
+          Printf.sprintf "(%s).%s" (exp_to_ocaml_string e) proj
       | _ -> failwith "Wrong number of arguments" )
   | [ e1; e2 ] -> (
       match op with
@@ -469,7 +475,7 @@ and prefix_op_to_ocaml_string op es ty =
       | MSet | MCreate ->
           failwith "Wrong number of arguments to MSet/MCreate operation"
       | Eq | UAdd _ | ULess _ | NLess | ULeq _ | NLeq | And | Or | Not | BddNot
-        ->
+      | TGet _ ->
           failwith "not applicable" )
   | [ e1; e2; e3 ] -> (
       match op with
@@ -481,7 +487,7 @@ and prefix_op_to_ocaml_string op es ty =
             (exp_to_ocaml_string e3)
       | And | Or | Not | Eq | NLess | NLeq | MGet | MCreate | BddAnd | BddOr
       | BddNot | BddEq | UAdd _ | ULess _ | ULeq _ | BddAdd _ | BddLess _
-      | BddLeq _ ->
+      | BddLeq _ | TGet _ ->
           failwith "Wrong number of arguments to operation." )
   | _ -> failwith "too many arguments to operation"
 
@@ -497,7 +503,7 @@ and branch_to_ocaml_string (p, e) =
 let compile_decl decl =
   match decl with
   (* | DUserTy (x, ty) -> Printf.sprintf "type %s = %s" (varname x) (ty_to_ocaml_string ty) *)
-  | DSymbolic (x, ty, p) ->
+  | DSymbolic (x, ty, _) ->
       let ty_id = get_fresh_type_id type_store ty in
       Printf.sprintf "let %s = BddFunc.create_value %d SIM.graph\n" (varname x)
         ty_id

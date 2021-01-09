@@ -226,6 +226,7 @@ let inline_multivalue_declarations (ds : declarations) =
         | Some Multivalue -> true
         | Some _ -> false
         | None -> failwith "No mode found" )
+    | TMap (_, _) -> false
   in
   inline_declarations_aux (fun ty -> cond ty) Env.empty ds
 

@@ -131,6 +131,7 @@ type op =
   | MGet
   | MSet
   | MCreate
+  | TGet of int (* index *) * int (* size *)
   (* Low-Level Language BDD operations *)
   | BddAnd
   | BddOr
@@ -611,6 +612,7 @@ and hash_op op =
   | BddNot -> 12
   | NLess -> 14
   | NLeq -> 15
+  | TGet (idx, sz) -> 18 + idx + sz + (256 * 6)
 
 and hash_branches ~hash_meta bs =
   let acc1 =
@@ -655,6 +657,7 @@ let arity op =
   | MCreate -> 1
   | MGet -> 2
   | MSet -> 3
+  | TGet _ -> 1
   | BddAdd _ | BddAnd | BddOr | BddEq | BddLess _ | BddLeq _ -> 2
   | BddNot -> 1
 

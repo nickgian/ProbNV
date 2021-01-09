@@ -69,8 +69,8 @@ let opToBddOp op =
   | NLess -> BddLess tnode_sz
   | NLeq -> BddLeq tnode_sz
   | BddAnd | BddAdd _ | BddOr | BddNot | BddEq | BddLess _ | BddLeq _ -> op
-  | MCreate | MGet | MSet ->
-      failwith "Can't convert map operations to symbolic operations"
+  | MCreate | MGet | MSet |  TGet _ -> 
+      failwith "Can't convert operation to symbolic operation"
 
 let liftBdd e1 =
   let typ = OCamlUtils.oget e1.ety in
@@ -140,6 +140,15 @@ let rec translate (e : exp) : exp * BddBinds.t =
             },
             r1 )
       | MCreate, _ -> failwith "invalid number of arguments to MCreate"
+      | TGet (i, sz), [ eh1 ] ->
+          let el1, r1 = translate eh1 in
+          ( {
+              e with
+              e = (eop (TGet (i, sz)) [ el1 ]).e;
+              ety = Some (fty (OCamlUtils.oget e.ety));
+            },
+            r1 )
+      | TGet _, _ -> failwith "invalid number of arguments to TGet"
       | And, _
       | Or, _
       | Not, _
