@@ -5,6 +5,7 @@ open ProbNv_datastructures
 open ProbNv_utils.PrimitiveCollections
 open Cudd
 open ProbNv_utils
+open ProbNv_utils.RecordUtils
 
 let is_keyword_op _ = false
 
@@ -42,11 +43,8 @@ let prec_exp e =
   | EMatch _ -> 8
   | ETuple _ -> 0
   | ESome _ -> max_prec
-
-(* 
-   | ETy (_, _) -> max_prec
-   | ERecord _ -> 0
-   | EProject _ -> 0 *)
+  | ERecord _ -> 0
+  | EProject _ -> 0
 
 let rec sep s f xs =
   match xs with
@@ -92,19 +90,17 @@ let canonicalize_type (ty : ty) : ty =
     | TOption t ->
         let t', map, count = aux t map count in
         ({ ty with typ = TOption t' }, map, count)
-        (* | TRecord tmap ->
-             let open RecordUtils in
-             let tmap', map, count =
-               List.fold_left2
-                 (fun (tmap, map, count) l t ->
-                   let t', map, count = aux t map count in
-                   StringMap.add l t' tmap, map, count)
-                 (StringMap.empty, map, count)
-                 (get_record_labels tmap)
-                 (get_record_entries tmap)
-             in
-             TRecord tmap', map, count
-        *)
+    | TRecord tmap ->
+        let open RecordUtils in
+        let tmap', map, count =
+          List.fold_left2
+            (fun (tmap, map, count) l t ->
+              let t', map, count = aux t map count in
+              (StringMap.add l t' tmap, map, count))
+            (StringMap.empty, map, count)
+            (get_record_labels tmap) (get_record_entries tmap)
+        in
+        ({ ty with typ = TRecord tmap' }, map, count)
     | TMap (t1, t2) ->
         let t1', map, count = aux t1 map count in
         let t2', map, count = aux t2 map count in
@@ -140,11 +136,8 @@ let rec base_ty_to_string t =
       if List.is_empty ts then "TEmptyTuple"
       else "(" ^ sep "," ty_to_string ts ^ ")"
   | TOption t -> "option[" ^ ty_to_string t ^ "]"
-  | TMap (t1, t2) ->
-      "dict[" ^ ty_to_string t1 ^ "," ^ ty_to_string t2 ^ "]"
-      (*
-          
-          | TRecord map -> print_record ":" (ty_to_string) map *)
+  | TMap (t1, t2) -> "dict[" ^ ty_to_string t1 ^ "," ^ ty_to_string t2 ^ "]"
+  | TRecord map -> print_record ":" ty_to_string map
   | TArrow (t1, t2) ->
       let leftside =
         match t1.typ with
@@ -188,6 +181,7 @@ let op_to_string op =
   | MCreate -> "createMap"
   | MGet -> "at"
   | MSet -> "set"
+  | TGet (i, _) -> "get-" ^ string_of_int i
 
 let rec pattern_to_string pattern =
   match pattern with
@@ -201,8 +195,7 @@ let rec pattern_to_string pattern =
       else "(" ^ comma_sep pattern_to_string ps ^ ")"
   | POption None -> "None"
   | POption (Some p) -> "Some " ^ pattern_to_string p
-  (*
-      | PRecord map -> print_record "=" pattern_to_string map *)
+  | PRecord map -> print_record "=" pattern_to_string map
   | PNode n -> Printf.sprintf "%dn" n
   | PEdge (p1, p2) ->
       Printf.sprintf "%s~%s" (pattern_to_string p1) (pattern_to_string p2)
@@ -321,8 +314,7 @@ and value_to_string_p ~show_types prec v =
   | VOption (Some v) ->
       let s = "Some(" ^ value_to_string_p max_prec v ^ ")" in
       if max_prec > prec then "(" ^ s ^ ")" else s
-  (*
-      | VRecord map -> print_record "=" (value_to_string_p prec) map *)
+  | VRecord map -> print_record "=" (value_to_string_p prec) map
   | VNode n -> Printf.sprintf "%dn" n
   | VEdge (n1, n2) -> Printf.sprintf "%d~%d" n1 n2
   | VClosure cl -> closure_to_string_p ~show_types prec cl
@@ -386,10 +378,8 @@ and exp_to_string_p ~show_types prec e =
         ^ branches_to_string ~show_types prec (branchToList bs)
         ^ ")"
     | ESome e -> "Some(" ^ exp_to_string_p prec e ^ ")"
-    (*
-        | ETy (e, t) -> exp_to_string_p prec e ^ ty_to_string t
-        | ERecord map -> print_record "=" (exp_to_string_p prec) map
-        | EProject (e, l) -> exp_to_string_p prec e ^ "." ^ l *)
+    | ERecord map -> print_record "=" (exp_to_string_p prec) map
+    | EProject (e, l) -> exp_to_string_p prec e ^ "." ^ l
   in
 
   if show_types then Printf.sprintf "(%s : %s)" s (tyo_to_string e.ety)
@@ -456,9 +446,8 @@ let rec declaration_to_string ?(show_types = false) d =
           (fun (u, v) s -> Printf.sprintf "%s%dn-%dn;" s u v)
           es ""
       ^ "}"
-
-(* | DUserTy (name, ty) ->
-   Printf.sprintf "type %s = %s" (Var.to_string name) (ty_to_string ty) *)
+  | DUserTy (name, ty) ->
+      Printf.sprintf "type %s = %s" (Var.to_string name) (ty_to_string ty)
 
 let rec declarations_to_string ?(show_types = false) ds =
   match ds with

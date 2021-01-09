@@ -180,8 +180,7 @@ let occurs tvr (ty : baseTy) : unit =
     | TMap (t1, t2) ->
         occ tvr t1.typ;
         occ tvr t2.typ
-    (* | TRecord map -> StringMap.iter (fun _ -> occ tvr) map
- *)
+    | TRecord map -> StringMap.iter (fun _ ty -> occ tvr ty.typ) map
   in
 
   try occ tvr ty
@@ -228,16 +227,16 @@ let rec unify info e t1 t2 : unit =
       | TOption t1, TOption t2 -> try_unify t1 t2 m1 m2
       | TMap (t1, t2), TMap (t3, t4) ->
           try_unify t1 t3 t1.mode t3.mode && try_unify t2 t4 t2.mode t4.mode
-      (*
-          | TRecord map1, TRecord map2 ->
+      | TRecord map1, TRecord map2 ->
           let open RecordUtils in
-          if not (same_labels map1 map2)
-          then false
+          if not (same_labels map1 map2) then false
           else
-           BatList.fold_left
-             (fun b l -> b && try_unify (StringMap.find l map1) (StringMap.find l map2))
-             true
-             (get_record_labels map1) *)
+            BatList.fold_left
+              (fun b l ->
+                let ty1 = StringMap.find l map1 in
+                let ty2 = StringMap.find l map2 in
+                b && try_unify ty1 ty2 ty1.mode ty2.mode)
+              true (get_record_labels map1)
       | _, _ -> false
   in
   let m1 = t1.mode in
@@ -284,9 +283,7 @@ let generalize ty =
         let ty1 = gen ty1 in
         let ty2 = gen ty2 in
         { ty with typ = TMap (ty1, ty2) }
-    (* | TRecord map -> TRecord (StringMap.map gen map)
-
- *)
+    | TRecord map -> { ty with typ = TRecord (StringMap.map gen map) }
   in
 
   match ty.typ with TArrow _ -> gen ty | _ -> ty
@@ -318,10 +315,7 @@ let inst subst ty =
         let ty1 = loop subst ty1 in
         let ty2 = loop subst ty2 in
         { ty with typ = TMap (ty1, ty2) }
-  (*
-      | TRecord map -> TRecord (StringMap.map (loop subst) map)
-
- *)
+    | TRecord map -> { ty with typ = TRecord (StringMap.map (loop subst) map) }
   and loops subst tys =
     match tys with
     | [] -> []
@@ -351,9 +345,8 @@ let substitute (ty : ty) : ty =
     | TOption t -> { ty with typ = TOption (substitute_aux t) }
     | TMap (ty1, ty2) ->
         { ty with typ = TMap (substitute_aux ty1, substitute_aux ty2) }
-    (* | TRecord map -> TRecord (StringMap.map substitute_aux map)
-
-     *)
+    | TRecord map ->
+        { ty with typ = TRecord (StringMap.map substitute_aux map) }
   in
 
   substitute_aux ty
@@ -380,13 +373,6 @@ let op_typ op =
   | NLeq -> ([ concrete TNode; concrete TNode ], concrete TBool)
   | TGet _ -> failwith "internal error (op_typ): tuple op"
   (* Map operations *)
-  (* | MMap
-     | MMerge
-     | MMapFilter
-     | MMapIte
-     | MFoldNode
-     | MFoldEdge
-     | MForAll *)
   | MCreate | MGet | MSet | Eq ->
       failwith
         (Printf.sprintf "(op_typ): %s should be handled elsewhere"
@@ -437,20 +423,17 @@ let canonicalize_type (ty : ty) : ty =
         let t1', map, count = aux t1 map count in
         let t2', map, count = aux t2 map count in
         ({ ty with typ = TMap (t1', t2') }, map, count)
-    (*
-        | TRecord tmap ->
+    | TRecord tmap ->
         let open RecordUtils in
         let tmap', map, count =
-         List.fold_left2
-           (fun (tmap, map, count) l t ->
-             let t', map, count = aux t map count in
-             StringMap.add l t' tmap, map, count)
-           (StringMap.empty, map, count)
-           (get_record_labels tmap)
-           (get_record_entries tmap)
+          List.fold_left2
+            (fun (tmap, map, count) l t ->
+              let t', map, count = aux t map count in
+              (StringMap.add l t' tmap, map, count))
+            (StringMap.empty, map, count)
+            (get_record_labels tmap) (get_record_entries tmap)
         in
-        TRecord tmap', map, count
- *)
+        ({ ty with typ = TRecord tmap' }, map, count)
     | QVar tyname -> (
         match VarMap.Exceptionless.find tyname map with
         | None ->
@@ -498,51 +481,14 @@ let rec infer_value info env record_types (v : Syntax.value) : Syntax.value =
         let tv = fresh_tyvar () |> concrete in
         unify info (exp_of_value v) t tv;
         tvalue (voption (Some v), concrete @@ TOption tv, v.vspan)
-    (* | VMap m ->
-       let vs, default = BddMap.bindings m in
-       let default, dty = infer_value default |> textractv in
-       (match vs with
-       | [] ->
-        (* let ty = fresh_tyvar () in *)
-        let ty = fresh_tyvar () in
-        tvalue (vmap m, TMap (ty, dty), v.vspan)
-       (* (match v.vty with *)
-       (*  | None -> *)
-       (*     let ty = fresh_tyvar () in *)
-       (*     tvalue (vmap m, TMap (ty, dty), v.vspan) *)
-       (*  | Some ty -> *)
-       (*     let map = BddMap.create ~key_ty:ty default in *)
-       (*     tvalue (vmap map, TMap (ty, dty), v.vspan)) *)
-       | (kv, vv) :: _ ->
-        let _, kvty = infer_value kv |> textractv in
-        let _, vvty = infer_value vv |> textractv in
-        unify info (exp_of_value v) vvty dty;
-        let vs =
-          BatList.map
-            (fun (kv2, vv2) ->
-              let kv2, kvty2 = infer_value kv2 |> textractv in
-              let vv2, vvty2 = infer_value vv2 |> textractv in
-              unify info (exp_of_value v) kvty kvty2;
-              unify info (exp_of_value v) vvty vvty2;
-              kv2, vv2)
-            vs
+    | VRecord vmap ->
+        (* All VRecords are constructed via ERecords, so shouldn't need
+           to check that the record type has been properly declared *)
+        let vmap = StringMap.map (infer_value info env record_types) vmap in
+        let tmap =
+          StringMap.map (fun v -> ProbNv_utils.OCamlUtils.oget v.vty) vmap
         in
-        let map = BddMap.from_bindings ~key_ty:kvty (vs, default) in
-        tvalue (vmap map, TMap (kvty, vvty), v.vspan))
-       | VRecord vmap ->
-       (* All VRecords are constructed via ERecords, so shouldn't need
-         to check that the record type has been properly declared *)
-       let vmap = StringMap.map infer_value vmap in
-       let tmap = StringMap.map (fun v -> Nv_utils.OCamlUtils.oget v.vty) vmap in
-       tvalue (vrecord vmap, TRecord tmap, v.vspan)
-       | VOption None ->
-       let tv = fresh_tyvar () in
-       tvalue (voption None, TOption tv, v.vspan)
-       | VOption (Some v) ->
-       let v, t = infer_value v |> textractv in
-       let tv = fresh_tyvar () in
-       unify info (exp_of_value v) t tv;
-       tvalue (voption (Some v), TOption tv, v.vspan) *)
+        tvalue (vrecord vmap, concrete @@ TRecord tmap, v.vspan)
     | VTotalMap _ | VClosure _ -> failwith "internal error (infer_value)"
   in
   ret
@@ -692,8 +638,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
                 trans = trans';
                 merge = merge';
               } ) )
-  (* | DUserTy _  *)
-  | DNodes _ | DEdges _ -> (env, d)
+  | DUserTy _ | DNodes _ | DEdges _ -> (env, d)
 
 (** High-Level Language Type Inference *)
 module HLLTypeInf = struct
@@ -1024,41 +969,42 @@ module HLLTypeInf = struct
           | None ->
               Console.error_position info e.espan
                 "No mode on scrutinee of match expression" )
-      (*
-          | ERecord emap ->
+      | ERecord emap ->
           (* Retrieve the record type corresponding to this expression.
-            All record types should be explicitly declared, and
-            all labels should appear in exactly one declaration *)
+             All record types should be explicitly declared, and
+             all labels should appear in exactly one declaration *)
           let open RecordUtils in
           let label = List.hd @@ get_record_labels emap in
           let ferr = Console.error_position info e.espan in
           let tmap = get_type_with_label record_types ferr label in
-          if not (same_labels emap tmap)
-          then
-           (* The only possible record type was not a match *)
-           Console.error_position
-             info
-             e.espan
-             "Record does not match any declared record type!";
+          if not (same_labels emap tmap) then
+            (* The only possible record type was not a match *)
+            Console.error_position info e.espan
+              "Record does not match any declared record type!";
           let emap = StringMap.map infer_exp emap in
           BatEnum.iter
-           (fun l ->
-             let e, t1 = StringMap.find l emap |> textract in
-             let t2 = StringMap.find l tmap in
-             unify info e t1 t2)
-           (StringMap.keys emap);
-          texp (erecord emap, TRecord tmap, e.espan)
-          | EProject (e1, label) ->
+            (fun l ->
+              let e, t1 = StringMap.find l emap |> textract in
+              let t2 = StringMap.find l tmap in
+              unify info e t1 t2)
+            (StringMap.keys emap);
+          let m =
+            StringMap.fold
+              (fun _ e acc -> join_opts (OCamlUtils.oget e.ety).mode acc)
+              emap (Some Concrete)
+          in
+          texp (erecord emap, { typ = TRecord tmap; mode = m }, e.espan)
+      | EProject (e1, label) ->
           (* Retrieve the record type containing this label.
-            All record types should be explicitly declared, and
-            all labels should appear in exactly one declaration *)
+             All record types should be explicitly declared, and
+             all labels should appear in exactly one declaration *)
           let open RecordUtils in
           let ferr = Console.error_position info e.espan in
           let tmap = get_type_with_label record_types ferr label in
           let label_type = StringMap.find label tmap in
           let e1, ety = infer_exp e1 |> textract in
-          unify info e1 ety (TRecord tmap);
-          texp (eproject e1 label, label_type, e.espan)*)
+          unify info e1 ety (mty (get_mode ety) (TRecord tmap));
+          texp (eproject e1 label, mty (get_mode ety) label_type.typ, e.espan)
       | EBddIf _ ->
           Console.error_position info e.espan "BddIf should not appear in HLL"
       | EToBdd _ ->
@@ -1128,15 +1074,17 @@ module HLLTypeInf = struct
         match x with
         | None -> env
         | Some p -> infer_pattern (i + 1) info env e t p )
+    | PRecord pmap ->
+        let ptmap =
+          StringMap.map (fun p -> (p, concrete @@ fresh_tyvar ())) pmap
+        in
+        let tmap = StringMap.map snd ptmap in
+        let ty = concrete @@ TRecord tmap in
+        unify info e tmatch ty;
+        StringMap.fold
+          (fun _ (p, t) env -> infer_pattern (i + 1) info env e t p)
+          ptmap env
 
-  (* | PRecord pmap ->
-         let ptmap = StringMap.map (fun p -> (p, fresh_tyvar ())) pmap in
-         let tmap = StringMap.map snd ptmap in
-         let ty = TRecord tmap in
-         unify info e tmatch ty;
-         StringMap.fold
-           (fun _ (p, t) env -> infer_pattern (i + 1) info env e t p)
-           ptmap env *)
   and infer_patterns i info env e ts ps =
     match (ts, ps) with
     | [], [] -> env
@@ -1162,17 +1110,15 @@ module HLLTypeInf = struct
     | PTuple ps -> valid_patterns env ps
     | POption None -> env
     | POption (Some p) -> valid_pattern env p
+    | PRecord map -> StringMap.fold (fun _ p env -> valid_pattern env p) map env
 
-  (* | PRecord map -> StringMap.fold (fun _ p env -> valid_pattern env p) map env
-    *)
   and valid_patterns env p =
     match p with
     | [] -> env
     | p :: ps -> valid_patterns (valid_pattern env p) ps
 
   let infer_declarations info (ds : declarations) : declarations =
-    (* let record_types = get_record_types ds in *)
-    let record_types = () in
+    let record_types = get_record_types ds in
     infer_declarations_aux true infer_exp 0 info Env.empty record_types ds
 end
 
@@ -1432,7 +1378,7 @@ module LLLTypeInf = struct
              texp (elet x e1 e2, ty_e2, e.espan) *)
       | ETuple es ->
           let es, tys = infer_exps (i + 1) info env record_types es in
-          let m = get_mode (List.hd tys) in
+          let m = get_mode (OCamlUtils.oget e.ety) in
           if List.for_all (fun ty2 -> get_mode ty2 = m) (List.tl tys) then
             texp (etuple es, { typ = TTuple tys; mode = m }, e.espan)
           else Console.error_position info e.espan "Mode mismatch in tuple"
@@ -1456,48 +1402,40 @@ module LLLTypeInf = struct
                 (Printing.exp_to_string ~show_types:true e);
               Console.error_position info e.espan
                 "Symbolic/Multivalue guard - mistyped mode in Match" )
-      (* NOTE:  Changes order of evaluation if e is not a value;
-         If we have effects, value restriction needed. *)
-      (*
-          | ERecord emap ->
+      | ERecord emap ->
           (* Retrieve the record type corresponding to this expression.
-            All record types should be explicitly declared, and
-            all labels should appear in exactly one declaration *)
+             All record types should be explicitly declared, and
+             all labels should appear in exactly one declaration *)
           let open RecordUtils in
           let label = List.hd @@ get_record_labels emap in
           let ferr = Console.error_position info e.espan in
           let tmap = get_type_with_label record_types ferr label in
-          if not (same_labels emap tmap)
-          then
-           (* The only possible record type was not a match *)
-           Console.error_position
-             info
-             e.espan
-             "Record does not match any declared record type!";
-          let emap = StringMap.map infer_exp emap in
+          if not (same_labels emap tmap) then
+            (* The only possible record type was not a match *)
+            Console.error_position info e.espan
+              "Record does not match any declared record type!";
+          let emap = StringMap.map (fun e -> OCamlUtils.oget e.ety) emap in
+          let m = get_mode (OCamlUtils.oget e.ety) in
           BatEnum.iter
-           (fun l ->
-             let e, t1 = StringMap.find l emap |> textract in
-             let t2 = StringMap.find l tmap in
-             unify info e t1 t2)
-           (StringMap.keys emap);
-          texp (erecord emap, TRecord tmap, e.espan)
-          | EProject (e1, label) ->
+            (fun l ->
+              let t1 = StringMap.find l emap in
+              let t2 = StringMap.find l tmap in
+              unify info e t1 t2)
+            (StringMap.keys emap);
+          if StringMap.for_all (fun _ ty -> ty.mode = m) emap then
+            texp (erecord emap, { typ = TRecord tmap; mode = m }, e.espan)
+          else Console.error_position info e.espan "Record mismatch in tuple"
+      | EProject (e1, label) ->
           (* Retrieve the record type containing this label.
-            All record types should be explicitly declared, and
-            all labels should appear in exactly one declaration *)
+             All record types should be explicitly declared, and
+             all labels should appear in exactly one declaration *)
           let open RecordUtils in
           let ferr = Console.error_position info e.espan in
           let tmap = get_type_with_label record_types ferr label in
           let label_type = StringMap.find label tmap in
-          let e1, ety = infer_exp e1 |> textract in
-          unify info e1 ety (TRecord tmap);
-          texp (eproject e1 label, label_type, e.espan)
-
-          | ETy (e, t) ->
-          let e, t1 = infer_exp e |> textract in
-          unify info e t t1;
-          texp (ety e t1, t1, e.espan) *)
+          let e1, ety = e1 |> textract in
+          unify info e1 ety (mty (get_mode ety) (TRecord tmap));
+          texp (eproject e1 label, mty (get_mode ety) label_type.typ, e.espan)
       | EBddIf (e1, e2, e3) -> (
           (* Based on rule Ite of the LLL*)
           let e1, tcond = infer_exp e1 |> textract in
@@ -1638,6 +1576,16 @@ module LLLTypeInf = struct
         match x with
         | None -> env
         | Some p -> infer_pattern (i + 1) info env e t p )
+    | PRecord pmap ->
+        let ptmap =
+          StringMap.map (fun p -> (p, concrete @@ fresh_tyvar ())) pmap
+        in
+        let tmap = StringMap.map snd ptmap in
+        let ty = concrete @@ TRecord tmap in
+        unify info e tmatch ty;
+        StringMap.fold
+          (fun _ (p, t) env -> infer_pattern (i + 1) info env e t p)
+          ptmap env
 
   and infer_patterns i info env e ts ps =
     match (ts, ps) with
@@ -1664,9 +1612,8 @@ module LLLTypeInf = struct
     | PTuple ps -> valid_patterns env ps
     | POption None -> env
     | POption (Some p) -> valid_pattern env p
+    | PRecord map -> StringMap.fold (fun _ p env -> valid_pattern env p) map env
 
-  (* | PRecord map -> StringMap.fold (fun _ p env -> valid_pattern env p) map env
-   *)
   and valid_patterns env p =
     match p with
     | [] -> env

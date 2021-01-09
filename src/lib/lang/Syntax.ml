@@ -57,6 +57,7 @@ type baseTy =
   | TTuple of ty list
   | TOption of ty
   | TMap of ty * ty
+  | TRecord of ty StringMap.t
 [@@deriving ord, eq]
 
 and ty = { typ : baseTy; mode : mode option }
@@ -77,7 +78,7 @@ type pattern =
   | PInt of Integer.t
   | PTuple of pattern list
   | POption of pattern option
-  (* | PRecord of pattern StringMap.t *)
+  | PRecord of pattern StringMap.t
   | PNode of node
   | PEdge of pattern * pattern
 [@@deriving ord, eq]
@@ -92,6 +93,7 @@ module Pat = struct
     | PEdge (p1, p2) -> isConcretePat p1 && isConcretePat p2
     | POption (Some p) -> isConcretePat p
     | PTuple ps -> BatList.for_all isConcretePat ps
+    | PRecord ps -> StringMap.for_all (fun _ p -> isConcretePat p) ps
     | _ -> false
 
   let rec compare p1 p2 =
@@ -112,6 +114,7 @@ module Pat = struct
               if c = 0 then b else c
             else b)
           0 ps1 ps2
+    | PRecord _, PRecord _ -> failwith "todo"
     | _, _ ->
         failwith (Printf.sprintf "No comparison between non-concrete patterns")
 end
@@ -152,6 +155,7 @@ type v =
   | VClosure of closure
   | VTotalMap of mtbdd
   | VOption of value option
+  | VRecord of value StringMap.t
 [@@deriving ord]
 
 and value = {
@@ -185,6 +189,8 @@ and e =
   | ETuple of exp list
   | EMatch of exp * branches
   | ESome of exp
+  | ERecord of exp StringMap.t
+  | EProject of exp * string
   (* Low-Level Language expressions *)
   | EBddIf of exp * exp * exp
   | EToBdd of exp
@@ -227,6 +233,9 @@ type declaration =
   | DSolve of solve
   | DNodes of int
   | DEdges of (node * node) list
+  | DUserTy of var * ty
+
+(* Declaration of a record type *)
 
 type declarations = declaration list
 
@@ -237,8 +246,7 @@ let rec is_irrefutable pat =
   | PWild | PVar _ -> true
   | PBool _ | PInt _ | PNode _ | PEdge _ | POption _ -> false
   | PTuple pats -> List.for_all is_irrefutable pats
-
-(* | PRecord map -> StringMap.for_all (fun _ p -> is_irrefutable p) map *)
+  | PRecord map -> StringMap.for_all (fun _ p -> is_irrefutable p) map
 
 type branchLookup = Found of exp | Rest of (pattern * exp) list
 
@@ -329,9 +337,10 @@ let rec equal_base_tys ty1 ty2 =
       | _ -> false )
   | QVar n1, QVar n2 -> Var.equals n1 n2
   | TTuple ts1, TTuple ts2 -> List.for_all2 equal_tys ts1 ts2
+  | TRecord map1, TRecord map2 -> StringMap.equal equal_tys map1 map2
   | TMap (t1, t2), TMap (s1, s2) -> equal_tys t1 s1 && equal_tys t2 s2
   | ( ( TBool | TNode | TEdge | TInt _ | TArrow _ | TVar _ | QVar _ | TTuple _
-      | TMap _ | TOption _ ),
+      | TMap _ | TOption _ | TRecord _ ),
       _ ) ->
       false
 
@@ -363,8 +372,10 @@ and equal_vs ~cmp_meta v1 v2 =
       | None, Some _ -> false
       | Some _, None -> false
       | Some x, Some y -> equal_values ~cmp_meta x y )
+  | VRecord map1, VRecord map2 ->
+      StringMap.equal (equal_values ~cmp_meta) map1 map2
   | ( ( VBool _ | VNode _ | VEdge _ | VInt _ | VClosure _ | VTotalMap _
-      | VTuple _ | VOption _ ),
+      | VTuple _ | VOption _ | VRecord _ ),
       _ ) ->
       false
 
@@ -400,6 +411,10 @@ and equal_es ~cmp_meta e1 e2 =
   | ESome e1, ESome e2 -> equal_exps ~cmp_meta e1 e2
   | EMatch (e1, bs1), EMatch (e2, bs2) ->
       equal_exps ~cmp_meta e1 e2 && equal_branches ~cmp_meta bs1 bs2
+  | ERecord map1, ERecord map2 ->
+      StringMap.equal (equal_exps ~cmp_meta) map1 map2
+  | EProject (e1, label1), EProject (e2, label2) ->
+      String.equal label1 label2 && equal_exps ~cmp_meta e1 e2
   | EBddIf (e1, e2, e3), EBddIf (e4, e5, e6) ->
       equal_exps ~cmp_meta e1 e4 && equal_exps ~cmp_meta e2 e5
       && equal_exps ~cmp_meta e3 e6
@@ -420,7 +435,9 @@ and equal_es ~cmp_meta e1 e2 =
   | EBddIf _, _
   | EToMap _, _
   | EToBdd _, _
-  | EApplyN _, _ ->
+  | EApplyN _, _
+  | ERecord _, _
+  | EProject _, _ ->
       false
 
 and equal_lists_es ~cmp_meta es1 es2 =
@@ -469,7 +486,7 @@ and equal_patterns p1 p2 =
   | PTuple ps1, PTuple ps2 -> equal_patterns_list ps1 ps2
   | POption None, POption None -> true
   | POption (Some p1), POption (Some p2) -> equal_patterns p1 p2
-  (* | PRecord map1, PRecord map2 -> StringMap.equal equal_patterns map1 map2 *)
+  | PRecord map1, PRecord map2 -> StringMap.equal equal_patterns map1 map2
   | PNode n1, PNode n2 -> n1 = n2
   | PEdge (p1, p2), PEdge (p1', p2') ->
       equal_patterns p1 p1' && equal_patterns p2 p2'
@@ -504,6 +521,8 @@ let rec hash_ty ty =
   | TMap (ty1, ty2) -> 9 + hash_ty ty1 + hash_ty ty2
   | TNode -> 12
   | TEdge -> 13
+  | TRecord map ->
+      StringMap.fold (fun l t acc -> acc + hash_string l + hash_ty t) map 0 + 10
 
 let hash_span (span : Span.t) = (19 * span.start) + span.finish
 
@@ -550,6 +569,13 @@ and hash_v ~hash_meta v =
       in
       (19 * acc) + 5
   | VTotalMap (m, _) -> (19 * hash_map m) + 2
+  | VRecord map ->
+      let acc =
+        StringMap.fold
+          (fun l v acc -> acc + hash_string l + hash_value ~hash_meta v)
+          map 0
+      in
+      (19 * acc) + 7
 
 and hash_exp ~hash_meta e =
   let m =
@@ -585,6 +611,13 @@ and hash_e ~hash_meta e =
   | ESome e -> (19 * hash_exp ~hash_meta e) + 8
   | EMatch (e, bs) ->
       (19 * ((19 * hash_exp ~hash_meta e) + hash_branches ~hash_meta bs)) + 9
+  | ERecord map ->
+      19
+      * StringMap.fold
+          (fun l e acc -> acc + +hash_string l + hash_exp ~hash_meta e)
+          map 0
+      + 11
+  | EProject (e, label) -> (19 * hash_exp ~hash_meta e) + hash_string label + 12
 
 and hash_var x = hash_string (Var.to_string x)
 
@@ -633,13 +666,12 @@ and hash_pattern p =
   | PTuple ps -> (19 * hash_patterns ps) + 5
   | POption None -> 6
   | POption (Some p) -> (19 * hash_pattern p) + 7
-  (* | PRecord map ->
-         19
-         * StringMap.fold
-             (fun l p acc -> acc + +hash_string l + hash_pattern p)
-             map 0
-         + 8
-  *)
+  | PRecord map ->
+      19
+      * StringMap.fold
+          (fun l p acc -> acc + hash_string l + hash_pattern p)
+          map 0
+      + 8
   | PNode n -> (19 * n) + 9
   | PEdge (p1, p2) -> (19 * (hash_pattern p1 + (19 * hash_pattern p2))) + 10
 
@@ -697,6 +729,8 @@ let vint i = value (VInt i)
 
 let vtuple vs = value (VTuple vs)
 
+let vrecord map = value (VRecord map)
+
 let voption v = value (VOption v)
 
 let evar x = exp (EVar x)
@@ -714,6 +748,10 @@ let eif e1 e2 e3 = exp (EIf (e1, e2, e3))
 let elet x e1 e2 = exp (ELet (x, e1, e2))
 
 let etuple es = exp (ETuple es)
+
+let eproject e l = exp (EProject (e, l))
+
+let erecord map = exp (ERecord map)
 
 let ematch e bs = exp (EMatch (e, bs))
 
@@ -740,6 +778,11 @@ let rec liftSymbolicTy ty =
   | TTuple ts ->
       {
         typ = TTuple (List.map liftSymbolicTy ts);
+        mode = Some (liftSymbolicMode (OCamlUtils.oget ty.mode));
+      }
+  | TRecord ts ->
+      {
+        typ = TRecord (StringMap.map liftSymbolicTy ts);
         mode = Some (liftSymbolicMode (OCamlUtils.oget ty.mode));
       }
   | TOption ty ->
@@ -777,6 +820,11 @@ let rec liftMultiTy ty =
         typ = TOption (liftMultiTy ty);
         mode = Some (liftMultiMode (OCamlUtils.oget ty.mode));
       }
+  | TRecord ts ->
+      {
+        typ = TRecord (StringMap.map liftMultiTy ts);
+        mode = Some (liftMultiMode (OCamlUtils.oget ty.mode));
+      }
   | TMap (_, _) ->
       { ty with mode = Some (liftMultiMode (OCamlUtils.oget @@ get_mode ty)) }
   | TArrow (_, _) -> failwith "Cannot lift to multivalue"
@@ -796,7 +844,8 @@ let rec is_value e =
   match e.e with
   | EVal _ -> true
   | ETuple es -> BatList.for_all is_value es
-  | EVar _ | EOp _ | EFun _ | EApp _ | EIf _ | ELet _ | EMatch _
+  | ERecord map -> StringMap.for_all (fun _ e -> is_value e) map
+  | EVar _ | EOp _ | EFun _ | EApp _ | EIf _ | ELet _ | EMatch _ | EProject _
   | EBddIf (_, _, _)
   | ESome _ | EToBdd _ | EToMap _
   | EApplyN (_, _) ->
@@ -816,11 +865,12 @@ let rec exp_to_value (e : exp) : value =
   match e.e with
   | EVar _ | EOp _ | EFun _ | EApp _ | EIf _ | ELet _ | ESome _
   | EBddIf (_, _, _)
-  | EToBdd _ | EToMap _ | EMatch _
+  | EToBdd _ | EToMap _ | EMatch _ | EProject _
   | EApplyN (_, _) ->
       failwith "Not a literal"
   | EVal v -> v
   | ETuple es -> vtuple (List.map exp_to_value es)
+  | ERecord map -> vrecord (StringMap.map exp_to_value map)
 
 let func x body = { arg = x; argty = None; resty = None; body; fmode = None }
 
@@ -893,6 +943,19 @@ let rec join_ty ty1 ty2 =
         typ = TTuple (List.map2 (fun ty1 ty2 -> join_ty ty1 ty2) ts1 ts2);
         mode = join_opts ty1.mode ty2.mode;
       }
+  | TRecord ts1, TRecord ts2 ->
+      {
+        typ =
+          TRecord
+            (StringMap.merge
+               (fun _ ty1 ty2 ->
+                 match (ty1, ty2) with
+                 | Some ty1, Some ty2 -> Some (join_ty ty1 ty2)
+                 | _, _ ->
+                     failwith "Unable to join records with different fields")
+               ts1 ts2);
+        mode = join_opts ty1.mode ty2.mode;
+      }
   | TArrow _, TArrow _ ->
       if ty1 = ty2 then ty1 else failwith "cannot join unequal arrow types"
   | TMap (kty1, vty1), TMap (kty2, vty2) ->
@@ -920,6 +983,7 @@ let rec join_ty ty1 ty2 =
   | TTuple _, _
   | TMap _, _
   | TOption _, _
+  | TRecord _, _
   | TEdge, _
   | TNode, _ ->
       failwith "Cannot join the given types"
@@ -929,6 +993,12 @@ let rec get_inner_type t : ty =
 
 let bool_of_val (v : value) : bool option =
   match v.v with VBool b -> Some b | _ -> None
+
+let get_record_types ds =
+  List.fold_left
+    (fun acc d ->
+      match d with DUserTy (_, { typ = TRecord lst }) -> lst :: acc | _ -> acc)
+    [] ds
 
 let compare_vs = compare_value
 
