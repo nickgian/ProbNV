@@ -1414,16 +1414,19 @@ module LLLTypeInf = struct
             (* The only possible record type was not a match *)
             Console.error_position info e.espan
               "Record does not match any declared record type!";
-          let emap = StringMap.map (fun e -> OCamlUtils.oget e.ety) emap in
+          (* let emap = StringMap.map (fun e -> OCamlUtils.oget e.ety) emap in *)
           let m = get_mode (OCamlUtils.oget e.ety) in
           BatEnum.iter
             (fun l ->
-              let t1 = StringMap.find l emap in
+              let e1, t1 = StringMap.find l emap |> textract in
               let t2 = StringMap.find l tmap in
-              unify info e t1 t2)
+              unify info e1 t1 t2)
             (StringMap.keys emap);
-          if StringMap.for_all (fun _ ty -> ty.mode = m) emap then
-            texp (erecord emap, { typ = TRecord tmap; mode = m }, e.espan)
+          if
+            StringMap.for_all
+              (fun _ e -> get_mode (OCamlUtils.oget e.ety) = m)
+              emap
+          then texp (erecord emap, { typ = TRecord tmap; mode = m }, e.espan)
           else Console.error_position info e.espan "Record mismatch in tuple"
       | EProject (e1, label) ->
           (* Retrieve the record type containing this label.
@@ -1620,8 +1623,7 @@ module LLLTypeInf = struct
     | p :: ps -> valid_patterns (valid_pattern env p) ps
 
   let infer_declarations info (ds : declarations) : declarations =
-    (* let record_types = get_record_types ds in *)
-    let record_types = () in
+    let record_types = get_record_types ds in
     infer_declarations_aux true infer_exp 0 info Env.empty record_types ds
 end
 

@@ -5,6 +5,7 @@
     probNv_datastructures
     probNv_lang
     probNv_solution
+    probNv_compile
     probNv_utils))
 
 (include_subdirs unqualified)

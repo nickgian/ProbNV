@@ -37,18 +37,16 @@ let rec update_pattern (env : Var.t Env.t) (p : pattern) : pattern * Var.t Env.t
   | POption (Some p) ->
       let p', env = update_pattern env p in
       (POption (Some p'), env)
-
-(* | PRecord map ->
-     let env, map =
-       StringMap.fold
-         (fun k p (env, acc) ->
+  | PRecord map ->
+      let env, map =
+        StringMap.fold
+          (fun k p (env, acc) ->
             let p', env' = update_pattern env p in
-            env', StringMap.add k p' acc)
-         map
-         (env, StringMap.empty)
-     in
-     (PRecord map, env)
-*)
+            (env', StringMap.add k p' acc))
+          map (env, StringMap.empty)
+      in
+      (PRecord map, env)
+
 and add_pattern (env, ps) p =
   let p', env' = update_pattern env p in
   (env', p' :: ps)
@@ -129,8 +127,7 @@ let alpha_convert_declaration bmap (env : Var.t Env.t) (d : declaration) =
       let env, y = rename_solve_vars bmap env var_names in
       (env, DSolve { aty; var_names = y; init; trans; merge })
   | DAssert (e, prob) -> (env, DAssert (alpha_convert_exp env e, prob))
-  (* | DUserTy _  *)
-  | DNodes _ | DEdges _ -> (env, d)
+  | DUserTy _ | DNodes _ | DEdges _ -> (env, d)
 
 let rec alpha_convert_aux bmap env (ds : declarations) : declarations =
   match ds with

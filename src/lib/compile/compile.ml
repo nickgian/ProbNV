@@ -502,7 +502,7 @@ and branch_to_ocaml_string (p, e) =
 (** Translate a declaration to an OCaml program*)
 let compile_decl decl =
   match decl with
-  (* | DUserTy (x, ty) -> Printf.sprintf "type %s = %s" (varname x) (ty_to_ocaml_string ty) *)
+  | DUserTy _ -> ""
   | DSymbolic (x, ty, _) ->
       let ty_id = get_fresh_type_id type_store ty in
       Printf.sprintf "let %s = BddFunc.create_value %d SIM.graph\n" (varname x)

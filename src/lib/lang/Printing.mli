@@ -14,7 +14,7 @@ val base_ty_to_string : Syntax.baseTy -> string
 
 val value_to_string : ?show_types:bool -> Syntax.value -> string
 
-(* val pattern_to_string : Syntax.pattern -> string *)
+val pattern_to_string : Syntax.pattern -> string
 
 val exp_to_string : ?show_types:bool -> Syntax.exp -> string
 

@@ -69,7 +69,7 @@ let opToBddOp op =
   | NLess -> BddLess tnode_sz
   | NLeq -> BddLeq tnode_sz
   | BddAnd | BddAdd _ | BddOr | BddNot | BddEq | BddLess _ | BddLeq _ -> op
-  | MCreate | MGet | MSet |  TGet _ -> 
+  | MCreate | MGet | MSet | TGet _ ->
       failwith "Can't convert operation to symbolic operation"
 
 let liftBdd e1 =
@@ -522,7 +522,7 @@ let rec free (seen : VarSet.t) (e : exp) : BddBinds.t =
         "This function is intented to be used with HLL expressions. This is a \
          logic error."
 
-(* | ESome e | ETy (e, _) | EProject (e, _) -> free seen e
+(* | EProject (e, _) -> free seen e
  *)
 
 let free e = free VarSet.empty e
@@ -995,7 +995,7 @@ let translateDecl d =
       let rho = BddBinds.union r fv in
       if BddBinds.isEmpty rho then DAssert (e', prob)
       else DAssert (buildApply e' rho, prob)
-  | DNodes _ | DEdges _ | DSymbolic _ -> d
+  | DNodes _ | DEdges _ | DSymbolic _ | DUserTy _ -> d
 
 let translate_declarations ds = List.map translateDecl ds
 

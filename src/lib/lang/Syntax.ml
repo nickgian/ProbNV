@@ -929,6 +929,9 @@ let get_symbolics ds =
     [] ds
   |> List.rev
 
+let get_solves ds =
+  List.filter_map (fun d -> match d with DSolve a -> Some a | _ -> None) ds
+
 let rec join_ty ty1 ty2 =
   match (ty1.typ, ty2.typ) with
   | TInt sz1, TInt sz2 when sz1 = sz2 ->

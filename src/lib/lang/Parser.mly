@@ -56,6 +56,63 @@
     | [e] -> exp e span
     | es -> exp (etuple es) span
 
+
+  type user_type = Var.t (* name *) * ty (* type *)
+  let user_types : user_type list ref = ref []
+
+  let add_user_type (name : Var.t) (ty : ty) : unit =
+    user_types := (name,ty)::!user_types
+
+  let get_user_type (name : Var.t) : ty =
+    match List.find_opt (fun (n,_) -> Var.equals name n) !user_types with
+    | Some (_, ty) -> ty
+    | None -> failwith @@ "Unknown user-defined type " ^ (Var.name name)
+
+      let find_record_type (lab : string) : 'a StringMap.t =
+    let rec aux lst =
+      match lst with
+      | [] -> failwith @@ "No record type using label " ^ lab
+      | (_, t) :: tl ->
+        match t.typ with
+        | TRecord tmap ->
+          if StringMap.mem lab tmap then tmap else aux tl
+        | _ -> aux tl
+    in
+    aux !user_types
+
+  (* Fill in a partial record specification, using the default provided for
+     labels which do not already appear in the list *)
+  let fill_record (lst : (Var.t * 'a) list) (default : Var.t -> 'a)
+    : (Var.t * 'a) list
+  =
+    let record_type = find_record_type (List.hd lst |> fst |> Var.name) in
+    (* FIXME: Strictly speaking, we should make sure that the elements of keys
+       are a strict subset of the elements of record_type *)
+    let keys = StringMap.keys record_type in
+    BatEnum.fold
+      (fun acc lab ->
+        let lab = Var.create lab in
+        match List.find_opt (fun (l,_) -> Var.equals l lab) lst with
+        | None -> (lab, default lab) :: acc
+        | Some elt -> elt :: acc
+      ) [] keys
+
+  let make_record_map (lst : (Var.t * 'a) list) : 'a StringMap.t =
+    (* Ensure that no labels were used more than once *)
+    let sorted =
+      List.sort (fun (l1,_) (l2, _)-> Var.compare l1 l2) lst
+    in
+    let rec build_map map lst =
+      match lst with
+      | [] -> map
+      | (l,x)::tl ->
+        let l = Var.name l in
+        if StringMap.mem l map
+        then failwith @@ "Label used more than once in a record: " ^ l
+        else build_map (StringMap.add l x map) tl
+    in
+    build_map StringMap.empty sorted
+
 %}
 
 
@@ -161,11 +218,8 @@ bty:
    | TOPTION LBRACKET ty RBRACKET       { TOption $3 }
    | TDICT LBRACKET ty COMMA ty RBRACKET{ TMap ($3,$5) }
    | TSET LBRACKET ty RBRACKET          { TMap ($3,{typ = TBool; mode = Some Concrete}) }
-   /*
-    */
-   /* 
    | LBRACE record_entry_tys RBRACE     { TRecord (make_record_map $2) }
-   | ID                                 { get_user_type (snd $1) } */
+   | ID                                 { (get_user_type (snd $1)).typ }
 ;
 
 ty:
@@ -179,14 +233,14 @@ tys:
   | ty COMMA tys                         { $1::$3 }
 ;
 
-/* record_entry_ty:
+record_entry_ty:
   | ID COLON ty                         { snd $1, $3 }
-; */
+;
 
-/* record_entry_tys:
+record_entry_tys:
   | record_entry_ty                       { [$1] }
   | record_entry_ty SEMI                  { [$1] }
-  | record_entry_ty SEMI record_entry_tys { $1::$3 } */
+  | record_entry_ty SEMI record_entry_tys { $1::$3 }
 
 param:
    | ID                                 { (snd $1, None) }
@@ -213,7 +267,7 @@ component:
     | LET EDGES EQ LBRACE RBRACE        { DEdges [] }
     | LET EDGES EQ LBRACE edges RBRACE  { DEdges $5 }
     | LET NODES EQ NUM                  { DNodes (ProbNv_datastructures.Integer.to_int (snd $4)) }
-    /* | TYPE ID EQ ty                     { (add_user_type (snd $2) $4; DUserTy (snd $2, $4)) } */
+    | TYPE ID EQ ty                     { (add_user_type (snd $2) $4; DUserTy (snd $2, $4)) }
 ;
 
 components:
@@ -222,14 +276,14 @@ components:
 ;
 
 
-/* record_entry_expr:
+record_entry_expr:
   | ID EQ expr                       { snd $1, $3 }
 ;
 
 record_entry_exprs:
   | record_entry_expr                         { [$1] }
   | record_entry_expr SEMI                    { [$1] }
-  | record_entry_expr SEMI record_entry_exprs { $1::$3 } */
+  | record_entry_expr SEMI record_entry_exprs { $1::$3 }
 
 expreof:
     expr EOF    { $1 }
@@ -274,14 +328,14 @@ expr:
     | expr NGEQ expr                    { exp (eop NLeq [$3;$1]) (Span.extend $1.espan $3.espan) }
     | LPAREN expr COLON ty RPAREN       { exp ~ty:(Some $4) $2 (Span.extend $1 $5) }
     | LPAREN expr RPAREN                { exp $2 (Span.extend $1 $3) }
-    /* | expr DOT ID                       { exp (eproject $1 (Var.name (snd $3))) (Span.extend ($1.espan) (fst $3)) }
+    | expr DOT ID                       { exp (eproject $1 (Var.name (snd $3))) (Span.extend ($1.espan) (fst $3)) }
     | LBRACE record_entry_exprs RBRACE  { exp (erecord (make_record_map $2)) (Span.extend $1 $3) }
     | LBRACE expr WITH record_entry_exprs RBRACE {
                                           let mk_project v =
                                           exp (eproject $2 (Var.name v)) (Span.extend $1 $3) in
                                           let lst = fill_record $4 mk_project in
                                           exp (erecord (make_record_map lst)) (Span.extend $1 $3)
-                                        } */
+                                        }
     /* | LBRACE exprs RBRACE               { make_set $2 (Span.extend $1 $3) }
     | LBRACE RBRACE                     { make_set [] (Span.extend $1 $2) } */
     | expr2                             { $1 }
@@ -293,7 +347,7 @@ expr2:
 
 expr3:
     | ID                                { exp (evar (snd $1)) (fst $1) }
-    /* | ID DOT ID                         { exp (eproject (evar (snd $1)) (Var.name (snd $3))) (Span.extend (fst $1) (fst $3)) } */
+    | ID DOT ID                         { exp (eproject (evar (snd $1)) (Var.name (snd $3))) (Span.extend (fst $1) (fst $3)) }
     | NUM                               { to_value (vint (snd $1)) (fst $1) }
     | ipaddr                            { $1 }
     | prefixes                          { $1 }
@@ -348,6 +402,10 @@ edges:
     | LPAREN patterns RPAREN            { tuple_pattern $2 }
     | NONE                              { POption None }
     | SOME pattern                      { POption (Some $2) }
+    | LBRACE record_entry_ps RBRACE     { PRecord (make_record_map
+                                          (if snd $2
+                                           then fill_record (fst $2) (fun _ -> PWild)
+                                           else fst $2)) }
 ;
 
 patterns:
@@ -368,7 +426,7 @@ prog:
     | components EOF                    { $1 }
 ;
 
-/* record_entry_p:
+record_entry_p:
   | ID EQ pattern                    { snd $1, $3 }
 ;
 
@@ -376,4 +434,4 @@ record_entry_ps:
   | record_entry_p                      { ([$1], false) }
   | record_entry_p SEMI                 { ([$1], false) }
   | record_entry_p SEMI UNDERSCORE      { ([$1], true) }
-  | record_entry_p SEMI record_entry_ps { ($1::(fst $3), snd $3) } */
+  | record_entry_p SEMI record_entry_ps { ($1::(fst $3), snd $3) }

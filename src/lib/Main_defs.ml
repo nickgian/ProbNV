@@ -35,9 +35,10 @@ let parse_input (args : string array) =
   let ds, info = Input.parse file in
   (* Parse probNV file *)
   let decls = ds in
-  let fs = [] in
   (* Type check the HLL program *)
   let decls = Typing.HLLTypeInf.infer_declarations info decls in
+  let decls, f = RecordUnrolling.unroll_declarations decls in
+  let fs = [ f ] in
   (* Note! Must rename before inling otherwise inling is unsound *)
   let decls, f = Renaming.alpha_convert_declarations decls in
   Printf.printf "Printing type checked program\n\n%s\n\n"

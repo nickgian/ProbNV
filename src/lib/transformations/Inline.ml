@@ -192,8 +192,7 @@ let inline_declaration (cond : ty -> bool) (env : exp Env.t) (d : declaration) =
         (inline_exp env init, inline_exp env trans, inline_exp env merge)
       in
       (env, Some (DSolve { aty; var_names; init; trans; merge }))
-  (* | DUserTy _  *)
-  | DNodes _ | DEdges _ -> (env, Some d)
+  | DUserTy _ | DNodes _ | DEdges _ -> (env, Some d)
 
 let rec inline_declarations_aux cond env (ds : declarations) : declarations =
   match ds with
