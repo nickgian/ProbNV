@@ -75,6 +75,17 @@ end)
 module TypeIds = ArrayIdMake (TypeMap)
 module ExpIds = ArrayIdMake (ExpMap)
 
+module DistMap = BetterMap.Make (struct
+  type t = distrExpr option
+
+  let compare e1 e2 = compare e1 e2
+
+  let to_string e =
+    match e with None -> "" | Some e -> Printing.distrExpr_to_string e
+end)
+
+module DistrIds = ArrayIdMake (DistMap)
+
 (* module ExpEnvMap = BatMap.Make (struct
     type t = exp * (value Env.t)
 

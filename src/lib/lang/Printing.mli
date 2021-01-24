@@ -24,6 +24,8 @@ val func_to_string : ?show_types:bool -> Syntax.func -> string
 
 val env_to_string : ?show_types:bool -> Syntax.env -> string *)
 
+val distrExpr_to_string : (Syntax.distrPattern * float) list -> string
+
 val declaration_to_string : ?show_types:bool -> Syntax.declaration -> string
 
 val declarations_to_string : ?show_types:bool -> Syntax.declarations -> string

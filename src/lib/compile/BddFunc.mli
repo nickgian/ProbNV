@@ -13,8 +13,9 @@ val print : t -> string
 
 val equal_t : t -> t -> bool
 
-val create_value : int -> AdjGraph.t -> t
-(** Given a type index, creates a BDD value representing all possible values of this type. *)
+val create_value : int -> int -> AdjGraph.t -> t
+(** Given a distribution index, a type index, and the topology, creates a BDD
+    value representing all possible values of this type. *)
 
 val toBdd : (int * int -> 'a -> 'b) -> vty_id:int -> 'a -> t
 (** Converts a value to a BDD *)

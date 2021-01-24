@@ -105,8 +105,7 @@ let is_prefix_op op =
   | BddAnd | BddOr | BddAdd _ | BddNot | BddLess _ | BddLeq _ | BddEq | MGet
   | MCreate | MSet | TGet _ ->
       true
-  | And | Or | Not | UAdd _ | Eq | ULess _ | ULeq _ | NLess | NLeq ->
-      false
+  | And | Or | Not | UAdd _ | Eq | ULess _ | ULeq _ | NLess | NLeq -> false
 
 (** Translating LLL operators to OCaml operators*)
 let op_to_ocaml_string op =
@@ -124,7 +123,9 @@ let op_to_ocaml_string op =
   | NLeq -> "<="
   | BddAnd | BddOr | BddNot | BddEq | BddAdd _ | BddLess _ | BddLeq _ | MGet
   | MSet | MCreate | TGet _ ->
-      failwith ("Operation: " ^ (Printing.op_to_string op) ^ ", prefix operations are handled elsewhere")
+      failwith
+        ( "Operation: " ^ Printing.op_to_string op
+        ^ ", prefix operations are handled elsewhere" )
 
 (** Translating patterns to OCaml patterns*)
 
@@ -493,10 +494,11 @@ and branch_to_ocaml_string (p, e) =
 let compile_decl decl =
   match decl with
   | DUserTy _ -> ""
-  | DSymbolic (x, ty, _) ->
+  | DSymbolic (x, ty, dist) ->
       let ty_id = get_fresh_type_id type_store ty in
-      Printf.sprintf "let %s = BddFunc.create_value %d SIM.graph\n" (varname x)
-        ty_id
+      let dist_id = Collections.DistrIds.fresh_id distr_store dist in
+      Printf.sprintf "let %s = BddFunc.create_value %d %d SIM.graph\n"
+        (varname x) dist_id ty_id
   | DLet (x, e) ->
       Printf.sprintf "let %s = %s" (varname x) (exp_to_ocaml_string e)
   | DAssert (e, prob) ->

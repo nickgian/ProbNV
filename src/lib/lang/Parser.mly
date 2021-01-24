@@ -278,38 +278,34 @@ letvars:
 ;
 
 distPattern:
-    | UNDERSCORE                          { DistrPWild }
-    | ID                                  { DistrPVar (snd $1) }                       
+    | UNDERSCORE                          { DistrPWild }                     
     | LBRACKET NUM COMMA NUM RBRACKET     { DistrPRange (snd $2,snd $4) }
     | NODE                                { DistrPNode (snd $1)}
     | NODE TILDE NODE                     { DistrPEdge (snd $1, snd $3) }
     | FALSE                               { DistrPBool false }
     | TRUE                                { DistrPBool true }
-    | LPAREN distPatterns RPAREN          { distr_tuple_pattern $2}
+    /* | LPAREN distPatterns RPAREN          { distr_tuple_pattern $2} */
 ;
 
-distPatterns:
+/* distPatterns:
     | distPattern                         { [$1] }
     | distPattern COMMA distPatterns      { $1 :: $3 }
-;
+; */
 
 distBranch:
-    | BAR distPattern ARROW dist          { ($2, $4) }
+    | BAR distPattern ARROW PROB          { ($2, snd $4) }
 
 distBranches:
     | distBranch                          { [$1] }
     | distBranch distBranches             { $1 :: $2 }
 
-dist:
-    | PROB                                { DistrProb (snd $1) }
-    | CASE ID OF distBranches             { DistrCase (snd $2, $4) }
 
 component:
     /* | LET letvars EQ SOLUTION expr      { make_dsolve (fst $2) $5 } */
     | LET letvars EQ SOLUTION LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (fst $2) $6 $8 $10 }
     | LET letvars EQ expr                       { global_let $2 $4 $4.espan (Span.extend $1 $4.espan) }
     | SYMBOLIC ID COLON bty                    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, None) }
-    | SYMBOLIC ID COLON bty EQ dist            { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, Some $6) }
+    | SYMBOLIC ID COLON bty EQ distBranches    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, Some $6) }
     | ASSERT LPAREN expr COMMA PROB RPAREN      { DAssert ($3,snd $5) }
     | LET EDGES EQ LBRACE RBRACE        { DEdges [] }
     | LET EDGES EQ LBRACE edges RBRACE  { DEdges $5 }

@@ -424,30 +424,24 @@ let func_to_string ?(show_types = false) f =
 let closure_to_string ?(show_types = false) c =
   closure_to_string_p ~show_types max_prec c
 
-let rec distrExpr_to_string e =
-  match e with
-  | DistrProb p -> Printf.sprintf "%f" p
-  | DistrCase (x, bs) ->
-    let bs_string = distrBranches_to_string bs in
-    Printf.sprintf "(case %s of\n%s)" (Var.to_string x) bs_string
+let rec distrExpr_to_string bs =
+  match bs with
+  | [] -> ""
+  | b :: bs ->
+      Printf.sprintf "%s\n%s" (distrBranch_to_string b) (distrExpr_to_string bs)
 
-and distrPattern_to_string p = 
+and distrPattern_to_string p =
   match p with
   | DistrPWild -> "_"
-  | DistrPVar x -> Var.to_string x
-  | DistrPBool b -> if b then "true" else "false" 
-  | DistrPRange (a, b) -> Printf.sprintf "[%s, %s]" (Integer.to_string a) (Integer.to_string b)
+  | DistrPBool b -> if b then "true" else "false"
+  | DistrPRange (a, b) ->
+      Printf.sprintf "[%s, %s]" (Integer.to_string a) (Integer.to_string b)
   | DistrPNode n -> Printf.sprintf "%dn" n
   | DistrPEdge (n1, n2) -> Printf.sprintf "%d~%d" n1 n2
   | DistrPTuple ps -> "(" ^ comma_sep distrPattern_to_string ps ^ ")"
 
-and distrBranch_to_string (p, e) =
-  " | " ^ distrPattern_to_string p ^ " -> " ^ distrExpr_to_string e
-
-and distrBranches_to_string bs = 
-  match bs with
-  | [] -> ""
-  | b :: bs -> Printf.sprintf "%s\n%s" (distrBranch_to_string b) (distrBranches_to_string bs)
+and distrBranch_to_string (pat, p) =
+  " | " ^ distrPattern_to_string pat ^ " -> " ^ string_of_float p
 
 (* TODO: should the let statements use the identifiers defined in Syntax instead? *)
 let rec declaration_to_string ?(show_types = false) d =

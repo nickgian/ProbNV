@@ -221,18 +221,13 @@ type probability = float
 
 type distrPattern =
   | DistrPWild
-  | DistrPVar of var
   | DistrPBool of bool 
   | DistrPRange of Integer.t * Integer.t
   | DistrPNode of node
   | DistrPEdge of edge
   | DistrPTuple of distrPattern list
 
-type distrExpr =
-  | DistrProb of probability
-  | DistrCase of var * distrBranches
-
-and distrBranches = (distrPattern * distrExpr) list
+type distrExpr = (distrPattern * probability) list
 
 (* var_names should be an exp that uses only the EVar and ETuple constructors *)
 type solve = {
