@@ -346,9 +346,9 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
       let n_incoming_attribute =
         if u = v then init u
         else (
-          Printf.printf "  Size of message from %d: %d\n" v
+          (* Printf.printf "  Size of message from %d: %d\n" v
             (Cudd.Mtbddc.size (Obj.magic (get_attribute_exn v local)));
-          printBdd (Obj.magic (get_attribute_exn v local));
+          printBdd (Obj.magic (get_attribute_exn v local)); *)
           trans edge (get_attribute_exn v local) )
       in
 
@@ -429,7 +429,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
                     { labels = u_new_attribute; received = inbox_u' }
                     local ) )
     in
-    Printf.printf "Processing node: %d\n" u;
+    (* Printf.printf "Processing node: %d\n" u; *)
     let change, local' =
       AdjGraph.VertexSet.fold
         (fun v (changed, local) ->

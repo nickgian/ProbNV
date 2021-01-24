@@ -35,7 +35,7 @@ let simulate name decls =
   Collections.ExpIds.seal pred_store;
 
   (* Build a simulator for SRPs *)
-  let module SrpSimulator = ( val (module SrpSimulation (G))
+  let module SrpSimulator = ( val (module SrpLazySimulation (G))
                                 : SrpSimulationSig )
   in
   (* Load compiled NV program*)

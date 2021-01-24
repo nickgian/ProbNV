@@ -45,6 +45,8 @@ rule token = parse
   | "nodes"           { NODES (position lexbuf) }
   | "match"           { MATCH (position lexbuf) }
   | "with"            { WITH (position lexbuf) }
+  | "case"            { CASE (position lexbuf) }
+  | "of"              { OF (position lexbuf) }
  (* | "require"         { REQUIRE (position lexbuf) }
   | "foldNodes"       { FOLDNODE (position lexbuf) }
   | "foldEdges"       { FOLDEDGE (position lexbuf) }

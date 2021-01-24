@@ -21,7 +21,7 @@ let rec ty_to_size ty =
       | TRecord tmap -> ty_to_size (TTuple (RecordUtils.get_record_entries tmap)) *)
   | TNode -> ty_to_size (concrete (TInt tnode_sz)) (* Encode as int *)
   | TEdge -> 2 * ty_to_size (concrete TNode) (*Encode as node pair*)
-  | TArrow _ | TVar _ | QVar _ | TMap _ ->
+  | TArrow _ | TVar _ | QVar _ | TMap _ | TRecord _->
       failwith ("internal error (ty_to_size): " ^ Printing.ty_to_string ty)
 
 (* A list of the range of BDD variables, the type and the distribution, of every symbolic *)

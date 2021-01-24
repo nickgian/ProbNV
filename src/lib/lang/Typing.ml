@@ -192,7 +192,7 @@ let occurs tvr (ty : baseTy) : unit =
 (* QVar are unexpected: they should've been instantiated *)
 (* Modes are also not used here, we just check that the base types can be
    unified. We compute the right mode in the infer_exp/infer_value/infer_decl functions.*)
-let rec unify info e t1 t2 : unit =
+let rec unify isHLL info e t1 t2 : unit =
   (* similar to unify, but returns a bool indicating if it was successful *)
   let rec try_unifies ts1 ts2 : bool =
     match (ts1, ts2) with
@@ -207,13 +207,27 @@ let rec unify info e t1 t2 : unit =
       | TVar { contents = Link t1 }, _ -> try_unify t1 t2 m1 m2
       | _, TVar { contents = Link t2 } -> try_unify t1 t2 m1 m2
       | TVar ({ contents = Unbound _ } as tv), t' ->
-          occurs tv t';
-          tv := Link { t2 with mode = m1 };
-          true
+          if isHLL then
+            (occurs tv t';
+            tv := Link { t2 with mode = m1 };
+            true)
+          else (
+            (t1.typ = t2.typ) ||
+            (occurs tv t';
+            tv := Link { t2 with mode = m1 };
+            true)
+          )
       | t', TVar ({ contents = Unbound _ } as tv) ->
-          occurs tv t';
+          if isHLL then
+            (occurs tv t';
           tv := Link { t1 with mode = m2 };
-          true
+          true)
+          else (
+            (t1.typ = t2.typ) ||
+            (occurs tv t';
+             tv := Link { t1 with mode = m2 };
+             true)
+          )
       (* | TVar {contents= Link t1}, t2 -> try_unify t1 t2
        * | t1, TVar {contents= Link t2} -> try_unify t1 t2 *)
       | TArrow (tyl1, tyl2), TArrow (tyr1, tyr2) ->
@@ -250,16 +264,16 @@ let rec unify info e t1 t2 : unit =
     Printf.printf "%s\n" msg;
     Console.error_position info e.espan msg
 
-and unifies info (e : exp) ts1 ts2 =
+and unifies isHLL info (e : exp) ts1 ts2 =
   match (ts1, ts2) with
   | [], [] -> ()
   | t1 :: ts1, t2 :: ts2 ->
-      unify info e t1 t2;
-      unifies info e ts1 ts2
+      unify isHLL info e t1 t2;
+      unifies isHLL info e ts1 ts2
   | _, _ -> Console.error "wrong number of components in unification"
 
-let unify_opt info (e : exp) topt1 t2 =
-  match topt1 with Some t1 -> unify info e t1 t2 | None -> ()
+let unify_opt isHLL info (e : exp) topt1 t2 =
+  match topt1 with Some t1 -> unify isHLL info e t1 t2 | None -> ()
 
 let generalize ty =
   let rec gen ty =
@@ -479,7 +493,7 @@ let rec infer_value info env record_types (v : Syntax.value) : Syntax.value =
     | VOption (Some v) ->
         let v, t = textractv (infer_value info env record_types v) in
         let tv = fresh_tyvar () |> concrete in
-        unify info (exp_of_value v) t tv;
+        unify true info (exp_of_value v) t tv;
         tvalue (voption (Some v), concrete @@ TOption tv, v.vspan)
     | VRecord vmap ->
         (* All VRecords are constructed via ERecords, so shouldn't need
@@ -544,7 +558,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
       Printf.printf "Assertion type: %s" (Printing.ty_to_string ty);
       (* Mode should not matter for unification - although it might matter in the TVar case
          but I don't think that case appears here *)
-      unify info e ty { typ = TBool; mode = None };
+      unify isHLL info e ty { typ = TBool; mode = None };
       (*According to rule Assert we need to check that mode = Multivalue or Concrete *)
       match ty.mode with
       | Some Concrete | Some Multivalue ->
@@ -617,9 +631,9 @@ and infer_declaration isHLL infer_exp i info env record_types d :
         | Some ty -> ty
         | None -> { typ = fresh_tyvar (); mode = Some m }
       in
-      unify info init (oget init'.ety) (init_ty solve_aty);
-      unify info trans (oget trans'.ety) (trans_ty solve_aty);
-      unify info merge (oget merge'.ety) (merge_ty solve_aty);
+      unify isHLL info init (oget init'.ety) (init_ty solve_aty);
+      unify isHLL info trans (oget trans'.ety) (trans_ty solve_aty);
+      unify isHLL info merge (oget merge'.ety) (merge_ty solve_aty);
 
       match m with
       | Symbolic ->
@@ -642,6 +656,11 @@ and infer_declaration isHLL infer_exp i info env record_types d :
 
 (** High-Level Language Type Inference *)
 module HLLTypeInf = struct
+
+  let unify = unify true
+  let unifies = unifies true
+  let unify_opt = unify_opt true
+
   let rec infer_exp i info env record_types (e : exp) : exp =
     let _infer_exp = infer_exp in
     (* Alias in case we need to modify the usually-static args *)
@@ -815,12 +834,19 @@ module HLLTypeInf = struct
           (* Type check e1 and e2 *)
           let e1, ty_fun = infer_exp e1 |> textract in
           let e2, ty_arg = infer_exp e2 |> textract in
+
+          let ty_res = fresh_tyvar () in
+
+          unify info e ty_fun
+          (mty (Some Concrete)
+             (TArrow (ty_arg, mty (Some Concrete) ty_res)));
+
           let fun_arg, fun_res =
-            match ty_fun.typ with
+            match (get_inner_type ty_fun).typ with
             | TArrow (fun_arg, fun_res) -> (fun_arg, fun_res)
             | _ ->
                 Console.error_position info e.espan
-                  "Function must have arrow type"
+                  (Printf.sprintf "Function must have arrow type: %s" (Printing.ty_to_string ty_fun))
           in
           (* suppose for now we restricted function arguments to C, i.e. symbolics
              are not allowed, ty_arg should be Concrete or Multivalue
@@ -838,7 +864,6 @@ module HLLTypeInf = struct
             | _ -> ()
           in
 
-          let ty_res = fresh_tyvar () in
           (* Check the mode of the arrow type *)
           match OCamlUtils.oget (get_mode ty_fun) with
           | Concrete -> (
@@ -851,10 +876,6 @@ module HLLTypeInf = struct
               with
               | None -> Console.error_position info e.espan "Cannot join modes"
               | Some res_mode ->
-                  (* modes should not matter for unification *)
-                  unify info e ty_fun
-                    (mty (Some Concrete)
-                       (TArrow (ty_arg, mty (get_mode fun_res) ty_res)));
                   (* set result mode to m2 U m3 *)
                   texp (eapp e1 e2, mty (Some res_mode) ty_res, e.espan) )
           | Multivalue ->
@@ -937,9 +958,9 @@ module HLLTypeInf = struct
           texp (esome e, { typ = TOption t; mode = t.mode }, e.espan)
       | EMatch (e1, branches) -> (
           let e1, tmatch = infer_exp e1 |> textract in
-          Printf.printf "e1: %s, tmatch: %s\n"
+          (* Printf.printf "e1: %s, tmatch: %s\n"
             (Printing.exp_to_string e1)
-            (Printing.ty_to_string tmatch);
+            (Printing.ty_to_string tmatch); *)
           let branches, t =
             infer_branches (i + 1) info env record_types e1 tmatch branches
           in
@@ -1040,6 +1061,7 @@ module HLLTypeInf = struct
         let env2 = infer_pattern (i + 1) info env exp tmatch p in
         let e, t = infer_exp (i + 1) info env2 record_types e |> textract in
         unify info e t tbranch;
+        (* Printf.printf "t, tbranch: %s, %s\n" (Printing.ty_to_string t) (Printing.ty_to_string tbranch); *)
         let t = join_ty t tbranch in
         (addBranch p e bs, t)
 
@@ -1124,6 +1146,12 @@ end
 
 (** High-Level Language Type Inference *)
 module LLLTypeInf = struct
+
+  let unify = unify false
+  let unifies = unifies false
+  let unify_opt = unify_opt false
+
+
   let rec infer_exp i info env record_types (e : exp) : exp =
     let _infer_exp = infer_exp in
     (* Alias in case we need to modify the usually-static args *)
@@ -1283,11 +1311,11 @@ module LLLTypeInf = struct
           let arg_mode =
             match argty with None -> Some Concrete | Some typ -> typ.mode
           in
-          let e, ty_e =
-            _infer_exp (i + 1) info
+          let e, ty_e = textract body
+            (* _infer_exp (i + 1) info
               (Env.update env x (OCamlUtils.oget argty))
               record_types body
-            |> textract
+            |> textract *)
           in
           unify_opt info e resty ty_e;
           (* Functions are always typed as Concrete *)
@@ -1305,8 +1333,8 @@ module LLLTypeInf = struct
       | EApp (e1, e2) ->
           (* Based on rules App-C and App-M*)
           (* Type check e1 and e2 *)
-          let e1, ty_fun = infer_exp e1 |> textract in
-          let e2, ty_arg = infer_exp e2 |> textract in
+          let e1, ty_fun = e1 |> textract in
+          let e2, ty_arg = e2 |> textract in
           let fun_arg, fun_res =
             match (get_inner_type ty_fun).typ with
             | TArrow (fun_arg, fun_res) -> (fun_arg, fun_res)
@@ -1331,11 +1359,11 @@ module LLLTypeInf = struct
                expression applied"
       | EIf (e1, e2, e3) -> (
           (* Based on rules Ite of the LLL*)
-          let e1, tcond = infer_exp e1 |> textract in
-          let e2, ty2 = infer_exp e2 |> textract in
-          let e3, ty3 = infer_exp e3 |> textract in
-          (* Unification does not matter for modes *)
-          unify info e1 (mty None TBool) tcond;
+          let e1, tcond = e1 |> textract in
+          let e2, ty2 = e2 |> textract in
+          let e3, ty3 = e3 |> textract in
+ 
+          unify info e1 (mty (Some Concrete) TBool) tcond;
           unify info e ty2 ty3;
 
           (* if not (Syntax.equal_tys ty2 ty3) then (
@@ -1361,14 +1389,19 @@ module LLLTypeInf = struct
               Console.error_position info e.espan
                 "Symbolic/Multivalue guard - mistyped mode in Ite" )
       | ELet (x, e1, e2) ->
-          enter_level ();
-          let e1, ty_e1 = infer_exp e1 |> textract in
-          leave_level ();
-          let ty = generalize ty_e1 in
+          (* enter_level (); *)
+          (* let e1, ty_e1 = infer_exp e1 |> textract in *)
+          let e1, ty_e1 = e1 |> textract in
+          (* leave_level (); *)
+          (* let ty = generalize ty_e1 in *)
           let e2, ty_e2 =
-            _infer_exp (i + 1) info (Env.update env x ty) record_types e2
+            e2
             |> textract
           in
+          (* let e2, ty_e2 =
+            _infer_exp (i + 1) info (Env.update env x ty) record_types e2
+            |> textract
+          in *)
           texp (elet x e1 e2, ty_e2, e.espan)
           (* let e1, ty_e1 = infer_exp e1 |> textract in
              let e2, ty_e2 =
@@ -1624,7 +1657,7 @@ module LLLTypeInf = struct
 
   let infer_declarations info (ds : declarations) : declarations =
     let record_types = get_record_types ds in
-    infer_declarations_aux true infer_exp 0 info Env.empty record_types ds
+    infer_declarations_aux false infer_exp 0 info Env.empty record_types ds
 end
 
 let rec equiv_tys ty1 ty2 =

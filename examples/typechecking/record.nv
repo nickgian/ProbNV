@@ -1,0 +1,26 @@
+symbolic x:int2
+type route = {valid: [C]bool; len: [C]int;}
+let nodes = 2
+let edges = {0=1;}
+
+let init u =
+  if u = 1n then {valid = false; len = 0} else {valid = true; len = 0}
+
+let merge u (v1 : [M]route) (v2 : [M]route) = 
+    match (v1, v2) with
+    | ({valid = false; _}, _) -> v2
+    | (_, {valid = false; _}) -> v1
+    | ({len = n1; _}, {len = n2; _}) ->
+        if n1 <= n2 then v1 else v2
+
+let trans e (v : [M]route) = 
+    match v with
+    | {valid = false; _} -> v
+    | {len = n; _} ->
+        if x <u2 3u2 then {valid = true; len = n+1} else {valid = false; len = 0}
+
+let s = solution(init, trans, merge)
+
+assert ((match s[1n] with
+        | {valid = false; _ } -> false
+        | _ -> true), 0.73)

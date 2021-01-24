@@ -37,6 +37,7 @@ let rec fty (ty : ty) : ty =
       let kty = canonicalize_type kty in
       let vty = canonicalize_type vty in
       { typ = TMap (kty, vty); mode = fty_mode (get_mode ty) }
+  | TRecord _ -> failwith "Records should be unrolled"
 
 (* Used for the function arguments when building applyN expressions *)
 let rec set_concrete_mode ty =
@@ -55,6 +56,7 @@ let rec set_concrete_mode ty =
       let ty2 = set_concrete_mode ty2 in
       { typ = TArrow (ty1, ty2); mode = Some Concrete }
   | TMap (kty, vty) -> { typ = TMap (kty, vty); mode = Some Concrete }
+  | TRecord _ -> failwith "Records should be unrolled"
 
 (* Converting normal operations to BDD operations *)
 let opToBddOp op =
@@ -195,7 +197,7 @@ let rec translate (e : exp) : exp * BddBinds.t =
       let ty2 = OCamlUtils.oget e2.ety in
       let ty3 = OCamlUtils.oget e3.ety in
       let ty = OCamlUtils.oget e.ety in
-      Printf.printf "fty: %s \n\n" (Printing.ty_to_string (fty ty));
+      (* Printf.printf "fty: %s \n\n" (Printing.ty_to_string (fty ty)); *)
       match (get_mode ty1, get_mode ty2, get_mode ty3, get_mode ty) with
       | Some Concrete, Some Concrete, Some Concrete, _ ->
           (* C-Ite-C*)
@@ -435,6 +437,7 @@ let rec translate (e : exp) : exp * BddBinds.t =
       | Some Symbolic, Some Symbolic ->
           failwith "For now not implementing symbolic matches"
       | _ -> failwith "wrong modes" )
+  | ERecord _ | EProject _ -> failwith "Records should have been unrolled"
   | EBddIf _ | EToBdd _ | EToMap _ | EApplyN _ ->
       failwith "Cannot translate LLL expressions"
 
@@ -463,6 +466,7 @@ let rec pattern_vars p =
       List.fold_left
         (fun set p -> VarSet.union set (pattern_vars p))
         VarSet.empty ps
+  | PRecord _ -> failwith "Records should have been unrolled"
 
 (* | PRecord map ->
     StringMap.fold
@@ -487,11 +491,7 @@ let rec free (seen : VarSet.t) (e : exp) : BddBinds.t =
           (BddBinds.empty ()) es
       in
       acc
-  (* | ERecord map ->
-     StringMap.fold
-       (fun _ e set -> VarSet.union set (free seen e))
-       map
-       VarSet.empty *)
+  | ERecord _ | EProject _ -> failwith "Records should have been unrolled"
   | EFun f -> free (VarSet.add f.arg seen) f.body
   | EApp (e1, e2) -> BddBinds.union (free seen e1) (free seen e2)
   | EIf (e1, e2, e3) ->

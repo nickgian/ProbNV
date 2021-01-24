@@ -96,15 +96,10 @@ let rec alpha_convert_exp (env : Var.t Env.t) (e : exp) =
       in
       ematch (alpha_convert_exp env e1) bs' |> wrap e
   | ESome e1 -> esome (alpha_convert_exp env e1) |> wrap e
-
-(* (* 
-   | ERecord map ->
-     erecord (StringMap.map (fun e -> alpha_convert_exp env e) map)
-     |> wrap e
-   | EProject (e, l) ->
-     eproject (alpha_convert_exp env e) l |> wrap e
-*)
-   | ETy (e1, ty) -> ety (alpha_convert_exp env e1) ty |> wrap e *)
+  | ERecord map ->
+  erecord (StringMap.map (fun e -> alpha_convert_exp env e) map) |> wrap e
+  | EProject (e, l) ->
+    eproject (alpha_convert_exp env e) l |> wrap e
 
 let alpha_convert_declaration bmap (env : Var.t Env.t) (d : declaration) =
   match d with

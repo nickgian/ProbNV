@@ -49,7 +49,7 @@ let rec embed_value (record_fns : int * int -> 'a -> 'b) (typ : Syntax.ty) :
       failwith
         (Printf.sprintf "Function %s computed as value"
            (Printing.ty_to_string typ))
-  (* | TRecord _ -> failwith "Trecord" *)
+  | TRecord _ -> failwith "Trecord"
   | TNode ->
       fun v ->
         Syntax.vint (Integer.create ~value:(Obj.magic v) ~size:Syntax.tnode_sz)

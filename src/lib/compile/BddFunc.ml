@@ -66,7 +66,7 @@ let rec default_value ty =
   | TEdge ->
       Tuple [ default_value (concrete TNode); default_value (concrete TNode) ]
   | TVar { contents = Link t } -> default_value t
-  | TVar _ | QVar _ | TArrow _ | TMap _ ->
+  | TVar _ | QVar _ | TArrow _ | TMap _ | TRecord _ ->
       failwith "internal error (default_value)"
 
 (** Lifts a value to a BDD*)
@@ -302,6 +302,49 @@ let apply3 ~op_key ~f ~arg1 ~arg2 ~arg3 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
 
 (** ** Probabilistic part *)
 
+(** * Distribution interpreter *)
+
+(* Takes a distribution expression, a symbolic value, its ProbNV type, and a
+  graph and computes a MTBDD that denotes its distribution *)
+let rec computeDistr dexpr (env : (t * Syntax.ty) Env.t) g : float Cudd.Mtbddc.unique Cudd.Vdd.t = 
+  match dexpr with
+  | DistrProb p -> 
+    Mtbddc.cst B.mgr B.tbl_probabilities p
+  | DistrCase (x, bs) ->
+    computeDistrCases (Env.lookup env x) bs env
+
+and matchDistrCase accSpace v p env g = 
+match p, v with
+| DistrPWild, _ -> 
+  let sz = computeSpace v g in
+  (sz - accSpace)
+  
+
+| DistrPVar x -> Var.to_string x
+| DistrPBool b -> if b then "true" else "false" 
+| DistrPRange (a, b) -> Printf.sprintf "[%s, %s]" (Integer.to_string a) (Integer.to_string b)
+| DistrPNode n -> Printf.sprintf "%dn" n
+| DistrPEdge (n1, n2) -> Printf.sprintf "%d~%d" n1 n2
+
+and computeDistrCase accSpace v (p, e) env g =
+  match p, v with
+  | DistrPWild, _ -> 
+    let sz = computeSpace v g in
+    (sz - accSpace)
+    
+
+  | DistrPVar x -> Var.to_string x
+  | DistrPBool b -> if b then "true" else "false" 
+  | DistrPRange (a, b) -> Printf.sprintf "[%s, %s]" (Integer.to_string a) (Integer.to_string b)
+  | DistrPNode n -> Printf.sprintf "%dn" n
+  | DistrPEdge (n1, n2) -> Printf.sprintf "%d~%d" n1 n2
+  (* | DistrPTuple ps -> "(" ^ comma_sep distrPattern_to_string ps ^ ")" *)
+
+and computeDistrCases v bs env =
+  match bs with
+  | [] -> failwith "todo"
+  | b :: bs ->  
+
 (* Returns a uniform probability based on the given type *)
 let uniform_probability_ty ty (g : AdjGraph.t) =
   match ty.typ with
@@ -310,8 +353,9 @@ let uniform_probability_ty ty (g : AdjGraph.t) =
   | TNode -> 1.0 /. float (AdjGraph.nb_vertex g)
   | TEdge -> 1.0 /. float (AdjGraph.nb_edges g)
   | TTuple _ -> failwith "Only applicable over base types"
-  | TOption _ -> failwith "Todo"
-  | TArrow _ | QVar _ | TVar _ | TMap _ ->
+  | TOption _ -> failwith "No support for declaration of symbolic options for now"
+  | TRecord _ -> failwith "Records should be unrolled"
+  | TArrow _ | QVar _ | TVar _ | TMap _  ->
       failwith "No probabilities over arrow types or type variables"
 
 (* Creates a uniform distribution represented as a MTBDD, 
@@ -359,7 +403,7 @@ let uniform_distribution (res : t) ty (g : AdjGraph.t) :
             else None)
           [||] (Array.of_list distrs)
     | TOption _, _ -> failwith "todo: probability for options"
-    | TTuple _, _ | TEdge, _ | TVar _, _ | QVar _, _ | TArrow _, _ | TMap _, _
+    | TTuple _, _ | TEdge, _ | TVar _, _ | QVar _, _ | TArrow _, _ | TMap _, _ | TRecord _, _
       ->
         failwith "Impossible cases"
   in
@@ -385,9 +429,7 @@ let create_value (ty : ty) (g : AdjGraph.t) : t =
     | TOption ty ->
         let tag = B.freshvar () in
         BOption (tag, aux ty)
-    (* | TRecord map -> aux i (TTuple (RecordUtils.get_record_entries map))
- *)
-    | TArrow _ | QVar _ | TVar _ | TMap _ ->
+    | TArrow _ | QVar _ | TVar _ | TMap _ | TRecord _ ->
         failwith
           (Printf.sprintf "internal error (create_value) type:%s\n"
              (Printing.ty_to_string (get_inner_type ty)))

@@ -215,6 +215,25 @@ and func = {
 
 and branches = { pmap : exp PatMap.t; plist : (pattern * exp) list }
 
+(** ** Syntax for the probabilistic part of the language *)
+
+type probability = float
+
+type distrPattern =
+  | DistrPWild
+  | DistrPVar of var
+  | DistrPBool of bool 
+  | DistrPRange of Integer.t * Integer.t
+  | DistrPNode of node
+  | DistrPEdge of edge
+  | DistrPTuple of distrPattern list
+
+type distrExpr =
+  | DistrProb of probability
+  | DistrCase of var * distrBranches
+
+and distrBranches = (distrPattern * distrExpr) list
+
 (* var_names should be an exp that uses only the EVar and ETuple constructors *)
 type solve = {
   aty : ty option;
@@ -224,11 +243,10 @@ type solve = {
   merge : exp;
 }
 
-type probability = float
 
 type declaration =
   | DLet of var * exp
-  | DSymbolic of var * ty * probability option
+  | DSymbolic of var * ty * distrExpr option
   | DAssert of (exp * probability)
   | DSolve of solve
   | DNodes of int
@@ -978,6 +996,10 @@ let rec join_ty ty1 ty2 =
       join_ty { ty3 with mode = join_opts ty1.mode ty3.mode } ty2
   | _, TVar { contents = Link ty3 } ->
       join_ty ty1 { ty3 with mode = join_opts ty2.mode ty3.mode }
+  | QVar x, QVar y when x = y ->
+    { ty1 with mode = join_opts ty1.mode ty2.mode }
+  | TVar { contents = Unbound (x1, x2)}, TVar { contents = Unbound (y1, y2)} when x1 = y1 && x2 = y2 ->
+    { ty1 with mode = join_opts ty1.mode ty2.mode }
   | TVar _, _
   | QVar _, _
   | TBool, _

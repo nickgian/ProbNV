@@ -1,0 +1,26 @@
+symbolic x:int2
+
+let nodes = 2
+let edges = {0=1;}
+
+let init u =
+  if u = 1n then (false, 0, createDict false) else (true, 0, createDict false)
+
+let merge u (v1 : [M]([C]bool, [C]int, [C](dict[[C]tedge, [C]bool])))  (v2 : [M]([C]bool, [C]int, [C](dict[[C]tedge, [C]bool]))) = 
+    match (v1, v2) with
+    | ((false, _, _), _) -> v2
+    | (_, (false, _, _)) -> v1
+    | ((true, n1,_), (true, n2,_)) ->
+        if n1 <= n2 then v1 else v2
+
+let trans e (v : [M]([C]bool, [C]int, [C](dict[[C]tedge, [C]bool]))) = 
+    match v with
+    | (false, _, _) -> v
+    | (true, n, s) ->
+        if x <u2 3u2 then (true, n+1, s[e := true]) else (false, 0, s)
+
+let s = solution(init, trans, merge)
+
+assert ((match s[1n] with
+        | (false, _, _) -> false
+        | (true, _, _) -> true), 0.73)

@@ -103,9 +103,9 @@ let build_constructors () =
 let is_prefix_op op =
   match op with
   | BddAnd | BddOr | BddAdd _ | BddNot | BddLess _ | BddLeq _ | BddEq | MGet
-  | MCreate | MSet ->
+  | MCreate | MSet | TGet _ ->
       true
-  | And | Or | Not | UAdd _ | Eq | ULess _ | ULeq _ | NLess | NLeq | TGet _ ->
+  | And | Or | Not | UAdd _ | Eq | ULess _ | ULeq _ | NLess | NLeq ->
       false
 
 (** Translating LLL operators to OCaml operators*)
@@ -124,7 +124,7 @@ let op_to_ocaml_string op =
   | NLeq -> "<="
   | BddAnd | BddOr | BddNot | BddEq | BddAdd _ | BddLess _ | BddLeq _ | MGet
   | MSet | MCreate | TGet _ ->
-      failwith "Prefix operations are handled elsewhere"
+      failwith ("Operation: " ^ (Printing.op_to_string op) ^ ", prefix operations are handled elsewhere")
 
 (** Translating patterns to OCaml patterns*)
 
@@ -143,8 +143,7 @@ let rec pattern_to_ocaml_string pattern =
         ps "{" "; " "}"
   | POption None -> "None"
   | POption (Some p) -> Printf.sprintf "Some %s" (pattern_to_ocaml_string p)
-  (*
-      | PRecord map -> record_to_ocaml_record "=" pattern_to_ocaml_string map *)
+  | PRecord _ -> failwith "Records should have been unrolled"
   | PNode n -> Printf.sprintf "%d" n
   | PEdge (p1, p2) ->
       Printf.sprintf "(%s, %s)"
@@ -178,6 +177,7 @@ let rec ty_to_ocaml_string t =
       ignore (ty_to_ocaml_string vty);
       let vty = ty_to_ocaml_string vty in
       Printf.sprintf "(%s) CompileBDDs.t" vty
+  | TRecord _ -> failwith "Records should have been unrolled"
 
 (* 
    | TRecord map -> record_to_ocaml_record ":" ty_to_ocaml_string map *)
@@ -194,6 +194,7 @@ let rec pattern_vars p =
         (BatSet.PSet.create Var.compare)
         ps
   | POption (Some p) -> pattern_vars p
+  | PRecord _ -> failwith "Records should have been unrolled"
 
 (* | PRecord map ->
     StringMap.fold
@@ -212,11 +213,6 @@ let rec free (seen : Var.t BatSet.PSet.t) (e : exp) : Var.t BatSet.PSet.t =
         (fun set e -> BatSet.PSet.union set (free seen e))
         (BatSet.PSet.create Var.compare)
         es
-  (* | ERecord map ->
-     StringMap.fold
-       (fun _ e set -> BatSet.PSet.union set (free seen e))
-       map
-       (BatSet.PSet.create Var.compare) *)
   | EFun f -> free (BatSet.PSet.add f.arg seen) f.body
   | EApp (e1, e2) -> BatSet.PSet.union (free seen e1) (free seen e2)
   | EIf (e1, e2, e3) ->
@@ -243,6 +239,7 @@ let rec free (seen : Var.t BatSet.PSet.t) (e : exp) : Var.t BatSet.PSet.t =
           bs1 bs.plist
       in
       BatSet.PSet.union (free seen e) bs
+  | ERecord _ | EProject _ -> failwith "records should have been unrolled"
   | EBddIf _ | EToBdd _ | EToMap _ | EApplyN _ ->
       failwith "Does not apply to non-concrete expressions"
 
@@ -321,9 +318,7 @@ let rec value_to_ocaml_string v =
         vs "{" "; " "}"
   | VOption None -> "None"
   | VOption (Some v) -> Printf.sprintf "(Some %s)" (value_to_ocaml_string v)
-  (*
-
-      | VRecord map -> record_to_ocaml_record "=" value_to_ocaml_string map *)
+  | VRecord _ -> failwith "Records should have been unrolled"
   | VNode n -> string_of_int n
   | VEdge (n1, n2) -> Printf.sprintf "(%d, %d)" n1 n2
   | VClosure _ -> failwith "Closures shouldn't appear here."
@@ -411,13 +406,8 @@ and exp_to_ocaml_string e =
         (Collections.printList branch_to_ocaml_string (branchToList bs) "" ""
            "")
   | ESome e -> Printf.sprintf "Some (%s)" (exp_to_ocaml_string e)
+  | ERecord _ | EProject _ -> failwith "Records should have been unrolled"
 
-(* 
-   
-   
-   | ETy (e, _) -> exp_to_ocaml_string e
-   | ERecord map -> record_to_ocaml_record "=" exp_to_ocaml_string map
-   | EProject (e, l) -> Printf.sprintf "(%s.%s)" (exp_to_ocaml_string e) l *)
 and op_args_to_ocaml_string op es =
   match es with
   | [] -> failwith "Empty operand list"

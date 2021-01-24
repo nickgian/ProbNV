@@ -26,6 +26,7 @@ let prec_op op =
   | MGet -> 5
   | MSet -> 3
   | ULess _ | BddLess _ | NLess | ULeq _ | NLeq | BddLeq _ -> 5
+  | TGet _ -> 5
 
 let prec_exp e =
   match e.e with
@@ -423,6 +424,31 @@ let func_to_string ?(show_types = false) f =
 let closure_to_string ?(show_types = false) c =
   closure_to_string_p ~show_types max_prec c
 
+let rec distrExpr_to_string e =
+  match e with
+  | DistrProb p -> Printf.sprintf "%f" p
+  | DistrCase (x, bs) ->
+    let bs_string = distrBranches_to_string bs in
+    Printf.sprintf "(case %s of\n%s)" (Var.to_string x) bs_string
+
+and distrPattern_to_string p = 
+  match p with
+  | DistrPWild -> "_"
+  | DistrPVar x -> Var.to_string x
+  | DistrPBool b -> if b then "true" else "false" 
+  | DistrPRange (a, b) -> Printf.sprintf "[%s, %s]" (Integer.to_string a) (Integer.to_string b)
+  | DistrPNode n -> Printf.sprintf "%dn" n
+  | DistrPEdge (n1, n2) -> Printf.sprintf "%d~%d" n1 n2
+  | DistrPTuple ps -> "(" ^ comma_sep distrPattern_to_string ps ^ ")"
+
+and distrBranch_to_string (p, e) =
+  " | " ^ distrPattern_to_string p ^ " -> " ^ distrExpr_to_string e
+
+and distrBranches_to_string bs = 
+  match bs with
+  | [] -> ""
+  | b :: bs -> Printf.sprintf "%s\n%s" (distrBranch_to_string b) (distrBranches_to_string bs)
+
 (* TODO: should the let statements use the identifiers defined in Syntax instead? *)
 let rec declaration_to_string ?(show_types = false) d =
   let exp_to_string = exp_to_string ~show_types in
@@ -430,9 +456,9 @@ let rec declaration_to_string ?(show_types = false) d =
   | DLet (x, e) -> "let " ^ Var.to_string x ^ " = " ^ exp_to_string e
   | DSymbolic (x, ty, None) ->
       Printf.sprintf "symbolic %s : %s" (Var.to_string x) (ty_to_string ty)
-  | DSymbolic (x, ty, Some prob) ->
-      Printf.sprintf "symbolic %s : %s = %f" (Var.to_string x) (ty_to_string ty)
-        prob
+  | DSymbolic (x, ty, Some distr) ->
+      Printf.sprintf "symbolic %s : %s = %s" (Var.to_string x) (ty_to_string ty)
+        (distrExpr_to_string distr)
   | DAssert (e, prob) -> Printf.sprintf "assert(%s, %f)" (exp_to_string e) prob
   | DSolve { aty; var_names; init; trans; merge } ->
       Printf.sprintf "let %s = solution<%s> {init = %s; trans = %s; merge = %s}"

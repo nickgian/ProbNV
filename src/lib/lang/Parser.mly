@@ -18,6 +18,19 @@
         let e = efun {arg=x; argty=tyopt; resty=None; body=make_fun rest body body_span body_span; fmode = None} in
         exp e span
 
+   let make_set exprs span =
+    let tru = exp (e_val (value (vbool true) span)) span in
+    let rec updates e exprs =
+        match exprs with
+        | [] -> e
+        | expr :: tl ->
+            let e = exp (eop MSet [e; expr; tru]) span in
+            updates e tl
+    in
+    let e = exp (e_val (value (vbool false) span)) span in
+    let e = exp (eop MCreate [e]) span in
+    updates e exprs
+
   let local_let (id,params) body body_span span =
     (id, make_fun params body body_span span)
 
@@ -50,6 +63,11 @@
     match ps with
     | [p] -> p
     | ps -> PTuple ps
+
+  let distr_tuple_pattern ps =
+    match ps with
+    | [p] -> p
+    | ps -> DistrPTuple ps
 
    let tuple_it es (span : Span.t) : exp =
     match es with
@@ -147,6 +165,8 @@
 %token <ProbNv_datastructures.Span.t> NONE
 %token <ProbNv_datastructures.Span.t> MATCH
 %token <ProbNv_datastructures.Span.t> WITH
+%token <ProbNv_datastructures.Span.t> CASE
+%token <ProbNv_datastructures.Span.t> OF
 %token <ProbNv_datastructures.Span.t> BAR
 %token <ProbNv_datastructures.Span.t> ARROW
 %token <ProbNv_datastructures.Span.t> DOT
@@ -257,12 +277,39 @@ letvars:
     | ID params                         { (snd $1, $2) }
 ;
 
+distPattern:
+    | UNDERSCORE                          { DistrPWild }
+    | ID                                  { DistrPVar (snd $1) }                       
+    | LBRACKET NUM COMMA NUM RBRACKET     { DistrPRange (snd $2,snd $4) }
+    | NODE                                { DistrPNode (snd $1)}
+    | NODE TILDE NODE                     { DistrPEdge (snd $1, snd $3) }
+    | FALSE                               { DistrPBool false }
+    | TRUE                                { DistrPBool true }
+    | LPAREN distPatterns RPAREN          { distr_tuple_pattern $2}
+;
+
+distPatterns:
+    | distPattern                         { [$1] }
+    | distPattern COMMA distPatterns      { $1 :: $3 }
+;
+
+distBranch:
+    | BAR distPattern ARROW dist          { ($2, $4) }
+
+distBranches:
+    | distBranch                          { [$1] }
+    | distBranch distBranches             { $1 :: $2 }
+
+dist:
+    | PROB                                { DistrProb (snd $1) }
+    | CASE ID OF distBranches             { DistrCase (snd $2, $4) }
+
 component:
     /* | LET letvars EQ SOLUTION expr      { make_dsolve (fst $2) $5 } */
     | LET letvars EQ SOLUTION LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (fst $2) $6 $8 $10 }
     | LET letvars EQ expr                       { global_let $2 $4 $4.espan (Span.extend $1 $4.espan) }
     | SYMBOLIC ID COLON bty                    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, None) }
-    | SYMBOLIC ID COLON bty EQ PROB            { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, Some (snd $6)) }
+    | SYMBOLIC ID COLON bty EQ dist            { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, Some $6) }
     | ASSERT LPAREN expr COMMA PROB RPAREN      { DAssert ($3,snd $5) }
     | LET EDGES EQ LBRACE RBRACE        { DEdges [] }
     | LET EDGES EQ LBRACE edges RBRACE  { DEdges $5 }
@@ -336,8 +383,8 @@ expr:
                                           let lst = fill_record $4 mk_project in
                                           exp (erecord (make_record_map lst)) (Span.extend $1 $3)
                                         }
-    /* | LBRACE exprs RBRACE               { make_set $2 (Span.extend $1 $3) }
-    | LBRACE RBRACE                     { make_set [] (Span.extend $1 $2) } */
+    | LBRACE exprs RBRACE               { make_set $2 (Span.extend $1 $3) }
+    | LBRACE RBRACE                     { make_set [] (Span.extend $1 $2) }
     | expr2                             { $1 }
 ; 
 expr2:
