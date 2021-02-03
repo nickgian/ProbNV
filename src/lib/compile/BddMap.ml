@@ -35,18 +35,13 @@ let rec default_value ty =
   | TBool -> avalue (vbool false, Some ty, Span.default)
   | TInt size ->
       avalue (vint (Integer.create ~value:0 ~size), Some ty, Span.default)
-  (* | TRecord map ->
-     avalue
-       ( vtuple (BatList.map default_value @@ RecordUtils.get_record_entries map)
-       , Some ty
-       , Span.default ) *)
   | TTuple ts ->
       avalue (vtuple (BatList.map default_value ts), Some ty, Span.default)
   | TOption _ -> avalue (voption None, Some ty, Span.default)
   | TNode -> avalue (vnode 0, Some ty, Span.default)
   | TEdge -> avalue (vedge (0, 1), Some ty, Span.default)
   | TVar { contents = Link t } -> default_value t
-  | TVar _ | QVar _ | TArrow _ | TMap _ ->
+  | TVar _ | QVar _ | TArrow _ | TMap _ | TRecord _ ->
       failwith "internal error (default_value)"
 
 let get_bit (n : int) (i : int) : bool =
@@ -117,6 +112,7 @@ let value_to_bdd (record_fns : int * int -> 'a -> 'b) (ty : Syntax.ty) (v : 'v)
 
 (** Takes as input an OCaml map and an ocaml key and returns an ocaml value*)
 let find record_fns (vmap : 'v t) (k : 'key) : 'v =
+  (* print_endline "inside find\n"; *)
   let key_ty = TypeIds.get_elt type_store vmap.key_ty_id in
   let bdd = value_to_bdd record_fns key_ty k in
   let for_key = Mtbddc.constrain vmap.bdd bdd in
@@ -124,6 +120,7 @@ let find record_fns (vmap : 'v t) (k : 'key) : 'v =
 
 (** Update vmap at key k with value v *)
 let update record_fns (vmap : 'v t) (k : 'key) (v : 'v) : 'v t =
+  (* print_endline "inside update\n"; *)
   let key_ty = TypeIds.get_elt type_store vmap.key_ty_id in
   let key = value_to_bdd record_fns key_ty k in
   let leaf = Mtbddc.cst mgr tbl v in
@@ -149,7 +146,7 @@ let map_cache = ref ExpMap.empty
 
 (** Operates on top of nv values *)
 let map ~op_key (f : value -> value) ((vdd, ty) : Syntax.mtbdd) : Syntax.mtbdd =
-  let cfg = Cmdline.get_cfg () in
+  (* print_endline "inside map\n"; *)
   let g x = f (Mtbddc.get x) |> Mtbddc.unique B.tbl_nv in
   let op =
     match ExpMap.Exceptionless.find op_key !map_cache with

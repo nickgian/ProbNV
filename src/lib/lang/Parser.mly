@@ -36,6 +36,7 @@
 
   let global_let (id,params) body body_span span =
     let e = make_fun params body body_span span in
+    (* Printf.printf "%s, %s\n" (Var.to_string id) (Printing.exp_to_string e); *)
     DLet (id, e)
 
 
@@ -165,8 +166,6 @@
 %token <ProbNv_datastructures.Span.t> NONE
 %token <ProbNv_datastructures.Span.t> MATCH
 %token <ProbNv_datastructures.Span.t> WITH
-%token <ProbNv_datastructures.Span.t> CASE
-%token <ProbNv_datastructures.Span.t> OF
 %token <ProbNv_datastructures.Span.t> BAR
 %token <ProbNv_datastructures.Span.t> ARROW
 %token <ProbNv_datastructures.Span.t> DOT
@@ -408,6 +407,7 @@ ipaddr:
 prefixes:
   | ipaddr SLASH NUM                    { let pre = to_value (vint (ProbNv_datastructures.Integer.create ~value:(ProbNv_datastructures.Integer.to_int (snd $3)) ~size:6)) (fst $3) in
                                           etuple [$1; pre]}
+
 
 edge_arg:
   | NUM                                 { (fst $1), (ProbNv_datastructures.Integer.to_int (snd $1))}

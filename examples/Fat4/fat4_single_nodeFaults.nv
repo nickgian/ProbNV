@@ -1,0 +1,60 @@
+include "fat4_single_control.nv"
+
+symbolic b0: bool
+symbolic b1: bool
+symbolic b2: bool
+symbolic b3: bool
+symbolic b4: bool
+symbolic b5: bool
+symbolic b6: bool
+symbolic b7: bool
+symbolic b8: bool
+symbolic b9: bool
+symbolic b10: bool
+symbolic b11: bool
+symbolic b12: bool
+symbolic b13: bool
+symbolic b14: bool
+symbolic b15: bool
+symbolic b16: bool
+symbolic b17: bool
+symbolic b18: bool
+symbolic b19: bool
+
+let isFailed u = 
+  match u with
+  | 0n -> b0
+  | 1n -> b1
+  | 2n -> b2
+  | 3n -> b3
+  | 4n -> b4
+  | 5n -> b5
+  | 6n -> b6
+  | 7n -> b7
+  | 8n -> b8
+  | 9n -> b9
+  | 10n -> b10
+  | 11n -> b11
+  | 12n -> b12
+  | 13n -> b13
+  | 14n -> b14
+  | 15n -> b15
+  | 16n -> b16
+  | 17n -> b17
+  | 18n -> b18
+  | 19n -> b19
+
+let mergeNodeFaults u (x : [M]attribute) (y : [M]attribute) =
+  merge u x y
+
+let transNodeFaults e (x : [M]attribute) =
+  if (match e with | a~b -> isFailed b) then
+    {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+  else trans e x
+
+let initNodeFaults u = 
+  if isFailed u then
+    {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+  else init u
+
+let nodeFaults = solution(initNodeFaults, transNodeFaults, mergeNodeFaults)

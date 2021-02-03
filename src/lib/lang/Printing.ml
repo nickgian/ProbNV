@@ -244,13 +244,17 @@ let pick_default_value map =
 
 (* Basic version *)
 (* : value list * value *)
-let bindings (map : mtbdd) =
+(* let bindings (map : mtbdd) =
   let bs = ref [] in
   (* let dv = pick_default_value map in *)
   match map with
   | m, _ ->
       Mtbddc.iter_cube (fun k v -> bs := (k, v) :: !bs) m;
-      !bs
+      !bs *)
+
+let bindings (map : mtbdd) =
+  match map with
+  | m, _ -> Array.to_list @@ Mtbddc.leaves m
 
 let rec value_env_to_string ~show_types env =
   Env.to_string (value_to_string_p ~show_types max_prec) env.value
@@ -307,7 +311,11 @@ and value_to_string_p ~show_types prec v =
   | VBool true -> "true"
   | VBool false -> "false"
   | VInt i -> Integer.to_string i
-  | VTotalMap m -> map_to_string ~show_types "\n" m
+  | VTotalMap m -> 
+    (match snd m with
+    | None -> 
+      map_to_string ~show_types "\n" m
+    | _ -> "MAP")
   | VTuple vs ->
       if List.is_empty vs then "VEmptyTuple"
       else "(" ^ comma_sep (value_to_string_p max_prec) vs ^ ")"
@@ -321,8 +329,8 @@ and value_to_string_p ~show_types prec v =
   | VClosure cl -> closure_to_string_p ~show_types prec cl
 
 and map_to_string ~show_types term_s m =
-  let binding_to_string (k, v) =
-    let key =
+  let binding_to_string v =
+    (* let key =
       Array.fold_right
         (fun x acc ->
           match x with
@@ -330,8 +338,8 @@ and map_to_string ~show_types term_s m =
           | Man.False -> Printf.sprintf "0%s" acc
           | Man.Top -> Printf.sprintf "*%s" acc)
         k ""
-    in
-    Printf.sprintf "(%s, %s)" key (value_to_string_p ~show_types max_prec v)
+    in *)
+    Printf.sprintf "(%s, %s)" "_" (value_to_string_p ~show_types max_prec v)
   in
   let bs = bindings m in
   Printf.sprintf "{ %s }" (term term_s binding_to_string bs)
@@ -339,7 +347,7 @@ and map_to_string ~show_types term_s m =
 and exp_to_string_p ~show_types prec e =
   let exp_to_string_p = exp_to_string_p ~show_types in
   let value_to_string_p = value_to_string_p ~show_types in
-  let p = prec_exp e in
+  let p = prec_exp e in 
   let s =
     match e.e with
     | EVar x -> Var.to_string x

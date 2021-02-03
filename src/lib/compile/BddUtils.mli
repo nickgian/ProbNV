@@ -10,6 +10,8 @@ val bdd_of_bool : bool -> Cudd.Man.v Cudd.Bdd.t
 val mgr : Cudd.Man.v Cudd.Man.t
 (** BDD/MTBDD manager *)
 
+val set_reordering : int option -> unit
+
 val tbl : 'a Cudd.Mtbddc.table
 
 val tbl_probabilities : float Cudd.Mtbddc.table

@@ -24,12 +24,18 @@ let run_compiled file _ _ decls fs =
   in
   let newpath = name in
   let solution = Loader.simulate newpath decls in
+  (* Printf.printf "simulation finished\n";
+  flush_all ();
+  let solution = (apply_all solution fs) in
+  Printf.printf "applied map back\n";
+  flush_all (); *)
   Solution.print_solution solution
 
 let parse_input (args : string array) =
   let cfg, rest = argparse default "probNV" args in
   Cmdline.set_cfg cfg;
   let cfg = Cmdline.get_cfg () in
+  BddUtils.set_reordering cfg.reordering;
   if cfg.debug then Printexc.record_backtrace true;
   let file = rest.(0) in
   let ds, info = Input.parse file in
@@ -41,8 +47,8 @@ let parse_input (args : string array) =
   let fs = [ f ] in
   (* Note! Must rename before inling otherwise inling is unsound *)
   let decls, f = Renaming.alpha_convert_declarations decls in
-  Printf.printf "Printing type checked program\n\n%s\n\n"
-    (ProbNv_lang.Printing.declarations_to_string ~show_types:true decls);
+  (* Printf.printf "Printing type checked program\n\n%s\n\n"
+    (ProbNv_lang.Printing.declarations_to_string ~show_types:true decls); *)
   let fs = f :: fs in
   (* inlining definitions *)
   let decls =
@@ -53,16 +59,16 @@ let parse_input (args : string array) =
       Profile.time_profile "Inlining Multivalues" (fun () ->
           Inline.inline_multivalue_declarations decls)
   in
-  Printf.printf "Printing inlined program\n\n%s\n\n"
-    (ProbNv_lang.Printing.declarations_to_string ~show_types:true decls);
+  (* Printf.printf "Printing inlined program\n\n%s\n\n"
+     (ProbNv_lang.Printing.declarations_to_string ~show_types:true decls); *)
   (* Translate the program to LLL *)
   let decls = Translate.translate_declarations decls in
   (* Printf.printf "Printing compiled program\n\n%s"
-    (ProbNv_lang.Printing.declarations_to_string ~show_types:true decls); *)
+    (ProbNv_lang.Printing.declarations_to_string ~show_types:false decls); *)
   (* Type check the LLL program *)
-  Printf.printf "LLL type checking after translation \n";
+  (* Printf.printf "LLL type checking after translation \n"; *)
   let decls = Typing.LLLTypeInf.infer_declarations info decls in
-  Printf.printf "done type checking and translating \n";
+  (* Printf.printf "done type checking and translating \n"; *)
   (cfg, info, file, decls, fs)
 
 (* print_endline @@ Printing.declarations_to_string decls ; *)

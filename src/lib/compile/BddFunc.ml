@@ -226,7 +226,7 @@ let applyN ~f ~args : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
       ~memo:
         Cudd.(
           Cache
-            (Cache.create ~size:67108864 ~maxsize:134217728
+            (Cache.create ~size:1398101 ~maxsize:5592404
                ~arity:(Array.length args)))
       0 (Array.length args) g
   in
@@ -271,13 +271,17 @@ let apply2 ~op_key ~f ~arg1 ~arg2 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
     match HashClosureMap.Exceptionless.find (Obj.magic op_key) !map_cache with
     | None ->
         let o =
-          User.make_op2 ~memo:Cudd.(Cache (Cache.create2 ~size:67108864 ())) g
+          User.make_op2 ~memo:Cudd.Memo.Global
+            (* Cudd.(Cache (Cache.create2 ~size:134217728 ~maxsize:134217728 ())) *)
+            (* Cudd.(Hash (Hash.create ~size:16777216 2)) *)
+            g
         in
         map_cache := HashClosureMap.add (Obj.magic op_key) o !map_cache;
         o
     | Some op -> op
   in
-  Profile.time_profile_total apply2_time (fun () -> User.apply_op2 op arg1 arg2)
+  (* Profile.time_profile_total apply2_time (fun () -> User.apply_op2 op arg1 arg2) *)
+  User.apply_op2 op arg1 arg2
 
 let apply3 ~op_key ~f ~arg1 ~arg2 ~arg3 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
   let g v1 v2 v3 =
@@ -291,14 +295,18 @@ let apply3 ~op_key ~f ~arg1 ~arg2 ~arg3 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
     match HashClosureMap.Exceptionless.find (Obj.magic op_key) !map_cache with
     | None ->
         let o =
-          User.make_op3 ~memo:Cudd.(Cache (Cache.create3 ~size:67108864 ())) g
+          User.make_op3
+            ~memo:Cudd.(Cache (Cache.create3 ~size:1398101 ~maxsize:5592404 ()))
+            g
         in
         map_cache := HashClosureMap.add (Obj.magic op_key) o !map_cache;
         o
     | Some op -> op
   in
-  Profile.time_profile_total apply3_time (fun () ->
-      User.apply_op3 op arg1 arg2 arg3)
+  User.apply_op3 op arg1 arg2 arg3
+
+(* Profile.time_profile_total apply3_time (fun () ->
+    User.apply_op3 op arg1 arg2 arg3) *)
 
 (** ** Probabilistic part *)
 

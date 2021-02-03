@@ -1,0 +1,124 @@
+include "bics_control.nv"
+
+symbolic b0: bool = | true -> 0.01p | false -> 0.99p
+symbolic b1: bool = | true -> 0.01p | false -> 0.99p
+symbolic b2: bool = | true -> 0.01p | false -> 0.99p
+symbolic b3: bool = | true -> 0.01p | false -> 0.99p
+symbolic b4: bool = | true -> 0.01p | false -> 0.99p
+symbolic b5: bool = | true -> 0.01p | false -> 0.99p
+symbolic b6: bool = | true -> 0.01p | false -> 0.99p
+symbolic b7: bool = | true -> 0.01p | false -> 0.99p
+symbolic b8: bool = | true -> 0.01p | false -> 0.99p
+symbolic b9: bool = | true -> 0.01p | false -> 0.99p
+symbolic b10: bool = | true -> 0.01p | false -> 0.99p
+symbolic b11: bool = | true -> 0.01p | false -> 0.99p
+symbolic b12: bool = | true -> 0.01p | false -> 0.99p
+symbolic b13: bool = | true -> 0.01p | false -> 0.99p
+symbolic b14: bool = | true -> 0.01p | false -> 0.99p
+symbolic b15: bool = | true -> 0.01p | false -> 0.99p
+symbolic b16: bool = | true -> 0.01p | false -> 0.99p
+symbolic b17: bool = | true -> 0.01p | false -> 0.99p
+symbolic b18: bool = | true -> 0.01p | false -> 0.99p
+symbolic b19: bool = | true -> 0.01p | false -> 0.99p
+symbolic b20: bool = | true -> 0.01p | false -> 0.99p
+symbolic b21: bool = | true -> 0.01p | false -> 0.99p
+symbolic b22: bool = | true -> 0.01p | false -> 0.99p
+symbolic b23: bool = | true -> 0.01p | false -> 0.99p
+symbolic b24: bool = | true -> 0.01p | false -> 0.99p
+symbolic b25: bool = | true -> 0.01p | false -> 0.99p
+symbolic b26: bool = | true -> 0.01p | false -> 0.99p
+symbolic b27: bool = | true -> 0.01p | false -> 0.99p
+symbolic b28: bool = | true -> 0.01p | false -> 0.99p
+symbolic b29: bool = | true -> 0.01p | false -> 0.99p
+symbolic b30: bool = | true -> 0.01p | false -> 0.99p
+symbolic b31: bool = | true -> 0.01p | false -> 0.99p
+symbolic b32: bool = | true -> 0.01p | false -> 0.99p
+symbolic b33: bool = | true -> 0.01p | false -> 0.99p
+symbolic b34: bool = | true -> 0.01p | false -> 0.99p
+symbolic b35: bool = | true -> 0.01p | false -> 0.99p
+symbolic b36: bool = | true -> 0.01p | false -> 0.99p
+symbolic b37: bool = | true -> 0.01p | false -> 0.99p
+symbolic b38: bool = | true -> 0.01p | false -> 0.99p
+symbolic b39: bool = | true -> 0.01p | false -> 0.99p
+symbolic b40: bool = | true -> 0.01p | false -> 0.99p
+symbolic b41: bool = | true -> 0.01p | false -> 0.99p
+symbolic b42: bool = | true -> 0.01p | false -> 0.99p
+symbolic b43: bool = | true -> 0.01p | false -> 0.99p
+symbolic b44: bool = | true -> 0.01p | false -> 0.99p
+symbolic b45: bool = | true -> 0.01p | false -> 0.99p
+symbolic b46: bool = | true -> 0.01p | false -> 0.99p
+symbolic b47: bool = | true -> 0.01p | false -> 0.99p
+symbolic b48: bool = | true -> 0.01p | false -> 0.99p
+
+let isFailed u = 
+  match u with
+  | 0n -> b0
+  | 1n -> b1
+  | 2n -> b2
+  | 3n -> b3
+  | 4n -> b4
+  | 5n -> b5
+  | 6n -> b6
+  | 7n -> b7
+  | 8n -> b8
+  | 9n -> b9
+  | 10n -> b10
+  | 11n -> b11
+  | 12n -> b12
+  | 13n -> b13
+  | 14n -> b14
+  | 15n -> b15
+  | 16n -> b16
+  | 17n -> b17
+  | 18n -> b18
+  | 19n -> b19
+  | 20n -> b20
+  | 21n -> b21
+  | 22n -> b22
+  | 23n -> b23
+  | 24n -> b24
+  | 25n -> b25
+  | 26n -> b26
+  | 27n -> b27
+  | 28n -> b28
+  | 29n -> b29
+  | 30n -> b30
+  | 31n -> b31
+  | 32n -> b32
+  | 33n -> b33
+  | 34n -> b34
+  | 35n -> b35
+  | 36n -> b36
+  | 37n -> b37
+  | 38n -> b38
+  | 39n -> b39
+  | 40n -> b40
+  | 41n -> b41
+  | 42n -> b42
+  | 43n -> b43
+  | 44n -> b44
+  | 45n -> b45
+  | 46n -> b46
+  | 47n -> b47
+  | 48n -> b48
+
+let mergeNodeFaults u (x : [M]attribute) (y : [M]attribute) =
+  merge u x y
+
+let transNodeFaults e (x : [M]attribute) =
+  if (match e with | a~b -> isFailed b) then
+    {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+  else trans e x
+
+let initNodeFaults u = 
+  if isFailed u then
+    {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+  else init u
+
+let nodeFaults = solution(initNodeFaults, transNodeFaults, mergeNodeFaults)
+
+let reachable u =
+  match nodeFaults[u].selected with | None -> false | _ -> true
+
+assert(reachable 3n, 0.3p)
+assert(reachable 1n || reachable 2n, 0.1p)

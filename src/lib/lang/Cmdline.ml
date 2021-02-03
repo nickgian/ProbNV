@@ -5,8 +5,12 @@ type t =
   ; memoize: bool [@short "-z"]  (** memoizes the interpreter for reuse      *)
   ; no_caching: bool  (** disables mtbdd operation caching        *)
   ; no_cutoff: bool  (** disables mtbdd early termination        *)
-  ; inline: bool  (** inline all expressions                  *) }
-(*; compile: bool                      (** compile network to OCaml code before simulation *)*)
+  ; inline: bool  (** inline all expressions                  *) 
+  ; reordering: int option (** dynamic reordering technique to use: default is disabled, 0 for WINDOW_2, 1 for WINDOW_2_CONV, 2 for WINDOW_3, 3 for WINDOW_3_CONV, 4 for WINDOW_4, 5 for SIFT, 6 for SIFT_CONV*)
+  ; new_sim : bool (** enables the new simulator based on dependecies. *)
+  ; sim_skip : int (** how many dependencies to skip, only applies to the new simulator.*)
+  ; 
+  }
 [@@deriving
   show
   , argparse
@@ -19,7 +23,11 @@ let default =
   ; memoize= false
   ; no_caching= false
   ; no_cutoff= false
-  ; inline= false (* ; compile=false *) }
+  ; inline= false
+  ; reordering = None
+  ; new_sim = false
+  ; sim_skip = 1;
+  }
 
 let cfg = ref default
 let get_cfg () = !cfg

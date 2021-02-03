@@ -1,0 +1,320 @@
+include "columbus_control.nv"
+
+symbolic b0_11: bool
+symbolic b11_37: bool
+symbolic b11_27: bool
+symbolic b4_11: bool
+symbolic b37_74: bool
+symbolic b13_37: bool
+symbolic b27_78: bool
+symbolic b4_6: bool
+symbolic b13_18: bool
+symbolic b78_80: bool
+symbolic b1_6: bool
+symbolic b6_33: bool
+symbolic b6_29: bool
+symbolic b18_36: bool
+symbolic b80_83: bool
+symbolic b1_41: bool
+symbolic b1_31: bool
+symbolic b16_33: bool
+symbolic b33_45: bool
+symbolic b31_33: bool
+symbolic b29_55: bool
+symbolic b14_29: bool
+symbolic b10_29: bool
+symbolic b29_81: bool
+symbolic b34_36: bool
+symbolic b2_36: bool
+symbolic b49_83: bool
+symbolic b77_83: bool
+symbolic b25_83: bool
+symbolic b41_71: bool
+symbolic b31_41: bool
+symbolic b19_41: bool
+symbolic b12_45: bool
+symbolic b3_45: bool
+symbolic b14_85: bool
+symbolic b14_75: bool
+symbolic b10_28: bool
+symbolic b34_40: bool
+symbolic b2_51: bool
+symbolic b25_49: bool
+symbolic b20_77: bool
+symbolic b20_25: bool
+symbolic b25_44: bool
+symbolic b25_53: bool
+symbolic b71_84: bool
+symbolic b8_71: bool
+symbolic b68_71: bool
+symbolic b12_50: bool
+symbolic b3_8: bool
+symbolic b3_50: bool
+symbolic b48_85: bool
+symbolic b24_85: bool
+symbolic b28_40: bool
+symbolic b40_70: bool
+symbolic b40_69: bool
+symbolic b39_40: bool
+symbolic b38_40: bool
+symbolic b40_46: bool
+symbolic b20_51: bool
+symbolic b15_51: bool
+symbolic b15_20: bool
+symbolic b7_20: bool
+symbolic b44_72: bool
+symbolic b5_44: bool
+symbolic b15_44: bool
+symbolic b44_61: bool
+symbolic b24_68: bool
+symbolic b48_52: bool
+symbolic b47_48: bool
+symbolic b39_43: bool
+symbolic b38_57: bool
+symbolic b46_54: bool
+symbolic b5_21: bool
+symbolic b5_23: bool
+symbolic b5_62: bool
+symbolic b5_79: bool
+symbolic b61_82: bool
+symbolic b32_57: bool
+symbolic b54_57: bool
+symbolic b54_63: bool
+symbolic b17_54: bool
+symbolic b62_67: bool
+symbolic b22_62: bool
+symbolic b76_82: bool
+symbolic b22_32: bool
+symbolic b32_63: bool
+symbolic b26_63: bool
+symbolic b58_67: bool
+symbolic b35_67: bool
+symbolic b22_59: bool
+symbolic b22_42: bool
+symbolic b56_76: bool
+symbolic b26_60: bool
+symbolic b9_58: bool
+symbolic b56_58: bool
+symbolic b35_73: bool
+symbolic b60_73: bool
+symbolic b60_64: bool
+symbolic b9_65: bool
+symbolic b65_66: bool
+symbolic b30_65: bool
+
+let isFailed e = 
+  match e with
+  | 0~11 -> b0_11
+  | 1~41 -> b1_41
+  | 1~6 -> b1_6
+  | 1~31 -> b1_31
+  | 2~51 -> b2_51
+  | 2~36 -> b2_36
+  | 3~8 -> b3_8
+  | 3~45 -> b3_45
+  | 3~50 -> b3_50
+  | 4~11 -> b4_11
+  | 4~6 -> b4_6
+  | 5~21 -> b5_21
+  | 5~23 -> b5_23
+  | 5~62 -> b5_62
+  | 5~44 -> b5_44
+  | 5~79 -> b5_79
+  | 6~1 -> b1_6
+  | 6~33 -> b6_33
+  | 6~4 -> b4_6
+  | 6~29 -> b6_29
+  | 7~20 -> b7_20
+  | 8~3 -> b3_8
+  | 8~71 -> b8_71
+  | 9~65 -> b9_65
+  | 9~58 -> b9_58
+  | 10~28 -> b10_28
+  | 10~29 -> b10_29
+  | 11~37 -> b11_37
+  | 11~0 -> b0_11
+  | 11~27 -> b11_27
+  | 11~4 -> b4_11
+  | 12~45 -> b12_45
+  | 12~50 -> b12_50
+  | 13~37 -> b13_37
+  | 13~18 -> b13_18
+  | 14~29 -> b14_29
+  | 14~85 -> b14_85
+  | 14~75 -> b14_75
+  | 15~20 -> b15_20
+  | 15~51 -> b15_51
+  | 15~44 -> b15_44
+  | 16~33 -> b16_33
+  | 17~54 -> b17_54
+  | 18~36 -> b18_36
+  | 18~13 -> b13_18
+  | 19~41 -> b19_41
+  | 20~15 -> b15_20
+  | 20~51 -> b20_51
+  | 20~25 -> b20_25
+  | 20~7 -> b7_20
+  | 20~77 -> b20_77
+  | 21~5 -> b5_21
+  | 22~59 -> b22_59
+  | 22~62 -> b22_62
+  | 22~32 -> b22_32
+  | 22~42 -> b22_42
+  | 23~5 -> b5_23
+  | 24~85 -> b24_85
+  | 24~68 -> b24_68
+  | 25~83 -> b25_83
+  | 25~49 -> b25_49
+  | 25~20 -> b20_25
+  | 25~44 -> b25_44
+  | 25~53 -> b25_53
+  | 26~63 -> b26_63
+  | 26~60 -> b26_60
+  | 27~78 -> b27_78
+  | 27~11 -> b11_27
+  | 28~10 -> b10_28
+  | 28~40 -> b28_40
+  | 29~55 -> b29_55
+  | 29~14 -> b14_29
+  | 29~10 -> b10_29
+  | 29~81 -> b29_81
+  | 29~6 -> b6_29
+  | 30~65 -> b30_65
+  | 31~1 -> b1_31
+  | 31~33 -> b31_33
+  | 31~41 -> b31_41
+  | 32~22 -> b22_32
+  | 32~57 -> b32_57
+  | 32~63 -> b32_63
+  | 33~16 -> b16_33
+  | 33~45 -> b33_45
+  | 33~31 -> b31_33
+  | 33~6 -> b6_33
+  | 34~36 -> b34_36
+  | 34~40 -> b34_40
+  | 35~67 -> b35_67
+  | 35~73 -> b35_73
+  | 36~18 -> b18_36
+  | 36~34 -> b34_36
+  | 36~2 -> b2_36
+  | 37~74 -> b37_74
+  | 37~11 -> b11_37
+  | 37~13 -> b13_37
+  | 38~40 -> b38_40
+  | 38~57 -> b38_57
+  | 39~43 -> b39_43
+  | 39~40 -> b39_40
+  | 40~70 -> b40_70
+  | 40~69 -> b40_69
+  | 40~28 -> b28_40
+  | 40~34 -> b34_40
+  | 40~39 -> b39_40
+  | 40~38 -> b38_40
+  | 40~46 -> b40_46
+  | 41~1 -> b1_41
+  | 41~71 -> b41_71
+  | 41~31 -> b31_41
+  | 41~19 -> b19_41
+  | 42~22 -> b22_42
+  | 43~39 -> b39_43
+  | 44~72 -> b44_72
+  | 44~5 -> b5_44
+  | 44~25 -> b25_44
+  | 44~15 -> b15_44
+  | 44~61 -> b44_61
+  | 45~12 -> b12_45
+  | 45~3 -> b3_45
+  | 45~33 -> b33_45
+  | 46~54 -> b46_54
+  | 46~40 -> b40_46
+  | 47~48 -> b47_48
+  | 48~85 -> b48_85
+  | 48~52 -> b48_52
+  | 48~47 -> b47_48
+  | 49~83 -> b49_83
+  | 49~25 -> b25_49
+  | 50~3 -> b3_50
+  | 50~12 -> b12_50
+  | 51~20 -> b20_51
+  | 51~15 -> b15_51
+  | 51~2 -> b2_51
+  | 52~48 -> b48_52
+  | 53~25 -> b25_53
+  | 54~57 -> b54_57
+  | 54~63 -> b54_63
+  | 54~17 -> b17_54
+  | 54~46 -> b46_54
+  | 55~29 -> b29_55
+  | 56~58 -> b56_58
+  | 56~76 -> b56_76
+  | 57~32 -> b32_57
+  | 57~38 -> b38_57
+  | 57~54 -> b54_57
+  | 58~9 -> b9_58
+  | 58~67 -> b58_67
+  | 58~56 -> b56_58
+  | 59~22 -> b22_59
+  | 60~26 -> b26_60
+  | 60~73 -> b60_73
+  | 60~64 -> b60_64
+  | 61~44 -> b44_61
+  | 61~82 -> b61_82
+  | 62~5 -> b5_62
+  | 62~67 -> b62_67
+  | 62~22 -> b22_62
+  | 63~32 -> b32_63
+  | 63~26 -> b26_63
+  | 63~54 -> b54_63
+  | 64~60 -> b60_64
+  | 65~66 -> b65_66
+  | 65~9 -> b9_65
+  | 65~30 -> b30_65
+  | 66~65 -> b65_66
+  | 67~62 -> b62_67
+  | 67~58 -> b58_67
+  | 67~35 -> b35_67
+  | 68~71 -> b68_71
+  | 68~24 -> b24_68
+  | 69~40 -> b40_69
+  | 70~40 -> b40_70
+  | 71~41 -> b41_71
+  | 71~84 -> b71_84
+  | 71~8 -> b8_71
+  | 71~68 -> b68_71
+  | 72~44 -> b44_72
+  | 73~60 -> b60_73
+  | 73~35 -> b35_73
+  | 74~37 -> b37_74
+  | 75~14 -> b14_75
+  | 76~56 -> b56_76
+  | 76~82 -> b76_82
+  | 77~20 -> b20_77
+  | 77~83 -> b77_83
+  | 78~27 -> b27_78
+  | 78~80 -> b78_80
+  | 79~5 -> b5_79
+  | 80~78 -> b78_80
+  | 80~83 -> b80_83
+  | 81~29 -> b29_81
+  | 82~61 -> b61_82
+  | 82~76 -> b76_82
+  | 83~49 -> b49_83
+  | 83~77 -> b77_83
+  | 83~80 -> b80_83
+  | 83~25 -> b25_83
+  | 84~71 -> b71_84
+  | 85~48 -> b48_85
+  | 85~24 -> b24_85
+  | 85~14 -> b14_85
+
+let mergeLinkFaults u (x : [M]attribute) (y : [M]attribute) =
+  merge u x y
+
+let transLinkFaults e (x : [M]attribute) =
+  if isFailed e then
+    {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+  else trans e x
+
+let initLinkFaults u = init u 
+
+let linkFaults = solution(initLinkFaults, transLinkFaults, mergeLinkFaults)

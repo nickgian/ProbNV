@@ -1,0 +1,340 @@
+include "USCarrierOSPF_control.nv"
+
+symbolic b0: bool
+symbolic b1: bool
+symbolic b2: bool
+symbolic b3: bool
+symbolic b4: bool
+symbolic b5: bool
+symbolic b6: bool
+symbolic b7: bool
+symbolic b8: bool
+symbolic b9: bool
+symbolic b10: bool
+symbolic b11: bool
+symbolic b12: bool
+symbolic b13: bool
+symbolic b14: bool
+symbolic b15: bool
+symbolic b16: bool
+symbolic b17: bool
+symbolic b18: bool
+symbolic b19: bool
+symbolic b20: bool
+symbolic b21: bool
+symbolic b22: bool
+symbolic b23: bool
+symbolic b24: bool
+symbolic b25: bool
+symbolic b26: bool
+symbolic b27: bool
+symbolic b28: bool
+symbolic b29: bool
+symbolic b30: bool
+symbolic b31: bool
+symbolic b32: bool
+symbolic b33: bool
+symbolic b34: bool
+symbolic b35: bool
+symbolic b36: bool
+symbolic b37: bool
+symbolic b38: bool
+symbolic b39: bool
+symbolic b40: bool
+symbolic b41: bool
+symbolic b42: bool
+symbolic b43: bool
+symbolic b44: bool
+symbolic b45: bool
+symbolic b46: bool
+symbolic b47: bool
+symbolic b48: bool
+symbolic b49: bool
+symbolic b50: bool
+symbolic b51: bool
+symbolic b52: bool
+symbolic b53: bool
+symbolic b54: bool
+symbolic b55: bool
+symbolic b56: bool
+symbolic b57: bool
+symbolic b58: bool
+symbolic b59: bool
+symbolic b60: bool
+symbolic b61: bool
+symbolic b62: bool
+symbolic b63: bool
+symbolic b64: bool
+symbolic b65: bool
+symbolic b66: bool
+symbolic b67: bool
+symbolic b68: bool
+symbolic b69: bool
+symbolic b70: bool
+symbolic b71: bool
+symbolic b72: bool
+symbolic b73: bool
+symbolic b74: bool
+symbolic b75: bool
+symbolic b76: bool
+symbolic b77: bool
+symbolic b78: bool
+symbolic b79: bool
+symbolic b80: bool
+symbolic b81: bool
+symbolic b82: bool
+symbolic b83: bool
+symbolic b84: bool
+symbolic b85: bool
+symbolic b86: bool
+symbolic b87: bool
+symbolic b88: bool
+symbolic b89: bool
+symbolic b90: bool
+symbolic b91: bool
+symbolic b92: bool
+symbolic b93: bool
+symbolic b94: bool
+symbolic b95: bool
+symbolic b96: bool
+symbolic b97: bool
+symbolic b98: bool
+symbolic b99: bool
+symbolic b100: bool
+symbolic b101: bool
+symbolic b102: bool
+symbolic b103: bool
+symbolic b104: bool
+symbolic b105: bool
+symbolic b106: bool
+symbolic b107: bool
+symbolic b108: bool
+symbolic b109: bool
+symbolic b110: bool
+symbolic b111: bool
+symbolic b112: bool
+symbolic b113: bool
+symbolic b114: bool
+symbolic b115: bool
+symbolic b116: bool
+symbolic b117: bool
+symbolic b118: bool
+symbolic b119: bool
+symbolic b120: bool
+symbolic b121: bool
+symbolic b122: bool
+symbolic b123: bool
+symbolic b124: bool
+symbolic b125: bool
+symbolic b126: bool
+symbolic b127: bool
+symbolic b128: bool
+symbolic b129: bool
+symbolic b130: bool
+symbolic b131: bool
+symbolic b132: bool
+symbolic b133: bool
+symbolic b134: bool
+symbolic b135: bool
+symbolic b136: bool
+symbolic b137: bool
+symbolic b138: bool
+symbolic b139: bool
+symbolic b140: bool
+symbolic b141: bool
+symbolic b142: bool
+symbolic b143: bool
+symbolic b144: bool
+symbolic b145: bool
+symbolic b146: bool
+symbolic b147: bool
+symbolic b148: bool
+symbolic b149: bool
+symbolic b150: bool
+symbolic b151: bool
+symbolic b152: bool
+symbolic b153: bool
+symbolic b154: bool
+symbolic b155: bool
+symbolic b156: bool
+symbolic b157: bool
+
+let isFailed u = 
+  match u with
+  | 0n -> b0
+  | 1n -> b1
+  | 2n -> b2
+  | 3n -> b3
+  | 4n -> b4
+  | 5n -> b5
+  | 6n -> b6
+  | 7n -> b7
+  | 8n -> b8
+  | 9n -> b9
+  | 10n -> b10
+  | 11n -> b11
+  | 12n -> b12
+  | 13n -> b13
+  | 14n -> b14
+  | 15n -> b15
+  | 16n -> b16
+  | 17n -> b17
+  | 18n -> b18
+  | 19n -> b19
+  | 20n -> b20
+  | 21n -> b21
+  | 22n -> b22
+  | 23n -> b23
+  | 24n -> b24
+  | 25n -> b25
+  | 26n -> b26
+  | 27n -> b27
+  | 28n -> b28
+  | 29n -> b29
+  | 30n -> b30
+  | 31n -> b31
+  | 32n -> b32
+  | 33n -> b33
+  | 34n -> b34
+  | 35n -> b35
+  | 36n -> b36
+  | 37n -> b37
+  | 38n -> b38
+  | 39n -> b39
+  | 40n -> b40
+  | 41n -> b41
+  | 42n -> b42
+  | 43n -> b43
+  | 44n -> b44
+  | 45n -> b45
+  | 46n -> b46
+  | 47n -> b47
+  | 48n -> b48
+  | 49n -> b49
+  | 50n -> b50
+  | 51n -> b51
+  | 52n -> b52
+  | 53n -> b53
+  | 54n -> b54
+  | 55n -> b55
+  | 56n -> b56
+  | 57n -> b57
+  | 58n -> b58
+  | 59n -> b59
+  | 60n -> b60
+  | 61n -> b61
+  | 62n -> b62
+  | 63n -> b63
+  | 64n -> b64
+  | 65n -> b65
+  | 66n -> b66
+  | 67n -> b67
+  | 68n -> b68
+  | 69n -> b69
+  | 70n -> b70
+  | 71n -> b71
+  | 72n -> b72
+  | 73n -> b73
+  | 74n -> b74
+  | 75n -> b75
+  | 76n -> b76
+  | 77n -> b77
+  | 78n -> b78
+  | 79n -> b79
+  | 80n -> b80
+  | 81n -> b81
+  | 82n -> b82
+  | 83n -> b83
+  | 84n -> b84
+  | 85n -> b85
+  | 86n -> b86
+  | 87n -> b87
+  | 88n -> b88
+  | 89n -> b89
+  | 90n -> b90
+  | 91n -> b91
+  | 92n -> b92
+  | 93n -> b93
+  | 94n -> b94
+  | 95n -> b95
+  | 96n -> b96
+  | 97n -> b97
+  | 98n -> b98
+  | 99n -> b99
+  | 100n -> b100
+  | 101n -> b101
+  | 102n -> b102
+  | 103n -> b103
+  | 104n -> b104
+  | 105n -> b105
+  | 106n -> b106
+  | 107n -> b107
+  | 108n -> b108
+  | 109n -> b109
+  | 110n -> b110
+  | 111n -> b111
+  | 112n -> b112
+  | 113n -> b113
+  | 114n -> b114
+  | 115n -> b115
+  | 116n -> b116
+  | 117n -> b117
+  | 118n -> b118
+  | 119n -> b119
+  | 120n -> b120
+  | 121n -> b121
+  | 122n -> b122
+  | 123n -> b123
+  | 124n -> b124
+  | 125n -> b125
+  | 126n -> b126
+  | 127n -> b127
+  | 128n -> b128
+  | 129n -> b129
+  | 130n -> b130
+  | 131n -> b131
+  | 132n -> b132
+  | 133n -> b133
+  | 134n -> b134
+  | 135n -> b135
+  | 136n -> b136
+  | 137n -> b137
+  | 138n -> b138
+  | 139n -> b139
+  | 140n -> b140
+  | 141n -> b141
+  | 142n -> b142
+  | 143n -> b143
+  | 144n -> b144
+  | 145n -> b145
+  | 146n -> b146
+  | 147n -> b147
+  | 148n -> b148
+  | 149n -> b149
+  | 150n -> b150
+  | 151n -> b151
+  | 152n -> b152
+  | 153n -> b153
+  | 154n -> b154
+  | 155n -> b155
+  | 156n -> b156
+  | 157n -> b157
+
+let mergeNodeFaults u (x : [M]attribute) (y : [M]attribute) =
+  merge u x y
+
+let transNodeFaults d e (x : [M]attribute) =
+  if (match e with | a~b -> isFailed b) then
+    {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+  else trans d e x
+
+let initNodeFaults d u = 
+  if isFailed u then
+    {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+  else init d u
+
+
+
+let d = (200.4.141.0/24)
+
+let nodeFaults = solution(initNodeFaults d, transNodeFaults d, mergeNodeFaults)

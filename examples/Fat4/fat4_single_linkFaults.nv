@@ -1,0 +1,113 @@
+include "fat4_single_control.nv"
+
+symbolic b0_18: bool
+symbolic b0_17: bool
+symbolic b1_7: bool
+symbolic b1_14: bool
+symbolic b1_18: bool
+symbolic b1_16: bool
+symbolic b2_16: bool
+symbolic b2_14: bool
+symbolic b2_18: bool
+symbolic b2_7: bool
+symbolic b3_4: bool
+symbolic b3_7: bool
+symbolic b4_8: bool
+symbolic b4_5: bool
+symbolic b4_10: bool
+symbolic b5_13: bool
+symbolic b5_17: bool
+symbolic b5_15: bool
+symbolic b6_16: bool
+symbolic b6_15: bool
+symbolic b7_10: bool
+symbolic b8_15: bool
+symbolic b8_17: bool
+symbolic b8_13: bool
+symbolic b9_18: bool
+symbolic b9_17: bool
+symbolic b11_13: bool
+symbolic b11_14: bool
+symbolic b12_13: bool
+symbolic b12_14: bool
+symbolic b15_19: bool
+symbolic b16_19: bool
+
+let isFailed e = 
+  match e with
+  | 0~18 -> b0_18
+  | 0~17 -> b0_17
+  | 1~7 -> b1_7
+  | 1~14 -> b1_14
+  | 1~18 -> b1_18
+  | 1~16 -> b1_16
+  | 2~16 -> b2_16
+  | 2~14 -> b2_14
+  | 2~18 -> b2_18
+  | 2~7 -> b2_7
+  | 3~4 -> b3_4
+  | 3~7 -> b3_7
+  | 4~8 -> b4_8
+  | 4~5 -> b4_5
+  | 4~3 -> b3_4
+  | 4~10 -> b4_10
+  | 5~13 -> b5_13
+  | 5~17 -> b5_17
+  | 5~15 -> b5_15
+  | 5~4 -> b4_5
+  | 6~16 -> b6_16
+  | 6~15 -> b6_15
+  | 7~1 -> b1_7
+  | 7~3 -> b3_7
+  | 7~2 -> b2_7
+  | 7~10 -> b7_10
+  | 8~15 -> b8_15
+  | 8~17 -> b8_17
+  | 8~4 -> b4_8
+  | 8~13 -> b8_13
+  | 9~18 -> b9_18
+  | 9~17 -> b9_17
+  | 10~7 -> b7_10
+  | 10~4 -> b4_10
+  | 11~13 -> b11_13
+  | 11~14 -> b11_14
+  | 12~13 -> b12_13
+  | 12~14 -> b12_14
+  | 13~12 -> b12_13
+  | 13~8 -> b8_13
+  | 13~5 -> b5_13
+  | 13~11 -> b11_13
+  | 14~2 -> b2_14
+  | 14~11 -> b11_14
+  | 14~1 -> b1_14
+  | 14~12 -> b12_14
+  | 15~6 -> b6_15
+  | 15~5 -> b5_15
+  | 15~19 -> b15_19
+  | 15~8 -> b8_15
+  | 16~6 -> b6_16
+  | 16~19 -> b16_19
+  | 16~1 -> b1_16
+  | 16~2 -> b2_16
+  | 17~0 -> b0_17
+  | 17~5 -> b5_17
+  | 17~8 -> b8_17
+  | 17~9 -> b9_17
+  | 18~2 -> b2_18
+  | 18~0 -> b0_18
+  | 18~1 -> b1_18
+  | 18~9 -> b9_18
+  | 19~16 -> b16_19
+  | 19~15 -> b15_19
+
+let mergeLinkFaults u (x : [M]attribute) (y : [M]attribute) =
+  merge u x y
+
+let transLinkFaults e (x : [M]attribute) =
+  if isFailed e then
+    {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+  else trans e x
+
+let initLinkFaults u = init u 
+
+let linkFaults = solution(initLinkFaults, transLinkFaults, mergeLinkFaults)

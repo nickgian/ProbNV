@@ -282,8 +282,6 @@ let rec translate (e : exp) : exp * BddBinds.t =
             BddBinds.empty () )
       | Some Concrete, Some Concrete, Some Symbolic ->
           (* C-App-S1*)
-          Printf.printf "C-App-S1: %s\n"
-            (Printing.exp_to_string ~show_types:true e);
           ( {
               e with
               e = (eapp el1 el2).e;
@@ -593,14 +591,14 @@ let liftInit init_body aty =
 (** translates the [init] function, given the mode [m] of the computed routes.
   [m] can be affected by the other functions, such as trans and merge. *)
 let translateInit init aty =
-  Printf.printf "init aty: %s" (Printing.ty_to_string aty);
+  (* Printf.printf "init aty: %s" (Printing.ty_to_string aty); *)
   let init', r = translate init in
   match init'.e with
   | EFun f ->
       let fv = free init in
       let rho = BddBinds.union r fv in
       if BddBinds.isEmpty rho then (
-        Printf.printf "bdd binds is empty\n";
+        (* Printf.printf "bdd binds is empty\n"; *)
         if aty.mode = Some Concrete then init'
         else
           let e1' = etoMap f.body in

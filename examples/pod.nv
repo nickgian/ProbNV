@@ -1,0 +1,26 @@
+let nodes = 6
+
+let edges = {0=1; 0=2; 1=3; 2=3; 1=4; 2=5;}
+
+symbolic f1: tedge
+
+let trans (e: [C]tedge) (route:[M](option[int])) =
+      (*if (e = f1) || (e = f2) || (e = f3) || (e = f4) || (e = f5) then None*)
+      if (e = f1) then None
+      else
+        match route with
+        | None -> None
+        | Some r -> Some (r+1)
+
+let merge u (r1 : [M](option[int])) (r2: [M](option[int])) =
+        (match (r1,r2) with
+         | (_, None) -> r1
+         | (None, _) -> r2
+         | (Some a, Some b) -> if a <= b then Some a else Some b)
+
+let init u =
+  if u = 0n then Some 0 else None
+
+
+
+let s = solution(init, trans, merge)

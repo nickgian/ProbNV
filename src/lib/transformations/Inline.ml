@@ -91,7 +91,7 @@ let rec inline_app cond env e1 e2 : exp =
         | None -> eapp e1 e2
         | Some e -> inline_app env e e2 )
     | EFun f ->
-        if cond (OCamlUtils.oget f.resty) then
+        if cond (OCamlUtils.oget e1.ety) then
           let e = substitute f.arg f.body e2 in
           inline_exp env e
         else eapp (inline_exp env e1) (inline_exp env e2)
@@ -219,8 +219,8 @@ let inline_multivalue_declarations (ds : declarations) =
         List.exists (fun t -> cond t) ts
     | TOption ty -> cond ty
     | TVar _ | QVar _ -> failwith "QVar/TVar found"
-    | TArrow (_, ty2) -> (
-        match (getReturnType ty2).mode with
+    | TArrow (_, _) -> (
+        match (getReturnType ty).mode with
         | Some Multivalue -> true
         | Some _ -> false
         | None -> failwith "No mode found" )

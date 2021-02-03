@@ -221,7 +221,7 @@ type probability = float
 
 type distrPattern =
   | DistrPWild
-  | DistrPBool of bool 
+  | DistrPBool of bool
   | DistrPRange of Integer.t * Integer.t
   | DistrPNode of node
   | DistrPEdge of edge
@@ -237,7 +237,6 @@ type solve = {
   trans : exp;
   merge : exp;
 }
-
 
 type declaration =
   | DLet of var * exp
@@ -842,6 +841,38 @@ let rec liftMultiTy ty =
       { ty with mode = Some (liftMultiMode (OCamlUtils.oget @@ get_mode ty)) }
   | TArrow (_, _) -> failwith "Cannot lift to multivalue"
 
+let liftMode m m' =
+  match join_opt m m' with None -> failwith "Cannot lift mode" | Some _ -> m
+
+let rec liftTy m ty =
+  match ty.typ with
+  | TVar { contents = Link typ } -> liftTy m typ
+  | TVar _ | QVar _ -> ty
+  | TBool | TInt _ | TNode | TEdge ->
+      { ty with mode = Some (liftMode m (OCamlUtils.oget ty.mode)) }
+  | TTuple ts ->
+      {
+        typ = TTuple (List.map (liftTy m) ts);
+        mode = Some (liftMode m (OCamlUtils.oget ty.mode));
+      }
+  | TOption ty ->
+      {
+        typ = TOption (liftTy m ty);
+        mode = Some (liftMode m (OCamlUtils.oget ty.mode));
+      }
+  | TRecord ts ->
+      {
+        typ = TRecord (StringMap.map (liftTy m) ts);
+        mode = Some (liftMode m (OCamlUtils.oget ty.mode));
+      }
+  | TMap (_, _) ->
+      { ty with mode = Some (liftMode m (OCamlUtils.oget @@ get_mode ty)) }
+  | TArrow (ty1, ty2) ->
+      {
+        typ = TArrow (ty1, ty2);
+        mode = Some (liftMode m (OCamlUtils.oget ty.mode));
+      }
+
 let etoMap e1 =
   let e1' = exp (EToMap e1) in
   match e1.ety with
@@ -991,10 +1022,10 @@ let rec join_ty ty1 ty2 =
       join_ty { ty3 with mode = join_opts ty1.mode ty3.mode } ty2
   | _, TVar { contents = Link ty3 } ->
       join_ty ty1 { ty3 with mode = join_opts ty2.mode ty3.mode }
-  | QVar x, QVar y when x = y ->
-    { ty1 with mode = join_opts ty1.mode ty2.mode }
-  | TVar { contents = Unbound (x1, x2)}, TVar { contents = Unbound (y1, y2)} when x1 = y1 && x2 = y2 ->
-    { ty1 with mode = join_opts ty1.mode ty2.mode }
+  | QVar x, QVar y when x = y -> { ty1 with mode = join_opts ty1.mode ty2.mode }
+  | TVar { contents = Unbound (x1, x2) }, TVar { contents = Unbound (y1, y2) }
+    when x1 = y1 && x2 = y2 ->
+      { ty1 with mode = join_opts ty1.mode ty2.mode }
   | TVar _, _
   | QVar _, _
   | TBool, _

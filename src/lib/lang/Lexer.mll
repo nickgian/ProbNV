@@ -20,7 +20,7 @@
 let id = ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '_' '0'-'9']*
 let symbol = ['~' '`' '!' '@' '#' '$' '%' '^' '&' '|' ':' '?' '>' '<' '[' ']' '=' '-' '.']+
 let num = ['0'-'9']+
-let prob_literal = (['0']['.']['0'-'9']+) | ("1.0")
+let prob_literal = (['0']['.']['0'-'9']+)"p" | ("1.0p")
 let width = "u"num
 let tid = ['\'']['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '_' '0'-'9']*
 let node = num"n"
@@ -45,19 +45,6 @@ rule token = parse
   | "nodes"           { NODES (position lexbuf) }
   | "match"           { MATCH (position lexbuf) }
   | "with"            { WITH (position lexbuf) }
-  | "case"            { CASE (position lexbuf) }
-  | "of"              { OF (position lexbuf) }
- (* | "require"         { REQUIRE (position lexbuf) }
-  | "foldNodes"       { FOLDNODE (position lexbuf) }
-  | "foldEdges"       { FOLDEDGE (position lexbuf) }
-  | "map"             { MAP (position lexbuf) }
-  | "mapIf"           { MAPIF (position lexbuf) }
-  | "mapIte"          { MAPITE (position lexbuf) }
-  | "combine"         { COMBINE (position lexbuf) }
-  | "union"           { UNION (position lexbuf) }
-  | "inter"           { INTER (position lexbuf) }
-  | "filter"          { FILTER (position lexbuf) }
-  | "minus"           { MINUS (position lexbuf) } *)
   | "createDict"      { CREATEMAP (position lexbuf) }
   | "set"             { TSET (position lexbuf) }
   | "dict"            { TDICT (position lexbuf) }
@@ -77,7 +64,7 @@ rule token = parse
   | node as s         { NODE (position lexbuf, int_of_string (String.rchop ~n:1 s)) }
   | num width as n    { NUM (position lexbuf, ProbNv_datastructures.Integer.of_string n) }
   | num as n          { NUM (position lexbuf, ProbNv_datastructures.Integer.of_string n) }
-  | prob_literal as n { PROB (position lexbuf, float_of_string n)}
+  | prob_literal as n { PROB (position lexbuf, float_of_string (String.rchop ~n:1 n))}
   | "&&"              { AND (position lexbuf) }
   | "||"              { OR (position lexbuf) }
   | "|"               { BAR (position lexbuf) }

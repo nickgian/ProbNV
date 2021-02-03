@@ -13,6 +13,7 @@ let load_srp name =
   try Fl_dynload.load_packages [ name ]
   with Dynlink.Error err -> Printf.printf "%s\n" (Dynlink.error_message err)
 
+
 let simulate name decls =
   (* Compile the program to OCaml *)
   ignore (Compile.compile_ocaml name decls);
@@ -30,13 +31,17 @@ let simulate name decls =
   end in
   (* build bdd and type arrays so that lookups during execution will work *)
   Collections.TypeIds.seal type_store;
-  (*build_bdd_array (); *)
+  Collections.DistrIds.seal distr_store;
+
   (*TODO: is this still relevant? *)
   Collections.ExpIds.seal pred_store;
 
   (* Build a simulator for SRPs *)
-  let module SrpSimulator = ( val (module SrpLazySimulation (G))
-                                : SrpSimulationSig )
+  let module SrpSimulator = 
+
+     (val (if (Cmdline.get_cfg()).new_sim then 
+            (module SrpLazySimulation (G))
+          else (module SrpSimulation(G))) : SrpSimulationSig )
   in
   (* Load compiled NV program*)
   let module CompleteSRP = (val get_srp ()) in

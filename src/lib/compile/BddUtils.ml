@@ -4,10 +4,27 @@ open Cudd
 open ProbNv_utils
 open ProbNv_datastructures
 open Batteries
+open Parmap
 
 type distribution = float Mtbddc.t
 
 let mgr = Man.make_v ()
+
+let set_reordering reorder = 
+  match reorder with
+  | None -> ()
+  | Some i ->
+    (match i with
+      | 0 -> Cudd.Man.enable_autodyn mgr REORDER_WINDOW2
+      | 1 -> Cudd.Man.enable_autodyn mgr REORDER_WINDOW2_CONV
+      | 2 -> Cudd.Man.enable_autodyn mgr REORDER_WINDOW3
+      | 3 -> Cudd.Man.enable_autodyn mgr REORDER_WINDOW3_CONV
+      | 4 -> Cudd.Man.enable_autodyn mgr REORDER_WINDOW4
+      | 5 -> Cudd.Man.enable_autodyn mgr REORDER_SIFT
+      | 6 -> Cudd.Man.enable_autodyn mgr REORDER_SIFT_CONVERGE
+      | _ -> ())
+
+let () = Cudd.Man.set_max_cache_hard mgr 134217728
 
 let bdd_of_bool b = if b then Bdd.dtrue mgr else Bdd.dfalse mgr
 
@@ -21,7 +38,7 @@ let rec ty_to_size ty =
       | TRecord tmap -> ty_to_size (TTuple (RecordUtils.get_record_entries tmap)) *)
   | TNode -> ty_to_size (concrete (TInt tnode_sz)) (* Encode as int *)
   | TEdge -> 2 * ty_to_size (concrete TNode) (*Encode as node pair*)
-  | TArrow _ | TVar _ | QVar _ | TMap _ | TRecord _->
+  | TArrow _ | TVar _ | QVar _ | TMap _ | TRecord _ ->
       failwith ("internal error (ty_to_size): " ^ Printing.ty_to_string ty)
 
 (* A list of the range of BDD variables, the type and the distribution, of every symbolic *)
@@ -183,9 +200,10 @@ let printCube cube =
       else Printf.printf "*")
     cube
 
+(* For debugging purposes *)
 let rec printBdd distr =
   match Mtbddc.inspect distr with
-  | Leaf v -> Printf.printf "Leaf: %f\n" (Mtbddc.dval distr)
+  | Leaf _ -> Printf.printf "Leaf: %f\n" (Mtbddc.dval distr)
   | Ite (i, t, e) ->
       Printf.printf "top: %d: \n" i;
       Printf.printf "  dthen: ";
@@ -200,13 +218,15 @@ let rec cubeProbability (cube : Cudd.Man.tbool array)
   | [] -> 1.0
   | (xstart, xend, _, xdistribution) :: bounds ->
       (* compute the probability for one variable *)
-      (* printBdd xdistribution; *)
+      (* printBdd xdistribution;
+      flush_all(); *)
       let p = symbolicProbability cube xstart xend xdistribution in
       (* debugging code *)
       (* Printf.printf "range:(%d,%d) " xstart xend;
-         Printf.printf "cube: ";
-         printCube cube;
+         (* Printf.printf "cube: ";
+         printCube cube; *)
          Printf.printf " symbProb: %f\n" p; *)
+
       p *. cubeProbability cube bounds
 
 let rec computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds =
@@ -216,5 +236,17 @@ let rec computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds =
       if v then ptrue := !ptrue +. cubeProbability cube bounds else ())
     assertion;
   !ptrue
+
+(* let rec computeTrueProbabilityPar (assertion : bool Cudd.Mtbddc.t) bounds =
+  let cubes = ref [] in
+  Mtbddc.iter_cube
+    (fun cube v ->
+      if v then cubes := cube :: !cubes else ())
+    assertion;
+  parfold ~ncores:2 (fun cube acc -> acc +. (cubeProbability cube bounds)) (L !cubes) 0.0 (fun thread1 thread2 -> thread1 +. thread2)
+    
+let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds =
+  computeTrueProbabilityPar assertion bounds *)
+
 
 let get_statistics () = Man.print_info mgr

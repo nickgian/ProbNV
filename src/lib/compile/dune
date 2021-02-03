@@ -8,5 +8,6 @@
    probNv_utils
    findlib.dynload
    fix
+   parmap
  )
 )

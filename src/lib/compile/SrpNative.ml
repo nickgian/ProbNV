@@ -140,12 +140,12 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
           in
           (* This is a hack because merge may not be selective *)
           let dummy_new =
-            n_incoming_attribute
-            (* merge neighbor n_incoming_attribute n_incoming_attribute *)
+            (* n_incoming_attribute *)
+            merge neighbor n_incoming_attribute n_incoming_attribute
           in
           (*if the merge between new and old route from origin is equal to the new route from origin*)
-          if compare_routes = dummy_new then (
-            incr incr_merges;
+          if compare_routes = dummy_new then
+            (* incr incr_merges; *)
             (*we can incrementally compute in this case*)
             let n_new_attribute =
               merge neighbor n_old_attribute n_incoming_attribute
@@ -159,7 +159,7 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
                 todo )
             else
               ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
-                neighbor :: todo ) )
+                neighbor :: todo )
           else
             (* In this case, we need to do a full merge of all received routes *)
             let best =
@@ -212,16 +212,23 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
   let simulate_solve record_fns attr_ty_id name init trans merge =
     let s = create_state (AdjGraph.nb_vertex G.graph) init in
     let trans e x =
-      incr transfers;
+      (* incr transfers; *)
       Profile.time_profile_total transfer_time (fun () -> trans e x)
     in
     let merge u x y =
-      incr merges;
+      (* incr merges; *)
       Profile.time_profile_total merge_time (fun () -> merge u x y)
     in
-    let vals =
+    let vals = match (Cmdline.get_cfg ()).bound with
+    | None -> 
       simulate_init trans merge s |> AdjGraph.VertexMap.map (fun (_, v) -> v)
-    in
+    | Some b ->  
+      Printf.printf "in bounded case with %d\n" b;
+      flush_all();
+      (fst @@ simulate_init_bound trans merge s b) |> 
+      AdjGraph.VertexMap.map (fun (_, v) -> v)
+      in
+
 
     Printf.printf "Number of incremental merges: %d\n" !incr_merges;
     Printf.printf "Number of calls to merge: %d\n" !merges;
@@ -345,11 +352,11 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
       (* init u can only be computed once so this is ok *)
       let n_incoming_attribute =
         if u = v then init u
-        else (
+        else
           (* Printf.printf "  Size of message from %d: %d\n" v
-            (Cudd.Mtbddc.size (Obj.magic (get_attribute_exn v local)));
-          printBdd (Obj.magic (get_attribute_exn v local)); *)
-          trans edge (get_attribute_exn v local) )
+               (Cudd.Mtbddc.size (Obj.magic (get_attribute_exn v local)));
+             printBdd (Obj.magic (get_attribute_exn v local)); *)
+          trans edge (get_attribute_exn v local)
       in
 
       match AdjGraph.VertexMap.Exceptionless.find u local with
@@ -394,12 +401,12 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
               in
               (* This is a hack because merge may not be selective *)
               let dummy_new =
-                n_incoming_attribute
-                (* merge neighbor n_incoming_attribute n_incoming_attribute *)
+                (* n_incoming_attribute *)
+                merge u n_incoming_attribute n_incoming_attribute
               in
               (*if the merge between new and old route from origin is equal to the new route from v*)
-              if compare_routes = dummy_new then (
-                incr incr_merges;
+              if compare_routes = dummy_new then
+                (* incr incr_merges; *)
                 (*we can incrementally compute in this case*)
                 let u_new_attribute = merge u labu n_incoming_attribute in
                 (* add the new message from v to u's inbox *)
@@ -410,7 +417,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
                 ( change_bit || labu <> u_new_attribute,
                   AdjGraph.VertexMap.add u
                     { labels = u_new_attribute; received = inbox_u' }
-                    local ) )
+                    local )
               else
                 (* In this case, we need to do a full merge of all received routes *)
                 (*TODO: maybe this isn't the most efficient way to implement this, we should do the full merge once
@@ -466,6 +473,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     | None -> None
     | Some (x, s) -> if pred x then findMin pred s else Some x
 
+  let skips = ref 0
   (* Process a node in the schedule *)
   let rec processNode next init trans merge local global i =
     (* Check the worklist for the nodes next should read messages from *)
@@ -478,7 +486,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
            (with the exception of the node itself) *)
     let pred v = v = next || wklist.(v) = AdjGraph.VertexSet.empty in
     (* how many steps to skip, i = 1 allows 1 skip *)
-    if i = 1 then simulate_step init trans merge local global next todoSet
+    if i = !skips then simulate_step init trans merge local global next todoSet
     else
       match findMin pred todoSet with
       | None -> simulate_step init trans merge local global next todoSet
@@ -511,6 +519,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
       incr merges;
       Profile.time_profile_total merge_time (fun () -> merge u x y)
     in
+    skips := (Cmdline.get_cfg()).sim_skip;
     let vals =
       simulate_init init trans merge global local
       |> AdjGraph.VertexMap.map (fun v -> v.labels)
@@ -539,7 +548,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     in
 
     (* Storing the AdjGraph.VertexMap in the solved list, but returning
-       the function to the ProbNV program *)
+       the total map to the ProbNV program *)
     solved :=
       ( name,
         ( Obj.magic vals,
@@ -555,12 +564,17 @@ end
 let ocaml_to_nv_value record_fns (attr_ty : Syntax.ty) v : Syntax.value =
   match Syntax.get_mode attr_ty with
   | Some Concrete -> Embeddings.embed_value record_fns attr_ty v
-  | Some Multivalue -> Embeddings.embed_multivalue record_fns attr_ty v
+  | Some Multivalue -> 
+    Embeddings.embed_multivalue record_fns attr_ty v
   | Some Symbolic -> failwith "Solution cannot be symbolic"
   | None -> failwith "No mode found"
 
 let build_solution record_fns (vals, ty) =
-  AdjGraph.VertexMap.map (fun v -> ocaml_to_nv_value record_fns ty v) vals
+  if (Cmdline.get_cfg ()).verbose then
+    AdjGraph.VertexMap.map (fun v -> 
+      ocaml_to_nv_value record_fns ty v
+      ) vals
+  else AdjGraph.VertexMap.empty
 
 let check_assertion (a : bool Cudd.Mtbddc.t * float) bounds =
   let prob = BddUtils.computeTrueProbability (fst a) bounds in
@@ -572,8 +586,6 @@ let build_solutions nodes record_fns
   let open Solution in
   let assertions = List.rev assertions in
   let symbolic_bounds = List.rev !BddUtils.vars_list in
-  Printf.printf "before computing assertions\n";
-  flush_all ();
   {
     assertions =
       List.map (fun a -> check_assertion a symbolic_bounds) assertions;
