@@ -50,7 +50,7 @@ let simulate name decls =
   let start_time = Sys.time () in
   let module Srp = (val (module CompleteSRP (SrpSimulator)) : NATIVE_SRP) in
   let finish_time = Sys.time () in
-  Printf.printf "Native simulation took: %f secs to complete\n%!"
+  Printf.printf "Native simulation took: %f\n%!"
     (finish_time -. start_time);
   BddUtils.get_statistics ();
   (* Get the computed solutions *)

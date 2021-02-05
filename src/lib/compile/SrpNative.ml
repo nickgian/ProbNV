@@ -212,19 +212,17 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
   let simulate_solve record_fns attr_ty_id name init trans merge =
     let s = create_state (AdjGraph.nb_vertex G.graph) init in
     let trans e x =
-      (* incr transfers; *)
+      incr transfers;
       Profile.time_profile_total transfer_time (fun () -> trans e x)
     in
     let merge u x y =
-      (* incr merges; *)
+      incr merges;
       Profile.time_profile_total merge_time (fun () -> merge u x y)
     in
     let vals = match (Cmdline.get_cfg ()).bound with
     | None -> 
       simulate_init trans merge s |> AdjGraph.VertexMap.map (fun (_, v) -> v)
     | Some b ->  
-      Printf.printf "in bounded case with %d\n" b;
-      flush_all();
       (fst @@ simulate_init_bound trans merge s b) |> 
       AdjGraph.VertexMap.map (fun (_, v) -> v)
       in
