@@ -586,7 +586,8 @@ let build_solutions nodes record_fns
   let symbolic_bounds = List.rev !BddUtils.vars_list in
   {
     assertions =
-      List.map (fun a -> check_assertion a symbolic_bounds) assertions;
+      Profile.time_profile "Time to check assertions" 
+        (fun () -> List.map (fun a -> check_assertion a symbolic_bounds) assertions);
     solves =
       List.map
         (fun (name, sol) ->

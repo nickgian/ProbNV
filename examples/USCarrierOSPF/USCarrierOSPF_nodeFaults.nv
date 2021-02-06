@@ -1,163 +1,163 @@
 include "USCarrierOSPF_control.nv"
 
-symbolic b0: bool
-symbolic b1: bool
-symbolic b2: bool
-symbolic b3: bool
-symbolic b4: bool
-symbolic b5: bool
-symbolic b6: bool
-symbolic b7: bool
-symbolic b8: bool
-symbolic b9: bool
-symbolic b10: bool
-symbolic b11: bool
-symbolic b12: bool
-symbolic b13: bool
-symbolic b14: bool
-symbolic b15: bool
-symbolic b16: bool
-symbolic b17: bool
-symbolic b18: bool
-symbolic b19: bool
-symbolic b20: bool
-symbolic b21: bool
-symbolic b22: bool
-symbolic b23: bool
-symbolic b24: bool
-symbolic b25: bool
-symbolic b26: bool
-symbolic b27: bool
-symbolic b28: bool
-symbolic b29: bool
-symbolic b30: bool
-symbolic b31: bool
-symbolic b32: bool
-symbolic b33: bool
-symbolic b34: bool
-symbolic b35: bool
-symbolic b36: bool
-symbolic b37: bool
-symbolic b38: bool
-symbolic b39: bool
-symbolic b40: bool
-symbolic b41: bool
-symbolic b42: bool
-symbolic b43: bool
-symbolic b44: bool
-symbolic b45: bool
-symbolic b46: bool
-symbolic b47: bool
-symbolic b48: bool
-symbolic b49: bool
-symbolic b50: bool
-symbolic b51: bool
-symbolic b52: bool
-symbolic b53: bool
-symbolic b54: bool
-symbolic b55: bool
-symbolic b56: bool
-symbolic b57: bool
-symbolic b58: bool
-symbolic b59: bool
-symbolic b60: bool
-symbolic b61: bool
-symbolic b62: bool
-symbolic b63: bool
-symbolic b64: bool
-symbolic b65: bool
-symbolic b66: bool
-symbolic b67: bool
-symbolic b68: bool
-symbolic b69: bool
-symbolic b70: bool
-symbolic b71: bool
-symbolic b72: bool
-symbolic b73: bool
-symbolic b74: bool
-symbolic b75: bool
-symbolic b76: bool
-symbolic b77: bool
-symbolic b78: bool
-symbolic b79: bool
-symbolic b80: bool
-symbolic b81: bool
-symbolic b82: bool
-symbolic b83: bool
-symbolic b84: bool
-symbolic b85: bool
-symbolic b86: bool
-symbolic b87: bool
-symbolic b88: bool
-symbolic b89: bool
-symbolic b90: bool
-symbolic b91: bool
-symbolic b92: bool
-symbolic b93: bool
-symbolic b94: bool
-symbolic b95: bool
-symbolic b96: bool
-symbolic b97: bool
-symbolic b98: bool
-symbolic b99: bool
-symbolic b100: bool
-symbolic b101: bool
-symbolic b102: bool
-symbolic b103: bool
-symbolic b104: bool
-symbolic b105: bool
-symbolic b106: bool
-symbolic b107: bool
-symbolic b108: bool
-symbolic b109: bool
-symbolic b110: bool
-symbolic b111: bool
-symbolic b112: bool
-symbolic b113: bool
-symbolic b114: bool
-symbolic b115: bool
-symbolic b116: bool
-symbolic b117: bool
-symbolic b118: bool
-symbolic b119: bool
-symbolic b120: bool
-symbolic b121: bool
-symbolic b122: bool
-symbolic b123: bool
-symbolic b124: bool
-symbolic b125: bool
-symbolic b126: bool
-symbolic b127: bool
-symbolic b128: bool
-symbolic b129: bool
-symbolic b130: bool
-symbolic b131: bool
-symbolic b132: bool
-symbolic b133: bool
-symbolic b134: bool
-symbolic b135: bool
-symbolic b136: bool
-symbolic b137: bool
-symbolic b138: bool
-symbolic b139: bool
-symbolic b140: bool
-symbolic b141: bool
-symbolic b142: bool
-symbolic b143: bool
-symbolic b144: bool
-symbolic b145: bool
-symbolic b146: bool
-symbolic b147: bool
-symbolic b148: bool
-symbolic b149: bool
-symbolic b150: bool
-symbolic b151: bool
-symbolic b152: bool
-symbolic b153: bool
-symbolic b154: bool
-symbolic b155: bool
-symbolic b156: bool
-symbolic b157: bool
+    symbolic b0: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b1: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b2: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b3: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b4: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b5: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b6: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b7: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b8: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b9: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b10: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b11: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b12: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b13: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b14: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b15: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b16: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b17: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b18: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b19: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b20: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b21: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b22: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b23: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b24: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b25: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b26: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b27: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b28: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b29: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b30: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b31: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b32: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b33: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b34: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b35: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b36: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b37: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b38: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b39: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b40: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b41: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b42: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b43: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b44: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b45: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b46: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b47: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b48: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b49: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b50: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b51: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b52: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b53: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b54: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b55: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b56: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b57: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b58: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b59: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b60: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b61: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b62: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b63: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b64: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b65: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b66: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b67: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b68: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b69: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b70: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b71: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b72: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b73: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b74: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b75: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b76: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b77: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b78: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b79: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b80: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b81: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b82: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b83: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b84: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b85: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b86: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b87: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b88: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b89: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b90: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b91: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b92: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b93: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b94: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b95: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b96: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b97: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b98: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b99: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b100: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b101: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b102: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b103: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b104: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b105: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b106: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b107: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b108: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b109: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b110: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b111: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b112: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b113: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b114: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b115: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b116: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b117: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b118: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b119: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b120: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b121: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b122: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b123: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b124: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b125: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b126: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b127: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b128: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b129: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b130: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b131: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b132: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b133: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b134: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b135: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b136: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b137: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b138: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b139: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b140: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b141: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b142: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b143: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b144: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b145: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b146: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b147: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b148: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b149: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b150: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b151: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b152: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b153: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b154: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b155: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b156: bool = | true -> 0.05p | false -> 0.95p
+          symbolic b157: bool = | true -> 0.05p | false -> 0.95p
 
 let isFailed u = 
   match u with
@@ -334,7 +334,166 @@ let initNodeFaults d u =
   else init d u
 
 
-
 let d = (200.4.141.0/24)
 
 let nodeFaults = solution(initNodeFaults d, transNodeFaults d, mergeNodeFaults)
+let reachable u =
+  match nodeFaults[u].selected with | None -> false | _ -> true
+
+                                                             assert(reachable 1n, 0.99p)
+                                                             assert(reachable 2n, 0.99p)
+                                                             assert(reachable 3n, 0.99p)
+                                                             assert(reachable 4n, 0.99p)
+                                                             assert(reachable 5n, 0.99p)
+                                                             assert(reachable 6n, 0.99p)
+                                                             assert(reachable 7n, 0.99p)
+                                                             assert(reachable 8n, 0.99p)
+                                                             assert(reachable 9n, 0.99p)
+                                                             assert(reachable 10n, 0.99p)
+                                                             assert(reachable 11n, 0.99p)
+                                                             assert(reachable 12n, 0.99p)
+                                                             assert(reachable 13n, 0.99p)
+                                                             assert(reachable 14n, 0.99p)
+                                                             assert(reachable 15n, 0.99p)
+                                                             assert(reachable 16n, 0.99p)
+                                                             assert(reachable 17n, 0.99p)
+                                                             assert(reachable 18n, 0.99p)
+                                                             assert(reachable 19n, 0.99p)
+                                                             assert(reachable 20n, 0.99p)
+                                                             assert(reachable 21n, 0.99p)
+                                                             assert(reachable 22n, 0.99p)
+                                                             assert(reachable 23n, 0.99p)
+                                                             assert(reachable 24n, 0.99p)
+                                                             assert(reachable 25n, 0.99p)
+                                                             assert(reachable 26n, 0.99p)
+                                                             assert(reachable 27n, 0.99p)
+                                                             assert(reachable 28n, 0.99p)
+                                                             assert(reachable 29n, 0.99p)
+                                                             assert(reachable 30n, 0.99p)
+                                                             assert(reachable 31n, 0.99p)
+                                                             assert(reachable 32n, 0.99p)
+                                                             assert(reachable 33n, 0.99p)
+                                                             assert(reachable 34n, 0.99p)
+                                                             assert(reachable 35n, 0.99p)
+                                                             assert(reachable 36n, 0.99p)
+                                                             assert(reachable 37n, 0.99p)
+                                                             assert(reachable 38n, 0.99p)
+                                                             assert(reachable 39n, 0.99p)
+                                                             assert(reachable 40n, 0.99p)
+                                                             assert(reachable 41n, 0.99p)
+                                                             assert(reachable 42n, 0.99p)
+                                                             assert(reachable 43n, 0.99p)
+                                                             assert(reachable 44n, 0.99p)
+                                                             assert(reachable 45n, 0.99p)
+                                                             assert(reachable 46n, 0.99p)
+                                                             assert(reachable 47n, 0.99p)
+                                                             assert(reachable 48n, 0.99p)
+                                                             assert(reachable 49n, 0.99p)
+                                                             assert(reachable 50n, 0.99p)
+                                                             assert(reachable 51n, 0.99p)
+                                                             assert(reachable 52n, 0.99p)
+                                                             assert(reachable 53n, 0.99p)
+                                                             assert(reachable 54n, 0.99p)
+                                                             assert(reachable 55n, 0.99p)
+                                                             assert(reachable 56n, 0.99p)
+                                                             assert(reachable 57n, 0.99p)
+                                                             assert(reachable 58n, 0.99p)
+                                                             assert(reachable 59n, 0.99p)
+                                                             assert(reachable 60n, 0.99p)
+                                                             assert(reachable 61n, 0.99p)
+                                                             assert(reachable 62n, 0.99p)
+                                                             assert(reachable 63n, 0.99p)
+                                                             assert(reachable 64n, 0.99p)
+                                                             assert(reachable 65n, 0.99p)
+                                                             assert(reachable 66n, 0.99p)
+                                                             assert(reachable 67n, 0.99p)
+                                                             assert(reachable 68n, 0.99p)
+                                                             assert(reachable 69n, 0.99p)
+                                                             assert(reachable 70n, 0.99p)
+                                                             assert(reachable 71n, 0.99p)
+                                                             assert(reachable 72n, 0.99p)
+                                                             assert(reachable 73n, 0.99p)
+                                                             assert(reachable 74n, 0.99p)
+                                                             assert(reachable 75n, 0.99p)
+                                                             assert(reachable 76n, 0.99p)
+                                                             assert(reachable 77n, 0.99p)
+                                                             assert(reachable 78n, 0.99p)
+                                                             assert(reachable 79n, 0.99p)
+                                                             assert(reachable 80n, 0.99p)
+                                                             assert(reachable 81n, 0.99p)
+                                                             assert(reachable 82n, 0.99p)
+                                                             assert(reachable 83n, 0.99p)
+                                                             assert(reachable 84n, 0.99p)
+                                                             assert(reachable 85n, 0.99p)
+                                                             assert(reachable 86n, 0.99p)
+                                                             assert(reachable 87n, 0.99p)
+                                                             assert(reachable 88n, 0.99p)
+                                                             assert(reachable 89n, 0.99p)
+                                                             assert(reachable 90n, 0.99p)
+                                                             assert(reachable 91n, 0.99p)
+                                                             assert(reachable 92n, 0.99p)
+                                                             assert(reachable 93n, 0.99p)
+                                                             assert(reachable 94n, 0.99p)
+                                                             assert(reachable 95n, 0.99p)
+                                                             assert(reachable 96n, 0.99p)
+                                                             assert(reachable 97n, 0.99p)
+                                                             assert(reachable 98n, 0.99p)
+                                                             assert(reachable 99n, 0.99p)
+                                                             assert(reachable 100n, 0.99p)
+                                                             assert(reachable 101n, 0.99p)
+                                                             assert(reachable 102n, 0.99p)
+                                                             assert(reachable 103n, 0.99p)
+                                                             assert(reachable 104n, 0.99p)
+                                                             assert(reachable 105n, 0.99p)
+                                                             assert(reachable 106n, 0.99p)
+                                                             assert(reachable 107n, 0.99p)
+                                                             assert(reachable 108n, 0.99p)
+                                                             assert(reachable 109n, 0.99p)
+                                                             assert(reachable 110n, 0.99p)
+                                                             assert(reachable 111n, 0.99p)
+                                                             assert(reachable 112n, 0.99p)
+                                                             assert(reachable 113n, 0.99p)
+                                                             assert(reachable 114n, 0.99p)
+                                                             assert(reachable 115n, 0.99p)
+                                                             assert(reachable 116n, 0.99p)
+                                                             assert(reachable 117n, 0.99p)
+                                                             assert(reachable 118n, 0.99p)
+                                                             assert(reachable 119n, 0.99p)
+                                                             assert(reachable 120n, 0.99p)
+                                                             assert(reachable 121n, 0.99p)
+                                                             assert(reachable 122n, 0.99p)
+                                                             assert(reachable 123n, 0.99p)
+                                                             assert(reachable 124n, 0.99p)
+                                                             assert(reachable 125n, 0.99p)
+                                                             assert(reachable 126n, 0.99p)
+                                                             assert(reachable 127n, 0.99p)
+                                                             assert(reachable 128n, 0.99p)
+                                                             assert(reachable 129n, 0.99p)
+                                                             assert(reachable 130n, 0.99p)
+                                                             assert(reachable 131n, 0.99p)
+                                                             assert(reachable 132n, 0.99p)
+                                                             assert(reachable 133n, 0.99p)
+                                                             assert(reachable 134n, 0.99p)
+                                                             assert(reachable 135n, 0.99p)
+                                                             assert(reachable 136n, 0.99p)
+                                                             assert(reachable 137n, 0.99p)
+                                                             assert(reachable 138n, 0.99p)
+                                                             assert(reachable 139n, 0.99p)
+                                                             assert(reachable 140n, 0.99p)
+                                                             assert(reachable 141n, 0.99p)
+                                                             assert(reachable 142n, 0.99p)
+                                                             assert(reachable 143n, 0.99p)
+                                                             assert(reachable 144n, 0.99p)
+                                                             assert(reachable 145n, 0.99p)
+                                                             assert(reachable 146n, 0.99p)
+                                                             assert(reachable 147n, 0.99p)
+                                                             assert(reachable 148n, 0.99p)
+                                                             assert(reachable 149n, 0.99p)
+                                                             assert(reachable 150n, 0.99p)
+                                                             assert(reachable 151n, 0.99p)
+                                                             assert(reachable 152n, 0.99p)
+                                                             assert(reachable 153n, 0.99p)
+                                                             assert(reachable 154n, 0.99p)
+                                                             assert(reachable 155n, 0.99p)
+                                                             assert(reachable 156n, 0.99p)
+                                                             assert(reachable 157n, 0.99p)

@@ -17,8 +17,6 @@ let p_STATIC = 1u2
 let p_OSPF = 2u2
 let p_BGP = 3u2
 
-let d = (200.1.31.0/24)
-
 (** Useful helper definitions **)
 
 let ospfIntraArea = 0u2
@@ -31,7 +29,6 @@ let isProtocol fib x =
   match fib with
   | None -> false
   | Some y -> x = y
-
 
 let getSourceNode e = 
   match e with  | a~b -> a
@@ -89,7 +86,7 @@ let mergeValues x y =
 
 let merge node x y = mergeValues x y
 
-let init node =
+let init d node =
   match node with
   | 0n -> 
 if d = (10.0.0.126/31) || d = (10.0.0.124/31) || d = (10.0.0.22/31) || d = (10.0.0.96/31) || d = (10.0.0.80/31) then
@@ -884,7 +881,7 @@ if d = (10.0.0.26/31) then
      match edge with
      | _ -> None)
 
- let transferBgp e x0 =
+ let transferBgp d e x0 =
   let (prefix, prefixLen) = d in
 let prot = x0.selected in
  match e with
@@ -1246,7 +1243,10 @@ None
 (Some {b with lp= 100; aslen= b.aslen + 1; })
  else
 if ((prefixLen = 24u6) && ((prefix >= 128.0.5.0) && (prefix < 128.0.6.0))) then
+if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 2 + 1; })
+ else
+None
  else
 if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 1; })
@@ -1267,7 +1267,10 @@ None
 (Some {b with lp= 100; aslen= b.aslen + 1; })
  else
 if ((prefixLen = 24u6) && ((prefix >= 128.0.4.0) && (prefix < 128.0.5.0))) then
+if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 2 + 1; })
+ else
+None
  else
 if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 1; })
@@ -2371,7 +2374,10 @@ None
 (Some {b with lp= 100; aslen= b.aslen + 1; })
  else
 if ((prefixLen = 24u6) && ((prefix >= 128.0.6.0) && (prefix < 128.0.7.0))) then
+if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 2 + 1; })
+ else
+None
  else
 if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 1; })
@@ -2533,10 +2539,7 @@ None
 (Some {b with lp= 100; aslen= b.aslen + 1; })
  else
 if ((prefixLen = 24u6) && ((prefix >= 128.0.12.0) && (prefix < 128.0.13.0))) then
-if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 2 + 1; })
- else
-None
  else
 if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 1; })
@@ -2644,7 +2647,10 @@ None
 (Some {b with lp= 100; aslen= b.aslen + 1; })
  else
 if ((prefixLen = 24u6) && ((prefix >= 128.0.13.0) && (prefix < 128.0.14.0))) then
+if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 2 + 1; })
+ else
+None
  else
 if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 1; })
@@ -2977,10 +2983,7 @@ None
 (Some {b with lp= 100; aslen= b.aslen + 1; })
  else
 if ((prefixLen = 24u6) && ((prefix >= 128.0.10.0) && (prefix < 128.0.11.0))) then
-if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 2 + 1; })
- else
-None
  else
 if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 1; })
@@ -3001,10 +3004,7 @@ None
 (Some {b with lp= 100; aslen= b.aslen + 1; })
  else
 if ((prefixLen = 24u6) && ((prefix >= 128.0.1.0) && (prefix < 128.0.2.0))) then
-if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 2 + 1; })
- else
-None
  else
 if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 1; })
@@ -3217,7 +3217,10 @@ None
 (Some {b with lp= 100; aslen= b.aslen + 1; })
  else
 if ((prefixLen = 24u6) && ((prefix >= 128.0.11.0) && (prefix < 128.0.12.0))) then
+if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 2 + 1; })
+ else
+None
  else
 if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 1; })
@@ -3421,10 +3424,7 @@ None
 (Some {b with lp= 100; aslen= b.aslen + 1; })
  else
 if ((prefixLen = 24u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.1.0))) then
-if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 2 + 1; })
- else
-None
  else
 if (isProtocol prot p_BGP) then
 (Some {b with lp= 100; aslen= b.aslen + 1; })
@@ -3812,11 +3812,10 @@ None
            (Some {b with lp= 1; comms= b.comms[6553603:= true]; })))
 
 
-let trans edge x = 
+let trans d edge x = 
   let o = transferOspf edge x.ospf in
-  let b = transferBgp edge x in
+  let b = transferBgp d edge x in
   {connected=None; static=None; ospf=o; bgp=b; selected=None}
-
 
 let nodes = 49
 

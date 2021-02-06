@@ -1,69 +1,69 @@
 include "bics_control.nv"
 
-symbolic b0_37: bool = | true -> 0.01p | false -> 0.99p
-symbolic b0_21: bool = | true -> 0.01p | false -> 0.99p
-symbolic b0_13: bool = | true -> 0.01p | false -> 0.99p
-symbolic b0_31: bool = | true -> 0.01p | false -> 0.99p
-symbolic b0_17: bool = | true -> 0.01p | false -> 0.99p
-symbolic b24_37: bool = | true -> 0.01p | false -> 0.99p
-symbolic b1_37: bool = | true -> 0.01p | false -> 0.99p
-symbolic b21_37: bool = | true -> 0.01p | false -> 0.99p
-symbolic b11_37: bool = | true -> 0.01p | false -> 0.99p
-symbolic b21_41: bool = | true -> 0.01p | false -> 0.99p
-symbolic b21_22: bool = | true -> 0.01p | false -> 0.99p
-symbolic b21_45: bool = | true -> 0.01p | false -> 0.99p
-symbolic b5_21: bool = | true -> 0.01p | false -> 0.99p
-symbolic b4_21: bool = | true -> 0.01p | false -> 0.99p
-symbolic b21_32: bool = | true -> 0.01p | false -> 0.99p
-symbolic b17_21: bool = | true -> 0.01p | false -> 0.99p
-symbolic b17_44: bool = | true -> 0.01p | false -> 0.99p
-symbolic b17_32: bool = | true -> 0.01p | false -> 0.99p
-symbolic b17_45: bool = | true -> 0.01p | false -> 0.99p
-symbolic b8_24: bool = | true -> 0.01p | false -> 0.99p
-symbolic b1_11: bool = | true -> 0.01p | false -> 0.99p
-symbolic b1_38: bool = | true -> 0.01p | false -> 0.99p
-symbolic b1_30: bool = | true -> 0.01p | false -> 0.99p
-symbolic b1_18: bool = | true -> 0.01p | false -> 0.99p
-symbolic b1_39: bool = | true -> 0.01p | false -> 0.99p
-symbolic b11_46: bool = | true -> 0.01p | false -> 0.99p
-symbolic b41_43: bool = | true -> 0.01p | false -> 0.99p
-symbolic b9_45: bool = | true -> 0.01p | false -> 0.99p
-symbolic b2_45: bool = | true -> 0.01p | false -> 0.99p
-symbolic b10_45: bool = | true -> 0.01p | false -> 0.99p
-symbolic b43_45: bool = | true -> 0.01p | false -> 0.99p
-symbolic b3_45: bool = | true -> 0.01p | false -> 0.99p
-symbolic b29_45: bool = | true -> 0.01p | false -> 0.99p
-symbolic b30_45: bool = | true -> 0.01p | false -> 0.99p
-symbolic b8_46: bool = | true -> 0.01p | false -> 0.99p
-symbolic b8_35: bool = | true -> 0.01p | false -> 0.99p
-symbolic b30_33: bool = | true -> 0.01p | false -> 0.99p
-symbolic b15_30: bool = | true -> 0.01p | false -> 0.99p
-symbolic b30_36: bool = | true -> 0.01p | false -> 0.99p
-symbolic b18_48: bool = | true -> 0.01p | false -> 0.99p
-symbolic b18_47: bool = | true -> 0.01p | false -> 0.99p
-symbolic b18_43: bool = | true -> 0.01p | false -> 0.99p
-symbolic b28_46: bool = | true -> 0.01p | false -> 0.99p
-symbolic b25_46: bool = | true -> 0.01p | false -> 0.99p
-symbolic b33_46: bool = | true -> 0.01p | false -> 0.99p
-symbolic b26_43: bool = | true -> 0.01p | false -> 0.99p
-symbolic b9_12: bool = | true -> 0.01p | false -> 0.99p
-symbolic b9_33: bool = | true -> 0.01p | false -> 0.99p
-symbolic b10_27: bool = | true -> 0.01p | false -> 0.99p
-symbolic b3_10: bool = | true -> 0.01p | false -> 0.99p
-symbolic b3_12: bool = | true -> 0.01p | false -> 0.99p
-symbolic b15_33: bool = | true -> 0.01p | false -> 0.99p
-symbolic b6_33: bool = | true -> 0.01p | false -> 0.99p
-symbolic b12_23: bool = | true -> 0.01p | false -> 0.99p
-symbolic b7_27: bool = | true -> 0.01p | false -> 0.99p
-symbolic b27_40: bool = | true -> 0.01p | false -> 0.99p
-symbolic b23_42: bool = | true -> 0.01p | false -> 0.99p
-symbolic b19_23: bool = | true -> 0.01p | false -> 0.99p
-symbolic b7_23: bool = | true -> 0.01p | false -> 0.99p
-symbolic b7_16: bool = | true -> 0.01p | false -> 0.99p
-symbolic b14_42: bool = | true -> 0.01p | false -> 0.99p
-symbolic b19_20: bool = | true -> 0.01p | false -> 0.99p
-symbolic b16_34: bool = | true -> 0.01p | false -> 0.99p
-symbolic b16_20: bool = | true -> 0.01p | false -> 0.99p
+symbolic b0_37: bool = | true -> 0.05p | false -> 0.95p
+symbolic b0_21: bool = | true -> 0.05p | false -> 0.95p
+symbolic b0_13: bool = | true -> 0.05p | false -> 0.95p
+symbolic b0_31: bool = | true -> 0.05p | false -> 0.95p
+symbolic b0_17: bool = | true -> 0.05p | false -> 0.95p
+symbolic b24_37: bool = | true -> 0.05p | false -> 0.95p
+symbolic b1_37: bool = | true -> 0.05p | false -> 0.95p
+symbolic b21_37: bool = | true -> 0.05p | false -> 0.95p
+symbolic b11_37: bool = | true -> 0.05p | false -> 0.95p
+symbolic b21_41: bool = | true -> 0.05p | false -> 0.95p
+symbolic b21_22: bool = | true -> 0.05p | false -> 0.95p
+symbolic b21_45: bool = | true -> 0.05p | false -> 0.95p
+symbolic b5_21: bool = | true -> 0.05p | false -> 0.95p
+symbolic b4_21: bool = | true -> 0.05p | false -> 0.95p
+symbolic b21_32: bool = | true -> 0.05p | false -> 0.95p
+symbolic b17_21: bool = | true -> 0.05p | false -> 0.95p
+symbolic b17_44: bool = | true -> 0.05p | false -> 0.95p
+symbolic b17_32: bool = | true -> 0.05p | false -> 0.95p
+symbolic b17_45: bool = | true -> 0.05p | false -> 0.95p
+symbolic b8_24: bool = | true -> 0.05p | false -> 0.95p
+symbolic b1_11: bool = | true -> 0.05p | false -> 0.95p
+symbolic b1_38: bool = | true -> 0.05p | false -> 0.95p
+symbolic b1_30: bool = | true -> 0.05p | false -> 0.95p
+symbolic b1_18: bool = | true -> 0.05p | false -> 0.95p
+symbolic b1_39: bool = | true -> 0.05p | false -> 0.95p
+symbolic b11_46: bool = | true -> 0.05p | false -> 0.95p
+symbolic b41_43: bool = | true -> 0.05p | false -> 0.95p
+symbolic b9_45: bool = | true -> 0.05p | false -> 0.95p
+symbolic b2_45: bool = | true -> 0.05p | false -> 0.95p
+symbolic b10_45: bool = | true -> 0.05p | false -> 0.95p
+symbolic b43_45: bool = | true -> 0.05p | false -> 0.95p
+symbolic b3_45: bool = | true -> 0.05p | false -> 0.95p
+symbolic b29_45: bool = | true -> 0.05p | false -> 0.95p
+symbolic b30_45: bool = | true -> 0.05p | false -> 0.95p
+symbolic b8_46: bool = | true -> 0.05p | false -> 0.95p
+symbolic b8_35: bool = | true -> 0.05p | false -> 0.95p
+symbolic b30_33: bool = | true -> 0.05p | false -> 0.95p
+symbolic b15_30: bool = | true -> 0.05p | false -> 0.95p
+symbolic b30_36: bool = | true -> 0.05p | false -> 0.95p
+symbolic b18_48: bool = | true -> 0.05p | false -> 0.95p
+symbolic b18_47: bool = | true -> 0.05p | false -> 0.95p
+symbolic b18_43: bool = | true -> 0.05p | false -> 0.95p
+symbolic b28_46: bool = | true -> 0.05p | false -> 0.95p
+symbolic b25_46: bool = | true -> 0.05p | false -> 0.95p
+symbolic b33_46: bool = | true -> 0.05p | false -> 0.95p
+symbolic b26_43: bool = | true -> 0.05p | false -> 0.95p
+symbolic b9_12: bool = | true -> 0.05p | false -> 0.95p
+symbolic b9_33: bool = | true -> 0.05p | false -> 0.95p
+symbolic b10_27: bool = | true -> 0.05p | false -> 0.95p
+symbolic b3_10: bool = | true -> 0.05p | false -> 0.95p
+symbolic b3_12: bool = | true -> 0.05p | false -> 0.95p
+symbolic b15_33: bool = | true -> 0.05p | false -> 0.95p
+symbolic b6_33: bool = | true -> 0.05p | false -> 0.95p
+symbolic b12_23: bool = | true -> 0.05p | false -> 0.95p
+symbolic b7_27: bool = | true -> 0.05p | false -> 0.95p
+symbolic b27_40: bool = | true -> 0.05p | false -> 0.95p
+symbolic b23_42: bool = | true -> 0.05p | false -> 0.95p
+symbolic b19_23: bool = | true -> 0.05p | false -> 0.95p
+symbolic b7_23: bool = | true -> 0.05p | false -> 0.95p
+symbolic b7_16: bool = | true -> 0.05p | false -> 0.95p
+symbolic b14_42: bool = | true -> 0.05p | false -> 0.95p
+symbolic b19_20: bool = | true -> 0.05p | false -> 0.95p
+symbolic b16_34: bool = | true -> 0.05p | false -> 0.95p
+symbolic b16_20: bool = | true -> 0.05p | false -> 0.95p
 
 let isFailed e = 
   match e with
@@ -199,17 +199,65 @@ let isFailed e =
 let mergeLinkFaults u (x : [M]attribute) (y : [M]attribute) =
   merge u x y
 
-let transLinkFaults e (x : [M]attribute) =
+let transLinkFaults d e (x : [M]attribute) =
   if isFailed e then
     {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  else trans e x
+  else trans d e x
 
-let initLinkFaults u = init u 
+let initLinkFaults d u = init d u 
 
-let linkFaults = solution(initLinkFaults, transLinkFaults, mergeLinkFaults)
+let d = (200.1.31.0/24)
+
+let linkFaults = solution(initLinkFaults d, transLinkFaults d, mergeLinkFaults)
 
 let reachable u =
   match linkFaults[u].selected with | None -> false | _ -> true
 
-assert(reachable 3n, 0.3p)
-assert(reachable 1n || reachable 2n, 0.1p)
+assert(reachable 1n, 0.99p)
+assert(reachable 2n, 0.99p)
+assert(reachable 3n, 0.99p)
+assert(reachable 4n, 0.99p)
+assert(reachable 5n, 0.99p)
+assert(reachable 6n, 0.99p)
+assert(reachable 7n, 0.99p)
+assert(reachable 8n, 0.99p)
+assert(reachable 9n, 0.99p)
+assert(reachable 10n, 0.99p)
+assert(reachable 11n, 0.99p)
+assert(reachable 12n, 0.99p)
+assert(reachable 13n, 0.99p)
+assert(reachable 14n, 0.99p)
+assert(reachable 15n, 0.99p)
+assert(reachable 16n, 0.99p)
+assert(reachable 17n, 0.99p)
+assert(reachable 18n, 0.99p)
+assert(reachable 19n, 0.99p)
+assert(reachable 20n, 0.99p)
+assert(reachable 21n, 0.99p)
+assert(reachable 22n, 0.99p)
+assert(reachable 23n, 0.99p)
+assert(reachable 24n, 0.99p)
+assert(reachable 25n, 0.99p)
+assert(reachable 26n, 0.99p)
+assert(reachable 27n, 0.99p)
+assert(reachable 28n, 0.99p)
+assert(reachable 29n, 0.99p)
+assert(reachable 30n, 0.99p)
+assert(reachable 31n, 0.99p)
+assert(reachable 32n, 0.99p)
+assert(reachable 33n, 0.99p)
+assert(reachable 34n, 0.99p)
+assert(reachable 35n, 0.99p)
+assert(reachable 36n, 0.99p)
+assert(reachable 37n, 0.99p)
+assert(reachable 38n, 0.99p)
+assert(reachable 39n, 0.99p)
+assert(reachable 40n, 0.99p)
+assert(reachable 41n, 0.99p)
+assert(reachable 42n, 0.99p)
+assert(reachable 43n, 0.99p)
+assert(reachable 44n, 0.99p)
+assert(reachable 45n, 0.99p)
+assert(reachable 46n, 0.99p)
+assert(reachable 47n, 0.99p)
+assert(reachable 48n, 0.99p)

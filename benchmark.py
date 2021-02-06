@@ -67,6 +67,8 @@ def parse_output(filename, ro, so, lines):
             stats.update({'merge_time': float(ls[1])})
         elif ls[0] == "Native simulation took":
             stats.update({'simulation_time': float(ls[1])})
+        elif ls[0] == "Time to check assertions took":
+            stats.update({'assertion_time': float(ls[1])})
         elif ls[0] == "Peak number of nodes":
             stats.update({'peak_nodes': float(ls[1])})
         elif ls[0] == "Time for garbage collection":
@@ -80,7 +82,7 @@ def parse_output(filename, ro, so, lines):
 
 def print_output(filename, stats):
     with open(filename + '.csv', 'w', newline='') as csvfile:
-        fieldnames = ['benchmark', 'reordering', 'sim', 'skips', 'merge_calls', 'transfer_calls', 'transfer_time', 'merge_time', 'simulation_time', 'peak_nodes', 'gc_time', 'reordering_time', 'cudd_memory']
+        fieldnames = ['benchmark', 'reordering', 'sim', 'skips', 'merge_calls', 'transfer_calls', 'transfer_time', 'merge_time', 'simulation_time', 'assertion_time', 'peak_nodes', 'gc_time', 'reordering_time', 'cudd_memory']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames,restval='')
 
         writer.writeheader()
@@ -93,7 +95,7 @@ def timeout_output(filename, ro, so):
     if so != "":
         skips = so.split(' ')[2] 
         simulator = so.split(' ')[0]
-    {'benchmark':filename, 'reordering':ro, 'sim':simulator, 'skips':skips, 'merge_calls':'', 'transfer_calls':'', 'transfer_time':'', 'merge_time':'', 'simulation_time':'', 'peak_nodes':'', 'gc_time':'', 'reordering_time':'', 'cudd_memory':''}
+    {'benchmark':filename, 'reordering':(reordering_toString(ro)), 'sim':simulator_toString(simulator), 'skips':skips, 'merge_calls':'', 'transfer_calls':'', 'transfer_time':'', 'merge_time':'', 'simulation_time':'', 'assertion_time':'' 'peak_nodes':'', 'gc_time':'', 'reordering_time':'', 'cudd_memory':''}
 
 
 def start_benchmark(folder, filename):
@@ -109,6 +111,7 @@ def start_benchmark(folder, filename):
                 benchStats = parse_output(filename, ro, so, iter(benchProcess.stdout.readline,''))
                 sims.append(benchStats)
             except TimeoutError:
+                sims.append(timeout_output(filename, ro, so))
                 benchProcess.kill()
     print_output(filename, sims)
 
