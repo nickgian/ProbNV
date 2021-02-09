@@ -537,10 +537,8 @@ let compile_decl decl =
               (* Printf.printf "Solution type: %s\n" (Printing.ty_to_string attr); *)
               let attr_id = get_fresh_type_id type_store attr in
               Printf.sprintf
-                "let attr_eq x y = %s\n\n
-                let %s = SIM.simulate_solve record_fns (%d) (\"%s\") (%s) \
+                "let %s = SIM.simulate_solve record_fns (%d) (\"%s\") (%s) \
                  (%s) (%s)"
-                (attr_ty_to_equality attr "x" "y")
                 (varname x) attr_id (Var.name x)
                 (exp_to_ocaml_string solve.init)
                 (exp_to_ocaml_string solve.trans)
