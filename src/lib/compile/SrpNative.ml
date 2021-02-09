@@ -186,6 +186,8 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
     match QueueSet.pop q with
     | None -> s
     | Some (next, rest) ->
+        (* (if (Cudd.Man.get_node_count BddUtils.mgr > 1000000) then
+          BddUtils.set_reordering (Cmdline.get_cfg ()).reordering); *)
         let s', more = simulate_step trans merge s next in
         simulate_init trans merge (s', QueueSet.add_all rest more)
 
@@ -211,6 +213,8 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
   let merge_time = ref 0.0
 
   let simulate_solve record_fns attr_ty_id name init trans merge =
+    let mgr = (BddUtils.mgr) in
+    Cudd.Man.group mgr 0 !BddMap.svars Cudd.Man.MTR_DEFAULT;
     let s = create_state (AdjGraph.nb_vertex G.graph) init in
     let trans e x =
       incr transfers;
@@ -413,7 +417,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
                   AdjGraph.VertexMap.add v n_incoming_attribute inbox_u'
                 in
                 (*update the todo bit if the node's solution changed.*)
-                ( change_bit || not ( (Obj.magic labu) = (Obj.magic u_new_attribute)),
+                ( change_bit || not (Mtbddc.is_equal (Obj.magic labu) (Obj.magic u_new_attribute)),
                   AdjGraph.VertexMap.add u
                     { labels = u_new_attribute; received = inbox_u' }
                     local ))
@@ -509,6 +513,8 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     ref []
 
   let simulate_solve record_fns attr_ty_id name init trans merge =
+    let mgr = (BddUtils.mgr) in
+    Cudd.Man.group mgr 0 !BddMap.svars Cudd.Man.MTR_DEFAULT;
     let local, global = create_initial_state (AdjGraph.nb_vertex G.graph) in
     let trans e x =
       incr transfers;
