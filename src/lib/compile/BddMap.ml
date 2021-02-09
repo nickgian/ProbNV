@@ -11,7 +11,9 @@ open Collections
 (* Manager for total maps *)
 let mgr = Man.make_v ()
 
-let tbl = Obj.magic (Mtbddc.make_table ~hash:Hashtbl.hash ~equal:( = ))
+(* let tbl = Obj.magic (Mtbddc.make_table ~hash:Hashtbl.hash ~equal:( = )) *)
+
+let tbl = BddUtils.tbl
 
 let set_size sz =
   let num_vars = Man.get_bddvar_nb mgr in

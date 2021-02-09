@@ -4,7 +4,6 @@ open Cudd
 open ProbNv_utils
 open ProbNv_datastructures
 open Batteries
-open Parmap
 
 type distribution = float Mtbddc.t
 
@@ -236,6 +235,41 @@ let rec computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds =
       if v then ptrue := !ptrue +. cubeProbability cube bounds else ())
     assertion;
   !ptrue
+
+  let memoize =
+    let tbl = Hashtbl.create 1000 in
+    fun f -> 
+    let rec g x =
+      try
+        Hashtbl.find tbl x
+      with
+      Not_found ->
+        let res = f g x in
+          Hashtbl.add tbl x res;
+          res
+    in
+      g
+
+  (* This function will only work for boolean symbolics.
+      In the future we might want to adapt it to any type of symbolics *)
+  let computeTrueProbabilityBDD (assertion : bool Cudd.Mtbddc.t) distrs =
+    let trueBdd = Mtbddc.guard_of_leaf tbl assertion true in
+    let rec aux self guard =
+      match Bdd.inspect guard with
+      | Bool true -> 1.0
+      | Bool false -> 0.0
+      | Ite (i, t, e) ->
+         let ptrue, pfalse = 
+          match Mtbddc.inspect (BatMap.Int.find i distrs) with
+          | Leaf a -> 
+            let p = Mtbddc.get a in (p, p)
+          | Ite(_, pt, pf) -> (Mtbddc.dval pt, Mtbddc.dval pf)
+        in
+          (ptrue *. self t) +. (pfalse *. self e)
+    in
+    let memoized_aux = memoize aux in
+    memoized_aux trueBdd
+
 
 (* let rec computeTrueProbabilityPar (assertion : bool Cudd.Mtbddc.t) bounds =
   let cubes = ref [] in

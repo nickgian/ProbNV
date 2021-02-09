@@ -1,6 +1,7 @@
 include "bics_control.nv"
 
-    symbolic b0: bool = | true -> 0.05p | false -> 0.95p
+
+          symbolic b0: bool = | true -> 0.05p | false -> 0.95p
           symbolic b1: bool = | true -> 0.05p | false -> 0.95p
           symbolic b2: bool = | true -> 0.05p | false -> 0.95p
           symbolic b3: bool = | true -> 0.05p | false -> 0.95p

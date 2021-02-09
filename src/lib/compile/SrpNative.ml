@@ -124,7 +124,7 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
           let n_new_attribute =
             merge neighbor n_old_attribute n_incoming_attribute
           in
-          if n_old_attribute = n_new_attribute then
+          if Mtbddc.is_equal (Obj.magic n_old_attribute) (Obj.magic n_new_attribute) then
             ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
               todo )
           else
@@ -144,8 +144,9 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
             merge neighbor n_incoming_attribute n_incoming_attribute
           in
           (*if the merge between new and old route from origin is equal to the new route from origin*)
-          if compare_routes = dummy_new then
-            (* incr incr_merges; *)
+          if Mtbddc.is_equal (Obj.magic compare_routes) (Obj.magic dummy_new) then
+            (
+              (* incr incr_merges; *)
             (*we can incrementally compute in this case*)
             let n_new_attribute =
               merge neighbor n_old_attribute n_incoming_attribute
@@ -154,12 +155,12 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
               AdjGraph.VertexMap.add origin n_incoming_attribute n_received
             in
             (*update the todo list if the node's solution changed.*)
-            if n_old_attribute = n_new_attribute then
+            if Mtbddc.is_equal (Obj.magic n_old_attribute) (Obj.magic n_new_attribute) then
               ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
                 todo )
             else
               ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
-                neighbor :: todo )
+                neighbor :: todo ))
           else
             (* In this case, we need to do a full merge of all received routes *)
             let best =
@@ -168,7 +169,7 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
                 n_received n_incoming_attribute
             in
             let newTodo =
-              if n_old_attribute = best then todo else neighbor :: todo
+              if Mtbddc.is_equal (Obj.magic n_old_attribute) (Obj.magic best) then todo else neighbor :: todo
             in
             (*add the new received route for n from origin*)
             let n_received =
@@ -385,7 +386,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
               in
               (*compute the merge and decide whether best route changed and it needs to be propagated*)
               let n_new_attribute = merge u labu n_incoming_attribute in
-              ( change_bit || labu <> n_new_attribute,
+              ( change_bit || not (Mtbddc.is_equal (Obj.magic labu) (Obj.magic n_new_attribute)),
                 AdjGraph.VertexMap.add u
                   { labels = n_new_attribute; received = inbox_u' }
                   local )
@@ -403,8 +404,8 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
                 merge u n_incoming_attribute n_incoming_attribute
               in
               (*if the merge between new and old route from origin is equal to the new route from v*)
-              if compare_routes = dummy_new then
-                (* incr incr_merges; *)
+              if (Obj.magic compare_routes) = (Obj.magic dummy_new) then
+                (incr incr_merges;
                 (*we can incrementally compute in this case*)
                 let u_new_attribute = merge u labu n_incoming_attribute in
                 (* add the new message from v to u's inbox *)
@@ -412,10 +413,10 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
                   AdjGraph.VertexMap.add v n_incoming_attribute inbox_u'
                 in
                 (*update the todo bit if the node's solution changed.*)
-                ( change_bit || labu <> u_new_attribute,
+                ( change_bit || not ( (Obj.magic labu) = (Obj.magic u_new_attribute)),
                   AdjGraph.VertexMap.add u
                     { labels = u_new_attribute; received = inbox_u' }
-                    local )
+                    local ))
               else
                 (* In this case, we need to do a full merge of all received routes *)
                 (*TODO: maybe this isn't the most efficient way to implement this, we should do the full merge once
@@ -429,7 +430,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
                 let inbox_u' =
                   AdjGraph.VertexMap.add v n_incoming_attribute inbox_u'
                 in
-                ( change_bit || labu <> u_new_attribute,
+                ( change_bit || not (Mtbddc.is_equal (Obj.magic labu) (Obj.magic u_new_attribute)),
                   AdjGraph.VertexMap.add u
                     { labels = u_new_attribute; received = inbox_u' }
                     local ) )
@@ -574,9 +575,21 @@ let build_solution record_fns (vals, ty) =
       ) vals
   else AdjGraph.VertexMap.empty
 
+(* Two modes of computation until we implement fast prob for all type of symbolics *)
 let check_assertion (a : bool Cudd.Mtbddc.t * float) bounds =
-  let prob = BddUtils.computeTrueProbability (fst a) bounds in
-  (prob >= snd a, prob)
+  let fastProb, distrs = List.fold_left (fun (accb, acc) (x, _, ty, xdistr) ->
+        if accb && Syntax.(ty.typ) = Syntax.TBool then
+          (true, BatMap.Int.add x xdistr acc)
+        else
+          (false, acc)
+      ) (true, BatMap.Int.empty) bounds
+  in
+  if fastProb then 
+    let prob = BddUtils.computeTrueProbabilityBDD (fst a) distrs in
+    (prob >= snd a, prob)
+  else
+    let prob = BddUtils.computeTrueProbability (fst a) bounds in
+    (prob >= snd a, prob)
 
 let build_solutions nodes record_fns
     (sols : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list)

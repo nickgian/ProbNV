@@ -46,4 +46,7 @@ val computeTrueProbability :
   (int * int * ProbNv_lang.Syntax.ty * float Cudd.Mtbddc.t) list ->
   float
 
+val computeTrueProbabilityBDD:
+  bool Cudd.Mtbddc.t -> float Cudd.Mtbddc.t BatMap.Int.t -> float
+
 val get_statistics : unit -> unit

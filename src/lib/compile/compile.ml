@@ -490,6 +490,27 @@ and branch_to_ocaml_string (p, e) =
     (pattern_to_ocaml_string p)
     (exp_to_ocaml_string e)
 
+let rec attr_ty_to_equality ty x y =
+  match ty.typ with
+  | TVar _ | QVar _ -> failwith "Expected attribute type to be a resolved type"
+  | TBool | TInt _ | TNode | TEdge -> Printf.sprintf "%s = %s" x y;
+  | TMap _ -> Printf.sprintf "Cudd.Mtbddc.is_equal (%s) (%s)" x y;
+  | TTuple ts ->
+    let n = List.length ts in
+    let recEq = List.mapi (fun i ty -> attr_ty_to_equality ty 
+          (Printf.sprintf "((%s).%s)" x (proj_rec i n))
+          (Printf.sprintf "((%s).%s)" y (proj_rec i n))) ts
+    in
+    Collections.printList (fun s -> s) recEq "(" " && " ")"
+  | TOption ty ->
+    let recEq = attr_ty_to_equality ty "x" "y" in
+    Printf.sprintf "(match %s, %s with\n\
+      | None, None -> true\n\
+      | Some x, Some y -> %s\n\
+      | _, _ -> false)" x y recEq
+  | TArrow _ | TRecord _ -> failwith "Cannot be in attribute type"
+
+
 (** Translate a declaration to an OCaml program*)
 let compile_decl decl =
   match decl with
@@ -513,104 +534,13 @@ let compile_decl decl =
               (*NOTE: this is just the attribute type, not including the map from nodes to attributes *)
               (*need to register node types manually! *)
               ignore (get_fresh_type_id type_store (concrete TNode));
-              Printf.printf "Solution type: %s\n" (Printing.ty_to_string attr);
+              (* Printf.printf "Solution type: %s\n" (Printing.ty_to_string attr); *)
               let attr_id = get_fresh_type_id type_store attr in
-
-              (* ignore (exp_to_ocaml_string solve.init);
-                 ignore (exp_to_ocaml_string solve.trans);
-                 ignore (exp_to_ocaml_string solve.merge);
-                 Printf.sprintf
-                   "let s_120 = SIM.simulate_solve record_fns (2) (\"s\") ((fun \
-                    u_121 -> (BddFunc.toMap ~value:((init_118) (u_121))))) ((fun \
-                    e_122 -> (fun x_123 -> (Obj.magic (let op_key = (1, \
-                    (trans_108,e_122)) in\n\
-                   \                 BddFunc.apply1 ~op_key:(Obj.magic op_key) \
-                    ~f:(fun x_123 -> ((((trans_108) (e_122))) (x_123))) \
-                    ~arg1:(Obj.magic x_123)))))) ((fun u_113 -> (fun r1_114 -> \
-                    (fun r2_115 -> (Obj.magic (let op_key = (0, ()) in\n\
-                   \              let arg2 = BddFunc.apply2 ~op_key:(Obj.magic \
-                    (3, ())) ~f:(fun b -> fun x -> if b then None else x) \
-                    ~arg1:(Obj.magic (BddFunc.wrap_mtbdd (((isFailed_106) \
-                    (u_113))))) ~arg2:(Obj.magic r2_115) in\n\
-                   \              let arg3 = BddFunc.apply2 ~op_key:(Obj.magic \
-                    (4, ())) ~f:(fun b -> fun x -> if b then None else x) \
-                    ~arg1:(Obj.magic (BddFunc.wrap_mtbdd (((isFailed_106) \
-                    (u_113))))) ~arg2:(Obj.magic r1_114) in\n\n\
-                   \                               BddFunc.apply2 \
-                    ~op_key:(Obj.magic op_key) ~f:(fun r2_42 -> (fun r1_41 ->\n\
-                   \              (match {p0__2 = r1_41; p1__2 = r2_42} with \n\
-                   \              | {p0__2 = _; p1__2 = None} -> r1_41\n\
-                   \             | {p0__2 = None; p1__2 = _} -> r2_42\n\
-                   \             | {p0__2 = Some a_59; p1__2 = Some b_60} -> (if \
-                    (a_59 <= b_60) then\n\
-                   \              Some (a_59) else\n\
-                   \              Some (b_60))\n\
-                   \             ))) ~arg1:(Obj.magic arg2) ~arg2:(Obj.magic \
-                    arg3)))))))" *)
-              (* Printf.sprintf
-                 "let s_47 = SIM.simulate_solve record_fns (2) (\"s\") ((fun \
-                  u_48 -> (BddFunc.toMap ~value:((init_45) (u_48))))) ((fun \
-                  e_49 -> (fun x_50 -> (Obj.magic (let op_key = (1, \
-                  (trans_35,e_49)) in\n\
-                 \              BddFunc.apply1 ~op_key:(Obj.magic op_key) \
-                  ~f:(fun x_50 -> ((((trans_35) (e_49))) (x_50))) \
-                  ~arg1:(Obj.magic x_50)))))) \n\
-                 \              \n\
-                 \              ((fun u_40 -> (fun r1_41 -> (fun r2_42 -> \
-                  (Obj.magic (let op_key = (0, ()) in\n\
-                 \              let arg2 = BddFunc.apply2 ~op_key:(Obj.magic \
-                  (3, ())) ~f:(fun b -> fun x -> if b then None else x) \
-                  ~arg1:(Obj.magic (BddFunc.wrap_mtbdd (((isFailed_33) \
-                  (u_40))))) ~arg2:(Obj.magic r2_42) in\n\
-                 \              let arg3 = BddFunc.apply2 ~op_key:(Obj.magic \
-                  (4, ())) ~f:(fun b -> fun x -> if b then None else x) \
-                  ~arg1:(Obj.magic (BddFunc.wrap_mtbdd (((isFailed_33) \
-                  (u_40))))) ~arg2:(Obj.magic r1_41) in\n\
-                 \            \n\
-                 \              BddFunc.apply2 ~op_key:(Obj.magic op_key) \
-                  ~f:(fun r2_42 -> (fun r1_41 ->\n\
-                 \              (match {p0__2 = r1_41; p1__2 = r2_42} with \n\
-                 \              | {p0__2 = _; p1__2 = None} -> r1_41\n\
-                 \             | {p0__2 = None; p1__2 = _} -> r2_42\n\
-                 \             | {p0__2 = Some a_59; p1__2 = Some b_60} -> (if \
-                  (a_59 <= b_60) then\n\
-                 \              Some (a_59) else\n\
-                 \              Some (b_60))\n\
-                 \             ))) ~arg1:(Obj.magic arg2) ~arg2:(Obj.magic \
-                  arg3)))))))" *)
-              (* Printf.sprintf
-                 "let s_63 = SIM.simulate_solve record_fns (2) (\"s\")\n\
-                 \                     ((fun u_64 -> (BddFunc.toMap \
-                  ~value:((init_61) (u_64)))))\n\
-                 \                     ((fun e_65 -> (fun x_66 -> (Obj.magic \
-                  (let op_key = (1, (trans_51,e_65)) in\n\
-                 \                  BddFunc.apply1 ~op_key:(Obj.magic op_key) \
-                  ~f:(fun x_66 -> ((((trans_51) (e_65))) (x_66))) \
-                  ~arg1:(Obj.magic x_66))))))\n\n\
-                 \                  ((fun u_56 -> (fun r1_57 -> (fun r2_58 -> \
-                  (Obj.magic (let op_key = (0, ()) in\n\
-                 \                  let arg2 = BddFunc.apply2 \
-                  ~op_key:(Obj.magic (3, ())) ~f:(fun b -> fun x -> if b then \
-                  None else x) ~arg1:(Obj.magic (BddFunc.wrap_mtbdd \
-                  (((isFailed_49) (u_56))))) ~arg2:(Obj.magic r2_58) in\n\
-                 \                  let arg3 = BddFunc.apply2 \
-                  ~op_key:(Obj.magic (4, ())) ~f:(fun b -> fun x -> if b then \
-                  None else x) ~arg1:(Obj.magic (BddFunc.wrap_mtbdd \
-                  (((isFailed_49) (u_56))))) ~arg2:(Obj.magic r1_57) in\n\
-                 \                  BddFunc.apply2 ~op_key:(Obj.magic op_key) \
-                  ~f:(fun r2_58 -> (fun r1_57 ->\n\
-                 \                  (match {p0__2 = r1_57; p1__2 = r2_58} with\n\
-                 \                  | {p0__2 = _; p1__2 = None} -> r1_57\n\
-                 \                 | {p0__2 = None; p1__2 = _} -> r2_58\n\
-                 \                 | {p0__2 = Some a_59; p1__2 = Some b_60} -> \
-                  (if (a_59 <= b_60) then\n\
-                 \                  Some (a_59) else\n\
-                 \                  Some (b_60))\n\
-                 \                 ))) ~arg1:(Obj.magic arg2) ~arg2:(Obj.magic \
-                  arg3)))))))" *)
               Printf.sprintf
-                "let %s = SIM.simulate_solve record_fns (%d) (\"%s\") (%s) \
+                "let attr_eq x y = %s\n\n
+                let %s = SIM.simulate_solve record_fns (%d) (\"%s\") (%s) \
                  (%s) (%s)"
+                (attr_ty_to_equality attr "x" "y")
                 (varname x) attr_id (Var.name x)
                 (exp_to_ocaml_string solve.init)
                 (exp_to_ocaml_string solve.trans)

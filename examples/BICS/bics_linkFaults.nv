@@ -215,7 +215,7 @@ let reachable u =
   match linkFaults[u].selected with | None -> false | _ -> true
 
                                                              assert(reachable 1n, 0.99p)
-                                                             assert(reachable 2n, 0.99p)
+                                      (*                       assert(reachable 2n, 0.99p)
                                                              assert(reachable 3n, 0.99p)
                                                              assert(reachable 4n, 0.99p)
                                                              assert(reachable 5n, 0.99p)
@@ -261,4 +261,4 @@ let reachable u =
                                                              assert(reachable 45n, 0.99p)
                                                              assert(reachable 46n, 0.99p)
                                                              assert(reachable 47n, 0.99p)
-                                                             assert(reachable 48n, 0.99p)
+                                                             assert(reachable 48n, 0.99p)*)
