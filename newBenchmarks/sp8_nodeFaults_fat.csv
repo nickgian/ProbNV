@@ -1,0 +1,21 @@
+benchmark,reordering,sim,skips,merge_calls,transfer_calls,transfer_time,merge_time,simulation_time,assertion_time,peak_nodes,gc_time,reordering_time,cudd_memory
+sp8_nodeFaults_fat,disabled,Classic Simulator,0,8228.0,3084.0,35.693898,55.938643,93.351755,4.051378,24583188.0,0.22,0.0,1842.077522277832
+sp8_nodeFaults_fat,disabled,New Simulator,0,13892.0,4972.0,597.535883,1226.356669,1826.726972,14.212103,529555432.0,0.19,0.0,21670.729194641113
+sp8_nodeFaults_fat,disabled,New Simulator,1,0,0,0,0,0,0,0,0,0,0
+sp8_nodeFaults_fat,disabled,New Simulator,3,0,0,0,0,0,0,0,0,0,0
+sp8_nodeFaults_fat,disabled,New Simulator,6,0,0,0,0,0,0,0,0,0,0
+sp8_nodeFaults_fat,WINDOW2,Classic Simulator,0,8228.0,3084.0,40.073495,70.503059,112.593287,3.180459,12387662.0,2.48,7.22,925.2620010375977
+sp8_nodeFaults_fat,WINDOW2,New Simulator,0,13892.0,4972.0,715.313048,1472.728107,2190.520213,15.016503,160191346.0,68.64,165.25,9478.664894104004
+sp8_nodeFaults_fat,WINDOW2,New Simulator,1,0,0,0,0,0,0,0,0,0,0
+sp8_nodeFaults_fat,WINDOW2,New Simulator,3,0,0,0,0,0,0,0,0,0,0
+sp8_nodeFaults_fat,WINDOW2,New Simulator,6,0,0,0,0,0,0,0,0,0,0
+sp8_nodeFaults_fat,WINDOW2_CONV,Classic Simulator,0,8228.0,3084.0,40.252048,70.600073,112.870889,3.187073,12387662.0,2.49,7.21,925.2620010375977
+sp8_nodeFaults_fat,WINDOW2_CONV,New Simulator,0,13892.0,4972.0,710.904972,1509.077367,2221.65546,2.468414,158403868.0,67.94,183.01,9427.077644348145
+sp8_nodeFaults_fat,WINDOW2_CONV,New Simulator,1,0,0,0,0,0,0,0,0,0,0
+sp8_nodeFaults_fat,WINDOW2_CONV,New Simulator,3,0,0,0,0,0,0,0,0,0,0
+sp8_nodeFaults_fat,WINDOW2_CONV,New Simulator,6,0,0,0,0,0,0,0,0,0,0
+sp8_nodeFaults_fat,WINDOW3,Classic Simulator,0,8228.0,3084.0,40.229439,70.66971,112.921769,3.234528,12387662.0,2.5,7.26,925.2620010375977
+sp8_nodeFaults_fat,WINDOW3,New Simulator,0,13892.0,4972.0,714.764012,1509.960799,2226.399412,2.444631,158403868.0,67.85,183.43,9427.077644348145
+sp8_nodeFaults_fat,WINDOW3,New Simulator,1,0,0,0,0,0,0,0,0,0,0
+sp8_nodeFaults_fat,WINDOW3,New Simulator,3,0,0,0,0,0,0,0,0,0,0
+sp8_nodeFaults_fat,WINDOW3,New Simulator,6,0,0,0,0,0,0,0,0,0,0
