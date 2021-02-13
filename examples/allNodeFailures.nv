@@ -113,21 +113,19 @@ let isFailed u =
     | 19n -> b19
 
 let trans e route = 
+  if (match e with | a~b -> b = f1 || b = f2 || b = f3) then 
     match route with
     | None -> None
     | Some r -> Some (r+1)
 
 let merge u (r1 : [M](option[int])) (r2: [M](option[int])) =
-    if isFailed u then
-        None
-    else
-        (match (r1,r2) with
-         | (_, None) -> r1
-         | (None, _) -> r2
-         | (Some a, Some b) -> if a <= b then Some a else Some b)
+      (match (r1,r2) with
+        | (_, None) -> r1
+        | (None, _) -> r2
+        | (Some a, Some b) -> if a <= b then Some a else Some b)
 
 let init u =
-  if isFailed u then None
+  if (match e with | a~b -> b = f1 || b = f2 || b = f3) then None
   else if u = 0n then Some 0 else None
 
 let s = solution(init, trans, merge)

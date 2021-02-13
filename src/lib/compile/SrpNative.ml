@@ -124,7 +124,11 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
           let n_new_attribute =
             merge neighbor n_old_attribute n_incoming_attribute
           in
-          if Mtbddc.is_equal (Obj.magic n_old_attribute) (Obj.magic n_new_attribute) then
+          if
+            Mtbddc.is_equal
+              (Obj.magic n_old_attribute)
+              (Obj.magic n_new_attribute)
+          then
             ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
               todo )
           else
@@ -144,9 +148,9 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
             merge neighbor n_incoming_attribute n_incoming_attribute
           in
           (*if the merge between new and old route from origin is equal to the new route from origin*)
-          if Mtbddc.is_equal (Obj.magic compare_routes) (Obj.magic dummy_new) then
-            (
-              (* incr incr_merges; *)
+          if Mtbddc.is_equal (Obj.magic compare_routes) (Obj.magic dummy_new)
+          then
+            (* incr incr_merges; *)
             (*we can incrementally compute in this case*)
             let n_new_attribute =
               merge neighbor n_old_attribute n_incoming_attribute
@@ -155,12 +159,16 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
               AdjGraph.VertexMap.add origin n_incoming_attribute n_received
             in
             (*update the todo list if the node's solution changed.*)
-            if Mtbddc.is_equal (Obj.magic n_old_attribute) (Obj.magic n_new_attribute) then
+            if
+              Mtbddc.is_equal
+                (Obj.magic n_old_attribute)
+                (Obj.magic n_new_attribute)
+            then
               ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
                 todo )
             else
               ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
-                neighbor :: todo ))
+                neighbor :: todo )
           else
             (* In this case, we need to do a full merge of all received routes *)
             let best =
@@ -169,7 +177,9 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
                 n_received n_incoming_attribute
             in
             let newTodo =
-              if Mtbddc.is_equal (Obj.magic n_old_attribute) (Obj.magic best) then todo else neighbor :: todo
+              if Mtbddc.is_equal (Obj.magic n_old_attribute) (Obj.magic best)
+              then todo
+              else neighbor :: todo
             in
             (*add the new received route for n from origin*)
             let n_received =
@@ -187,7 +197,7 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
     | None -> s
     | Some (next, rest) ->
         (* (if (Cudd.Man.get_node_count BddUtils.mgr > 1000000) then
-          BddUtils.set_reordering (Cmdline.get_cfg ()).reordering); *)
+           BddUtils.set_reordering (Cmdline.get_cfg ()).reordering); *)
         let s', more = simulate_step trans merge s next in
         simulate_init trans merge (s', QueueSet.add_all rest more)
 
@@ -213,7 +223,7 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
   let merge_time = ref 0.0
 
   let simulate_solve record_fns attr_ty_id name init trans merge =
-    let mgr = (BddUtils.mgr) in
+    let mgr = BddUtils.mgr in
     Cudd.Man.group mgr 0 !BddMap.svars Cudd.Man.MTR_DEFAULT;
     let s = create_state (AdjGraph.nb_vertex G.graph) init in
     let trans e x =
@@ -224,14 +234,15 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
       incr merges;
       Profile.time_profile_total merge_time (fun () -> merge u x y)
     in
-    let vals = match (Cmdline.get_cfg ()).bound with
-    | None -> 
-      simulate_init trans merge s |> AdjGraph.VertexMap.map (fun (_, v) -> v)
-    | Some b ->  
-      (fst @@ simulate_init_bound trans merge s b) |> 
-      AdjGraph.VertexMap.map (fun (_, v) -> v)
-      in
-
+    let vals =
+      match (Cmdline.get_cfg ()).bound with
+      | None ->
+          simulate_init trans merge s
+          |> AdjGraph.VertexMap.map (fun (_, v) -> v)
+      | Some b ->
+          fst @@ simulate_init_bound trans merge s b
+          |> AdjGraph.VertexMap.map (fun (_, v) -> v)
+    in
 
     Printf.printf "Number of incremental merges: %d\n" !incr_merges;
     Printf.printf "Number of calls to merge: %d\n" !merges;
@@ -390,7 +401,10 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
               in
               (*compute the merge and decide whether best route changed and it needs to be propagated*)
               let n_new_attribute = merge u labu n_incoming_attribute in
-              ( change_bit || not (Mtbddc.is_equal (Obj.magic labu) (Obj.magic n_new_attribute)),
+              ( change_bit
+                || not
+                     (Mtbddc.is_equal (Obj.magic labu)
+                        (Obj.magic n_new_attribute)),
                 AdjGraph.VertexMap.add u
                   { labels = n_new_attribute; received = inbox_u' }
                   local )
@@ -408,8 +422,8 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
                 merge u n_incoming_attribute n_incoming_attribute
               in
               (*if the merge between new and old route from origin is equal to the new route from v*)
-              if (Obj.magic compare_routes) = (Obj.magic dummy_new) then
-                (incr incr_merges;
+              if Obj.magic compare_routes = Obj.magic dummy_new then (
+                incr incr_merges;
                 (*we can incrementally compute in this case*)
                 let u_new_attribute = merge u labu n_incoming_attribute in
                 (* add the new message from v to u's inbox *)
@@ -417,10 +431,13 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
                   AdjGraph.VertexMap.add v n_incoming_attribute inbox_u'
                 in
                 (*update the todo bit if the node's solution changed.*)
-                ( change_bit || not (Mtbddc.is_equal (Obj.magic labu) (Obj.magic u_new_attribute)),
+                ( change_bit
+                  || not
+                       (Mtbddc.is_equal (Obj.magic labu)
+                          (Obj.magic u_new_attribute)),
                   AdjGraph.VertexMap.add u
                     { labels = u_new_attribute; received = inbox_u' }
-                    local ))
+                    local ) )
               else
                 (* In this case, we need to do a full merge of all received routes *)
                 (*TODO: maybe this isn't the most efficient way to implement this, we should do the full merge once
@@ -434,7 +451,10 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
                 let inbox_u' =
                   AdjGraph.VertexMap.add v n_incoming_attribute inbox_u'
                 in
-                ( change_bit || not (Mtbddc.is_equal (Obj.magic labu) (Obj.magic u_new_attribute)),
+                ( change_bit
+                  || not
+                       (Mtbddc.is_equal (Obj.magic labu)
+                          (Obj.magic u_new_attribute)),
                   AdjGraph.VertexMap.add u
                     { labels = u_new_attribute; received = inbox_u' }
                     local ) )
@@ -477,6 +497,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     | Some (x, s) -> if pred x then findMin pred s else Some x
 
   let skips = ref 0
+
   (* Process a node in the schedule *)
   let rec processNode next init trans merge local global i =
     (* Check the worklist for the nodes next should read messages from *)
@@ -513,7 +534,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     ref []
 
   let simulate_solve record_fns attr_ty_id name init trans merge =
-    let mgr = (BddUtils.mgr) in
+    let mgr = BddUtils.mgr in
     Cudd.Man.group mgr 0 !BddMap.svars Cudd.Man.MTR_DEFAULT;
     let local, global = create_initial_state (AdjGraph.nb_vertex G.graph) in
     let trans e x =
@@ -524,7 +545,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
       incr merges;
       Profile.time_profile_total merge_time (fun () -> merge u x y)
     in
-    skips := (Cmdline.get_cfg()).sim_skip;
+    skips := (Cmdline.get_cfg ()).sim_skip;
     let vals =
       simulate_init init trans merge global local
       |> AdjGraph.VertexMap.map (fun v -> v.labels)
@@ -569,33 +590,19 @@ end
 let ocaml_to_nv_value record_fns (attr_ty : Syntax.ty) v : Syntax.value =
   match Syntax.get_mode attr_ty with
   | Some Concrete -> Embeddings.embed_value record_fns attr_ty v
-  | Some Multivalue -> 
-    Embeddings.embed_multivalue record_fns attr_ty v
+  | Some Multivalue -> Embeddings.embed_multivalue record_fns attr_ty v
   | Some Symbolic -> failwith "Solution cannot be symbolic"
   | None -> failwith "No mode found"
 
 let build_solution record_fns (vals, ty) =
   if (Cmdline.get_cfg ()).verbose then
-    AdjGraph.VertexMap.map (fun v -> 
-      ocaml_to_nv_value record_fns ty v
-      ) vals
+    AdjGraph.VertexMap.map (fun v -> ocaml_to_nv_value record_fns ty v) vals
   else AdjGraph.VertexMap.empty
 
 (* Two modes of computation until we implement fast prob for all type of symbolics *)
 let check_assertion (a : bool Cudd.Mtbddc.t * float) bounds =
-  let fastProb, distrs = List.fold_left (fun (accb, acc) (x, _, ty, xdistr) ->
-        if accb && Syntax.(ty.typ) = Syntax.TBool then
-          (true, BatMap.Int.add x xdistr acc)
-        else
-          (false, acc)
-      ) (true, BatMap.Int.empty) bounds
-  in
-  if fastProb then 
-    let prob = BddUtils.computeTrueProbabilityBDD (fst a) distrs in
-    (prob >= snd a, prob)
-  else
-    let prob = BddUtils.computeTrueProbability (fst a) bounds in
-    (prob >= snd a, prob)
+  let prob = BddUtils.computeTrueProbability (fst a) bounds in
+  (prob >= snd a, prob)
 
 let build_solutions nodes record_fns
     (sols : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list)
@@ -605,8 +612,8 @@ let build_solutions nodes record_fns
   let symbolic_bounds = List.rev !BddUtils.vars_list in
   {
     assertions =
-      Profile.time_profile "Time to check assertions" 
-        (fun () -> List.map (fun a -> check_assertion a symbolic_bounds) assertions);
+      Profile.time_profile "Time to check assertions" (fun () ->
+          List.map (fun a -> check_assertion a symbolic_bounds) assertions);
     solves =
       List.map
         (fun (name, sol) ->

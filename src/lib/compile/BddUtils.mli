@@ -41,12 +41,17 @@ val tbool_to_bool : Cudd.Man.tbool -> bool
 
 val tbool_to_obool : Cudd.Man.tbool -> bool option
 
+val computeTrueProbabilityOld :
+  bool Cudd.Mtbddc.t ->
+  (int * int * ProbNv_lang.Syntax.ty * float Cudd.Mtbddc.t) list ->
+  float
+
 val computeTrueProbability :
   bool Cudd.Mtbddc.t ->
   (int * int * ProbNv_lang.Syntax.ty * float Cudd.Mtbddc.t) list ->
   float
 
-val computeTrueProbabilityBDD:
+val computeTrueProbabilityBDD :
   bool Cudd.Mtbddc.t -> float Cudd.Mtbddc.t BatMap.Int.t -> float
 
 val get_statistics : unit -> unit
