@@ -1,0 +1,21 @@
+benchmark,reordering,sim,skips,merge_calls,transfer_calls,transfer_time,merge_time,simulation_time,assertion_time,peak_nodes,gc_time,reordering_time,cudd_memory
+USCarrierOSPF_linkFaults_bfs,disabled,Classic Simulator,0,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,disabled,New Simulator,0,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,disabled,New Simulator,1,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,disabled,New Simulator,3,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,WINDOW2,Classic Simulator,0,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,WINDOW2,New Simulator,0,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,WINDOW2,New Simulator,1,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,WINDOW2,New Simulator,3,19113.0,6623.0,669.570045,1400.606021,2073.024252,10.399351,142095814.0,124.9,767.95,8849.68985748291
+USCarrierOSPF_linkFaults_bfs,WINDOW2_CONV,Classic Simulator,0,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,WINDOW2_CONV,New Simulator,0,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,WINDOW2_CONV,New Simulator,1,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,WINDOW2_CONV,New Simulator,3,19113.0,6623.0,650.06033,1375.175696,2027.915579,8.595588,133880978.0,115.85,826.45,8571.759376525879
+USCarrierOSPF_linkFaults_bfs,WINDOW3,Classic Simulator,0,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,WINDOW3,New Simulator,0,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,WINDOW3,New Simulator,1,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,WINDOW3,New Simulator,3,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,WINDOW3_CONV,Classic Simulator,0,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,WINDOW3_CONV,New Simulator,0,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,WINDOW3_CONV,New Simulator,1,0,0,0,0,0,0,0,0,0,0
+USCarrierOSPF_linkFaults_bfs,WINDOW3_CONV,New Simulator,3,0,0,0,0,0,0,0,0,0,0

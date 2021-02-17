@@ -422,7 +422,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
                 merge u n_incoming_attribute n_incoming_attribute
               in
               (*if the merge between new and old route from origin is equal to the new route from v*)
-              if Obj.magic compare_routes = Obj.magic dummy_new then (
+              if Mtbddc.is_equal (Obj.magic compare_routes) (Obj.magic dummy_new) then (
                 incr incr_merges;
                 (*we can incrementally compute in this case*)
                 let u_new_attribute = merge u labu n_incoming_attribute in

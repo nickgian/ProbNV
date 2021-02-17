@@ -345,11 +345,13 @@ let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds =
         | Leaf p ->
             (* If the distribution is at a leaf and the guard has reached a true leaf
                then the probability is the one given by the distribution multiplied by
-               the number of integers described: i.e. 2^(end_var - start_var) *)
+               the number of integers described: i.e. 2^(end_var - (start_var - 1).
+               Note, because start_var represents the next start_var we decrease it by 1.
+               *)
             (* Printf.printf "probSymbolic Bool true/Leaf p: %d, %d\n" start_var
                end_var; *)
-            if end_var - start_var > 0 then
-              Mtbddc.get p *. cardinality end_var start_var
+            if end_var - (start_var - 1) > 0 then
+              Mtbddc.get p *. cardinality end_var (start_var - 1)
             else Mtbddc.get p
         | Ite (j, td, ed) ->
             (* If the distribution is still not concrete then we recursively
