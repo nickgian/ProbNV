@@ -518,7 +518,6 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
 
   (* Process a node in the schedule *)
   let rec processNode next init trans merge local global i =
-    Printf.printf "Processing node: %d\n" next;
     (* Check the worklist for the nodes next should read messages from *)
     let wklist = global.worklist in
     let todoSet = wklist.(next) in
@@ -537,7 +536,6 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
           (* If all elements satisfy pred, i.e. they have no outstanding deps, continue processing next *)
           simulate_step init trans merge local global next todoSet
       | Some x ->
-          Printf.printf "Skipped to node: %d\n" x;
           (* If next depends on x and x needs to be processed too, then skip
               the queue and process x *)
           processNode x init trans merge local global (i + 1)
