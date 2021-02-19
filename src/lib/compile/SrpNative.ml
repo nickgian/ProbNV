@@ -300,13 +300,17 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     (* for i = n downto 1 do
          BatQueue.add (i - 1) q
        done; *)
-    for i = 1 to n do
-      BatQueue.add (i - 1) q
-    done;
+    (* for i = 1 to n do
+         BatQueue.add (i - 1) q
+       done; *)
+    BatQueue.add 0 q;
     let initGlobal =
       {
         queue = q;
-        worklist = Array.init n (fun i -> AdjGraph.VertexSet.singleton i);
+        worklist =
+          Array.init n (fun i ->
+              if i = 0 then AdjGraph.VertexSet.singleton i
+              else AdjGraph.VertexSet.empty);
       }
     in
     (AdjGraph.VertexMap.empty, initGlobal)
@@ -360,6 +364,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
   let simulate_step init trans merge local global u todoSet =
     let do_neighbor change_bit v local =
       (* Processing message from v to u *)
+      (* Printf.printf "Processing message from: %d\n" v; *)
       let edge = (v, u) in
 
       (* Compute the incoming attribute from v *)
@@ -422,7 +427,9 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
                 merge u n_incoming_attribute n_incoming_attribute
               in
               (*if the merge between new and old route from origin is equal to the new route from v*)
-              if Mtbddc.is_equal (Obj.magic compare_routes) (Obj.magic dummy_new) then (
+              if
+                Mtbddc.is_equal (Obj.magic compare_routes) (Obj.magic dummy_new)
+              then (
                 incr incr_merges;
                 (*we can incrementally compute in this case*)
                 let u_new_attribute = merge u labu n_incoming_attribute in
@@ -489,22 +496,32 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
       local' )
     else local'
 
-  (* returns the minimal element not satisfying pred in the set s. Returns None if no
+  (* returns the first element not satisfying pred in the set s. Returns None if no
      such element exists. *)
   let rec findMin pred (s : AdjGraph.VertexSet.t) : AdjGraph.Vertex.t option =
     match try Some (AdjGraph.VertexSet.pop s) with Not_found -> None with
     | None -> None
     | Some (x, s) -> if pred x then findMin pred s else Some x
 
+  let rec findMinLargest u wklist (s : AdjGraph.VertexSet.t) : AdjGraph.Vertex.t
+      =
+    let x, _ =
+      AdjGraph.VertexSet.fold
+        (fun x (accx, accsz) ->
+          let sz = AdjGraph.VertexSet.cardinal wklist.(x) in
+          if x <> u && sz > accsz then (x, sz) else (accx, accsz))
+        s (u, 0)
+    in
+    x
+
   let skips = ref 0
 
   (* Process a node in the schedule *)
   let rec processNode next init trans merge local global i =
+    Printf.printf "Processing node: %d\n" next;
     (* Check the worklist for the nodes next should read messages from *)
     let wklist = global.worklist in
     let todoSet = wklist.(next) in
-
-    (* simulate_step init trans merge local global next todoSet *)
 
     (* Check that the node only depends on nodes that are not in the schedule
            (with the exception of the node itself) *)
@@ -512,10 +529,16 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     (* how many steps to skip, i = 1 allows 1 skip *)
     if i = !skips then simulate_step init trans merge local global next todoSet
     else
+      (* let x = findMinLargest next wklist todoSet in
+         if x = next then simulate_step init trans merge local global next todoSet
+         else processNode x init trans merge local global (i + 1) *)
       match findMin pred todoSet with
-      | None -> simulate_step init trans merge local global next todoSet
+      | None ->
+          (* If all elements satisfy pred, i.e. they have no outstanding deps, continue processing next *)
+          simulate_step init trans merge local global next todoSet
       | Some x ->
-          (* If next depends on x and x needs to be processed, then skip
+          Printf.printf "Skipped to node: %d\n" x;
+          (* If next depends on x and x needs to be processed too, then skip
               the queue and process x *)
           processNode x init trans merge local global (i + 1)
 
