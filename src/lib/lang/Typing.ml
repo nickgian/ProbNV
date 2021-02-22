@@ -548,7 +548,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
   | DAssert (e, prob) -> (
       let e' = infer_exp e in
       let ty = oget e'.ety in
-      Printf.printf "Assertion type: %s" (Printing.ty_to_string ty);
+      (* Printf.printf "Assertion type: %s" (Printing.ty_to_string ty); *)
       (* Mode should not matter for unification - although it might matter in the TVar case
          but I don't think that case appears here *)
       unify isHLL info e ty { typ = TBool; mode = None };

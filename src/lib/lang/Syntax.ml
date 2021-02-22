@@ -7,7 +7,7 @@ open Cudd
 
 type node = int [@@deriving eq, ord]
 
-let tnode_sz = 7
+let tnode_sz = 11
 
 type edge = node * node [@@deriving eq, ord]
 

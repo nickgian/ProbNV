@@ -13,6 +13,7 @@ let set_reordering reorder =
   match reorder with
   | None -> ()
   | Some i -> (
+      Cudd.Man.set_next_autodyn mgr 1000000;
       match i with
       | 0 -> Cudd.Man.enable_autodyn mgr REORDER_WINDOW2
       | 1 -> Cudd.Man.enable_autodyn mgr REORDER_WINDOW2_CONV
@@ -23,19 +24,6 @@ let set_reordering reorder =
       | 6 -> Cudd.Man.enable_autodyn mgr REORDER_SIFT_CONVERGE
       | _ -> () )
 
-(* let set_reordering reorder = 
-  match reorder with
-  | None -> ()
-  | Some i ->
-    (match i with
-      | 0 -> Man.reduce_heap mgr REORDER_WINDOW2 1 
-      | 1 -> Man.reduce_heap mgr REORDER_WINDOW2_CONV 1 
-      | 2 -> Man.reduce_heap mgr REORDER_WINDOW3 1 
-      | 3 -> Man.reduce_heap mgr  REORDER_WINDOW3_CONV 1
-      (* | 4 -> Cudd.Man.enable_autodyn mgr REORDER_WINDOW4
-      | 5 -> Cudd.Man.enable_autodyn mgr REORDER_SIFT
-      | 6 -> Cudd.Man.enable_autodyn mgr REORDER_SIFT_CONVERGE *)
-      | _ -> ()) *)
 
 let () = Cudd.Man.set_max_cache_hard mgr 134217728
 

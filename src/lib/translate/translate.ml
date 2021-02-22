@@ -597,9 +597,10 @@ let translateInit init aty =
   | EFun f ->
       let fv = free init in
       let rho = BddBinds.union r fv in
-      if BddBinds.isEmpty rho then (
-        (* Printf.printf "bdd binds is empty\n"; *)
-        if aty.mode = Some Concrete then init'
+      if BddBinds.isEmpty rho then
+        if (* Printf.printf "bdd binds is empty\n"; *)
+           aty.mode = Some Concrete
+        then init'
         else
           let e1' = etoMap f.body in
           let resTy = liftMultiTy (OCamlUtils.oget f.resty) in
@@ -608,7 +609,7 @@ let translateInit init aty =
               Some
                 (concrete
                    (TArrow (concrete (OCamlUtils.oget f.argty).typ, resTy))),
-              init.espan ) )
+              init.espan )
       else
         let e1' = buildApply f.body rho in
         let resTy = liftMultiTy (OCamlUtils.oget f.resty) in
@@ -977,17 +978,22 @@ let translateMerge merge aty =
 let translateDecl d =
   match d with
   | DLet (x, e) ->
+      BddBinds.clearStore ();
       let e', r = translate e in
       let fv = free e in
       let rho = BddBinds.union r fv in
       if BddBinds.isEmpty r then DLet (x, e') else DLet (x, buildApply e' rho)
   | DSolve { aty; var_names; init; trans; merge } ->
       let route_ty = OCamlUtils.oget aty in
+      BddBinds.clearStore ();
       let init' = translateInit init route_ty in
+      BddBinds.clearStore ();
       let trans' = translateTrans trans route_ty in
+      BddBinds.clearStore ();
       let merge' = translateMerge merge route_ty in
       DSolve { aty; var_names; init = init'; trans = trans'; merge = merge' }
   | DAssert (e, prob) ->
+      BddBinds.clearStore ();
       let e', r = translate e in
       let fv = free e in
       let rho = BddBinds.union r fv in

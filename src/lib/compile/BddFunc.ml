@@ -203,6 +203,11 @@ let bor x y =
   | BBool x, BBool y -> BBool (Bdd.dor x y)
   | _, _ -> failwith "Expected booleans"
 
+let bnot x =
+  match x with
+  | BBool x -> BBool (Bdd.dnot x)
+  | _ -> failwith "Expected a boolean"
+
 (** ** Multivalue operations *)
 
 let toMap ~value = Mtbddc.cst B.mgr B.tbl (Obj.magic value)

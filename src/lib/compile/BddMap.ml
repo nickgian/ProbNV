@@ -16,29 +16,27 @@ let mgr = BddUtils.mgr
 let tbl = BddUtils.tbl
 
 (* Number of variables for maps *)
-let nvars = ref 0 
+let nvars = ref 0
 
 (* Number of variables for symbolics *)
 let svars = ref (-1)
 
 let set_size sz =
   let num_vars = !nvars in
-  if num_vars < sz then
-    (for _ = 1 to sz - num_vars do
+  if num_vars < sz then (
+    for _ = 1 to sz - num_vars do
       ignore (Bdd.newvar mgr)
     done;
     nvars := num_vars + (sz - num_vars);
     Man.group mgr !svars !nvars Man.MTR_FIXED;
-    Man.group mgr 0 (!svars + !nvars) Man.MTR_FIXED
-    )
+    Man.group mgr 0 (!svars + !nvars) Man.MTR_FIXED )
 
 let ithvar i =
   set_size (i + 1);
   Bdd.ithvar mgr (!svars + i)
 
 let create ~(key_ty_id : int) ~(val_ty_id : int) (vnat : 'v) : 'v t =
-  (if !svars = -1 then
-    svars := Man.get_bddvar_nb mgr);
+  if !svars = -1 then svars := Man.get_bddvar_nb mgr;
   let key_ty = TypeIds.get_elt type_store key_ty_id in
   set_size (BddUtils.ty_to_size key_ty);
   { bdd = Mtbddc.cst mgr tbl vnat; key_ty_id; val_ty_id }

@@ -32,3 +32,5 @@ let isEmpty rho1 = VarMap.is_empty rho1
 let singleton (x : Var.t) (e : exp) : exp VarMap.t = VarMap.add x e VarMap.empty
 
 let fold = VarMap.fold
+
+let clearStore () = store := ExpMap.empty

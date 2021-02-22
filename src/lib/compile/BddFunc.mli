@@ -38,6 +38,8 @@ val band : t -> t -> t
 
 val bor : t -> t -> t
 
+val bnot : t -> t
+
 val toMap : value:'a -> 'a Cudd.Mtbddc.unique Cudd.Vdd.t
 
 val applyN :
