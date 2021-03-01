@@ -25,10 +25,10 @@ let run_compiled file _ _ decls fs =
   let newpath = name in
   let solution = Loader.simulate newpath decls in
   (* Printf.printf "simulation finished\n";
-  flush_all ();
-  let solution = (apply_all solution fs) in
-  Printf.printf "applied map back\n";
-  flush_all (); *)
+     flush_all ();
+     let solution = (apply_all solution fs) in
+     Printf.printf "applied map back\n";
+     flush_all (); *)
   Solution.print_solution solution
 
 let parse_input (args : string array) =
@@ -42,13 +42,14 @@ let parse_input (args : string array) =
   (* Parse probNV file *)
   let decls = ds in
   (* Type check the HLL program *)
+  let decls = ToEdge.toEdge_decl decls :: decls in
   let decls = Typing.HLLTypeInf.infer_declarations info decls in
   let decls, f = RecordUnrolling.unroll_declarations decls in
   let fs = [ f ] in
   (* Note! Must rename before inling otherwise inling is unsound *)
   let decls, f = Renaming.alpha_convert_declarations decls in
   (* Printf.printf "Printing type checked program\n\n%s\n\n"
-    (ProbNv_lang.Printing.declarations_to_string ~show_types:true decls); *)
+     (ProbNv_lang.Printing.declarations_to_string ~show_types:true decls); *)
   let fs = f :: fs in
   (* inlining definitions *)
   let decls =
@@ -64,7 +65,7 @@ let parse_input (args : string array) =
   (* Translate the program to LLL *)
   let decls = Translate.translate_declarations decls in
   (* Printf.printf "Printing compiled program\n\n%s"
-    (ProbNv_lang.Printing.declarations_to_string ~show_types:false decls); *)
+     (ProbNv_lang.Printing.declarations_to_string ~show_types:false decls); *)
   (* Type check the LLL program *)
   (* Printf.printf "LLL type checking after translation \n"; *)
   let decls = Typing.LLLTypeInf.infer_declarations info decls in

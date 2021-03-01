@@ -22,49 +22,62 @@ open ProbNv_lang.Syntax
    | _ -> None
  ***)
 
-(* let toEdge_decl decls =
+let toEdge_decl decls =
   let open ProbNv_datastructures in
   let n1_var = Var.create "n1" in
   let n2_var = Var.create "n2" in
-   (* if compile then
-      DLet
-        (
-          Var.create "toEdge",
-          None,
-          efun
-            {arg = n1_var; argty = None; resty = None;
-             body =
-               efun
-                 {arg = n2_var; argty = None; resty= None;
-                  body = esome (e_val (vedge (n1_var, n2_var)))
-                 }
-            }
-        )
-    else*)
-      (* print_endline @@ Nv_lang.Printing.declarations_to_string decls ; *)
-      let edges = get_edges decls |> ProbNv_utils.OCamlUtils.oget in
-      let default_branch =
-        addBranch PWild (e_val (voption None)) emptyBranch
-      in
-      let branches =
-        List.fold_left
-          (fun bs (n1, n2) ->
-             addBranch (PTuple [PNode n1; PNode n2]) (esome (e_val (vedge (n1, n2)))) bs
-          )
-          default_branch
-          edges
-      in
-        DLet
-          (
-            Var.create "toEdge",
-            None,
+  (* if compile then
+       DLet
+         (
+           Var.create "toEdge",
+           None,
+           efun
+             {arg = n1_var; argty = None; resty = None;
+              body =
+                efun
+                  {arg = n2_var; argty = None; resty= None;
+                   body = esome (e_val (vedge (n1_var, n2_var)))
+                  }
+             }
+         )
+     else*)
+  (* print_endline @@ Nv_lang.Printing.declarations_to_string decls ; *)
+  let edges = get_edges decls |> ProbNv_utils.OCamlUtils.oget in
+  let default_branch =
+    addBranch PWild
+      (aexp
+         ( e_val (voption None),
+           Some (concrete @@ TOption (concrete TEdge)),
+           Span.default ))
+      emptyBranch
+  in
+  let branches =
+    List.fold_left
+      (fun bs (n1, n2) ->
+        addBranch
+          (PTuple [ PNode n1; PNode n2 ])
+          (esome (e_val (vedge (n1, n2))))
+          bs)
+      default_branch edges
+  in
+  DLet
+    ( Var.create "toEdge",
+      efun
+        {
+          arg = n1_var;
+          argty = Some (concrete TNode);
+          resty =
+            Some
+              (concrete
+                 (TArrow (concrete TNode, concrete @@ TOption (concrete TEdge))));
+          fmode = Some Concrete;
+          body =
             efun
-              {arg = n1_var; argty = None; resty = None;
-               body =
-                 efun
-                   {arg = n2_var; argty = None; resty= None;
-                    body =
-                      ematch (etuple [evar n1_var; evar n2_var]) branches
-                   }
-              }
-          ) *)
+              {
+                arg = n2_var;
+                argty = Some (concrete TNode);
+                fmode = Some Concrete;
+                resty = Some (concrete (TOption (concrete TEdge)));
+                body = ematch (etuple [ evar n1_var; evar n2_var ]) branches;
+              };
+        } )

@@ -290,6 +290,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
 
   type globalState = {
     mutable queue : AdjGraph.Vertex.t BatQueue.t;
+    mutable queueSet : AdjGraph.VertexSet.t;
     mutable worklist : AdjGraph.VertexSet.t array;
   }
 
@@ -307,10 +308,12 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     let initGlobal =
       {
         queue = q;
+        queueSet = AdjGraph.VertexSet.singleton 0;
         worklist =
-          Array.init n (fun i ->
+        Array.init n (fun i -> AdjGraph.VertexSet.singleton i);
+          (* Array.init n (fun i ->
               if i = 0 then AdjGraph.VertexSet.singleton i
-              else AdjGraph.VertexSet.empty);
+              else AdjGraph.VertexSet.empty); *)
       }
     in
     (AdjGraph.VertexMap.empty, initGlobal)
@@ -342,8 +345,9 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     let neighbors = AdjGraph.succ G.graph u in
     BatList.iter
       (fun v ->
-        if global.worklist.(v) = AdjGraph.VertexSet.empty then
+        if not(AdjGraph.VertexSet.mem v global.queueSet) then
           BatQueueExt.add v global.queue;
+          global.queueSet <- AdjGraph.VertexSet.add v global.queueSet;
         global.worklist.(v) <- AdjGraph.VertexSet.add u global.worklist.(v))
       neighbors
 
@@ -477,11 +481,9 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     (* empty the worklist for u, it should have been fully processed *)
     global.worklist.(u) <- AdjGraph.VertexSet.empty;
 
-    (* Remove next from the queue schedule *)
-    (* Printf.printf "Queue before removing next";
-       BatQueue.iter (fun i -> Printf.printf "%d," i) global.queue;
-       Printf.printf "\n"; *)
+    (* Remove next from the queue schedule and the queueset *)
     BatQueueExt.filter_first (fun i -> i = u) global.queue;
+    global.queueSet <- AdjGraph.VertexSet.remove u global.queueSet;
 
     (* BatQueue.pop global.queue; *)
 
@@ -630,6 +632,9 @@ let build_solutions nodes record_fns
     (assertions : (bool Cudd.Mtbddc.t * float) list) =
   let open Solution in
   let assertions = List.rev assertions in
+  let arr = Array.init (Cudd.Man.get_bddvar_nb BddUtils.mgr) (fun i -> i) in
+  Cudd.Man.shuffle_heap BddUtils.mgr arr;
+  Cudd.Man.disable_autodyn BddUtils.mgr;
   let symbolic_bounds = List.rev !BddUtils.vars_list in
   {
     assertions =
