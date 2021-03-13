@@ -85,6 +85,7 @@ and transform_pattern ~(name : string) (transformers : transformers)
       | PInt _, TInt _
       | PNode _, TNode
       | PEdge _, TEdge
+      | PEdgeId _, TEdge
       | POption None, TOption _ ->
           p
       | POption (Some p), TOption ty -> POption (Some (transform_pattern p ty))
@@ -220,7 +221,13 @@ let rec map_back_value ~(name : string) (sol : Solution.t)
                vmap
       | VTotalMap bdd, TMap (_, vty) ->
           let op_key = (e_val v, BatSet.PSet.empty) in
-          vmap (Cudd.Mapleaf.mapleaf1 (fun v -> map_back_value (Cudd.Mtbddc.get v) vty |> Cudd.Mtbddc.unique BddUtils.tbl_nv) (fst bdd), snd bdd)
+          vmap
+            ( Cudd.Mapleaf.mapleaf1
+                (fun v ->
+                  map_back_value (Cudd.Mtbddc.get v) vty
+                  |> Cudd.Mtbddc.unique BddUtils.tbl_nv)
+                (fst bdd),
+              snd bdd )
             (* (BddMap.map op_key (fun v -> map_back_value v vty) bdd) *)
             (Some orig_ty)
       | VClosure _, _ ->
@@ -259,10 +266,10 @@ let map_back_sol ~(name : string) (map_back_transformer : map_back_transformer)
 let get_solve_types solves =
   let rec add_tys acc e =
     match e.e with
-    | EVar x -> 
-      (match (oget e.ety).typ with
-      | TMap (_, vty) -> VarMap.add x vty acc
-      | _ -> failwith "Bad DSolve")
+    | EVar x -> (
+        match (oget e.ety).typ with
+        | TMap (_, vty) -> VarMap.add x vty acc
+        | _ -> failwith "Bad DSolve" )
     | _ -> failwith "Bad DSolve"
   in
   List.fold_left (fun acc s -> add_tys acc s.var_names) VarMap.empty solves

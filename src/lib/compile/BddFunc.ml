@@ -62,9 +62,8 @@ let rec default_value ty =
   | TInt size -> BInt (mk_int 0 size)
   | TTuple ts -> Tuple (List.map default_value ts)
   | TOption ty -> BOption (Bdd.dfalse B.mgr, default_value ty)
-  | TNode -> BInt (mk_int 0 tnode_sz)
-  | TEdge ->
-      Tuple [ default_value (concrete TNode); default_value (concrete TNode) ]
+  | TNode -> BInt (mk_int 0 !tnode_sz)
+  | TEdge -> BInt (mk_int 0 !tedge_sz)
   | TVar { contents = Link t } -> default_value t
   | TVar _ | QVar _ | TArrow _ | TMap _ | TRecord _ ->
       failwith "internal error (default_value)"
@@ -78,12 +77,11 @@ let rec toBdd_typ (record_fns : int * int -> 'a -> 'b) (val_ty : ty) (v : 'v) :
       let bs = mk_int (Obj.magic v) i in
       BInt bs
   | TNode ->
-      let bs = mk_int (Obj.magic v) tnode_sz in
+      let bs = mk_int (Obj.magic v) !tnode_sz in
       BInt bs
   | TEdge ->
-      let bs1 = mk_int (fst @@ Obj.magic v) tnode_sz in
-      let bs2 = mk_int (snd @@ Obj.magic v) tnode_sz in
-      Tuple [ BInt bs1; BInt bs2 ]
+      let bs = mk_int (fst @@ Obj.magic v) !tedge_sz in
+      BInt bs
   | TTuple ts ->
       let n = BatList.length ts in
       let bs =
@@ -346,12 +344,10 @@ let matchDistrCase v p g =
           ( mk_int (Integer.to_int a) (Integer.size a),
             mk_int (Integer.to_int b) (Integer.size b) ),
         float_of_int @@ (Integer.to_int b - Integer.to_int a + 1) )
-  | DistrPNode n, BInt xs -> (eqBdd (BInt (mk_int n tnode_sz)) (BInt xs), 1.)
-  | DistrPEdge (n1, n2), Tuple [ x1; x2 ] ->
-      ( Bdd.dand
-          (eqBdd (BInt (mk_int n1 tnode_sz)) x1)
-          (eqBdd (BInt (mk_int n2 tnode_sz)) x2),
-        1. )
+  | DistrPNode n, BInt xs -> (eqBdd (BInt (mk_int n !tnode_sz)) (BInt xs), 1.)
+  | DistrPEdge (n1, n2), BInt xs ->
+      let e = AdjGraph.find_edge g n1 n2 in
+      (eqBdd (BInt (mk_int (AdjGraph.E.label e) !tedge_sz)) (BInt xs), 1.)
   | DistrPWild, _ -> (Bdd.dtrue B.mgr, space_ty (snd v) g)
   | _, _ -> failwith "Mistyped distribution"
 
@@ -394,25 +390,20 @@ let uniform_distribution (res : t) ty (g : AdjGraph.t) :
           Mtbddc.cst B.mgr B.tbl_probabilities (uniform_probability_ty ty g)
         in
         (* If it's a node type, assign 0 probability to invalid nodes *)
-        match lt res (BInt (mk_int (AdjGraph.nb_vertex g) tnode_sz)) with
+        match lt res (BInt (mk_int (AdjGraph.nb_vertex g) !tnode_sz)) with
         | BBool isValidNode ->
             Mtbddc.ite isValidNode prob
               (Mtbddc.cst B.mgr B.tbl_probabilities 0.0)
         | _ -> failwith "Expected a boolean result from lt computation" )
-    | TEdge, Tuple [ u; v ] ->
+    | TEdge, res -> (
         let prob =
           Mtbddc.cst B.mgr B.tbl_probabilities (uniform_probability_ty ty g)
         in
-        let isValidEdge =
-          AdjGraph.fold_edges_e
-            (fun e acc ->
-              let bs1 = BInt (mk_int (AdjGraph.Edge.src e) tnode_sz) in
-              let bs2 = BInt (mk_int (AdjGraph.Edge.dst e) tnode_sz) in
-              Bdd.dor acc (Bdd.dand (eqBdd u bs1) (eqBdd v bs2)))
-            g (Bdd.dfalse B.mgr)
-        in
-        (* If it's not a valid edge assign a 0 probability *)
-        Mtbddc.ite isValidEdge prob (Mtbddc.cst B.mgr B.tbl_probabilities 0.0)
+        match lt res (BInt (mk_int (AdjGraph.nb_edges g) !tedge_sz)) with
+        | BBool isValidEdge ->
+            Mtbddc.ite isValidEdge prob
+              (Mtbddc.cst B.mgr B.tbl_probabilities 0.0)
+        | _ -> failwith "Expected a boolean result from lt computation" )
     | TTuple ts, Tuple rs ->
         let distrs = List.map2 (fun t r -> aux t r) ts rs in
         User.map_opN
@@ -427,7 +418,6 @@ let uniform_distribution (res : t) ty (g : AdjGraph.t) :
           [||] (Array.of_list distrs)
     | TOption _, _ -> failwith "todo: probability for options"
     | TTuple _, _
-    | TEdge, _
     | TVar _, _
     | QVar _, _
     | TArrow _, _
@@ -443,8 +433,8 @@ let create_value (dist : distrExpr option) (ty : ty) (g : AdjGraph.t) : t =
     match ty.typ with
     | TBool -> BBool (B.freshvar ())
     | TInt sz -> BInt (Array.init sz (fun _ -> B.freshvar ()))
-    | TNode -> aux (concrete @@ TInt tnode_sz)
-    | TEdge -> aux (concrete @@ TTuple [ concrete @@ TNode; concrete @@ TNode ])
+    | TNode -> aux (concrete @@ TInt !tnode_sz)
+    | TEdge -> aux (concrete @@ TInt !tedge_sz)
     | TTuple ts ->
         let bs =
           List.fold_left

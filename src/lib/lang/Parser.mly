@@ -132,6 +132,8 @@
     in
     build_map StringMap.empty sorted
 
+  let make_to_edge n1 n2 = 
+    eapp (eapp (evar (Var.create "toEdge")) n1) n2
 %}
 
 
@@ -394,7 +396,7 @@ expr3:
     | ipaddr                            { $1 }
     | prefixes                          { $1 }
     | NODE                              { to_value (vnode (snd $1)) (fst $1)}
-    | edge_arg TILDE edge_arg           { to_value (vedge (snd $1, snd $3)) (Span.extend (fst $1) (fst $3))}
+    | edge_arg TILDE edge_arg           { exp (make_to_edge (snd $1) (snd $3)) (Span.extend (fst $1) (fst $3))}
     | TRUE                              { to_value (vbool true) $1 }
     | FALSE                             { to_value (vbool false) $1 }
     | NONE                              { to_value (voption None) $1 }
@@ -410,8 +412,8 @@ prefixes:
 
 
 edge_arg:
-  | NUM                                 { (fst $1), (ProbNv_datastructures.Integer.to_int (snd $1))}
-  | NODE                                { (fst $1), (snd $1) }
+  | NUM                                 { (fst $1), to_value (vnode (ProbNv_datastructures.Integer.to_int (snd $1))) (fst $1) }
+  | NODE                                { (fst $1), to_value (vnode (snd $1)) (fst $1)}
 
 exprs:
     | expr                              { [$1] }

@@ -51,7 +51,7 @@ let rec default_value ty =
       avalue (vtuple (BatList.map default_value ts), Some ty, Span.default)
   | TOption _ -> avalue (voption None, Some ty, Span.default)
   | TNode -> avalue (vnode 0, Some ty, Span.default)
-  | TEdge -> avalue (vedge (0, 1), Some ty, Span.default)
+  | TEdge -> avalue (vedge 0, Some ty, Span.default)
   | TVar { contents = Link t } -> default_value t
   | TVar _ | QVar _ | TArrow _ | TMap _ | TRecord _ ->
       failwith "internal error (default_value)"
@@ -96,7 +96,7 @@ let value_to_bdd (record_fns : int * int -> 'a -> 'b) (ty : Syntax.ty) (v : 'v)
           (base, idx) ts
     | TNode ->
         (* Encode same way as we encode ints *)
-        let sz = tnode_sz in
+        let sz = !tnode_sz in
         let i = Integer.create ~value:(Obj.magic v) ~size:sz in
         (mk_int i idx, idx + sz)
     | TEdge ->

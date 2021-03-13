@@ -146,6 +146,7 @@ let rec pattern_to_ocaml_string pattern =
   | POption (Some p) -> Printf.sprintf "Some %s" (pattern_to_ocaml_string p)
   | PRecord _ -> failwith "Records should have been unrolled"
   | PNode n -> Printf.sprintf "%d" n
+  | PEdgeId n -> Printf.sprintf "%d" n
   | PEdge (p1, p2) ->
       Printf.sprintf "(%s, %s)"
         (pattern_to_ocaml_string p1)
@@ -185,7 +186,7 @@ let rec ty_to_ocaml_string t =
 
 let rec pattern_vars p =
   match p with
-  | PWild | PBool _ | PInt _ | POption None | PNode _ ->
+  | PWild | PBool _ | PInt _ | POption None | PNode _ | PEdgeId _ ->
       BatSet.PSet.create Var.compare
   | PVar v -> BatSet.PSet.singleton ~cmp:Var.compare v
   | PEdge (p1, p2) -> pattern_vars (PTuple [ p1; p2 ])
@@ -321,7 +322,7 @@ let rec value_to_ocaml_string v =
   | VOption (Some v) -> Printf.sprintf "(Some %s)" (value_to_ocaml_string v)
   | VRecord _ -> failwith "Records should have been unrolled"
   | VNode n -> string_of_int n
-  | VEdge (n1, n2) -> Printf.sprintf "(%d, %d)" n1 n2
+  | VEdge e -> Printf.sprintf "%d" e
   | VClosure _ -> failwith "Closures shouldn't appear here."
   | VTotalMap _ ->
       failwith
@@ -493,23 +494,27 @@ and branch_to_ocaml_string (p, e) =
 let rec attr_ty_to_equality ty x y =
   match ty.typ with
   | TVar _ | QVar _ -> failwith "Expected attribute type to be a resolved type"
-  | TBool | TInt _ | TNode | TEdge -> Printf.sprintf "%s = %s" x y;
-  | TMap _ -> Printf.sprintf "Cudd.Mtbddc.is_equal (%s) (%s)" x y;
+  | TBool | TInt _ | TNode | TEdge -> Printf.sprintf "%s = %s" x y
+  | TMap _ -> Printf.sprintf "Cudd.Mtbddc.is_equal (%s) (%s)" x y
   | TTuple ts ->
-    let n = List.length ts in
-    let recEq = List.mapi (fun i ty -> attr_ty_to_equality ty 
-          (Printf.sprintf "((%s).%s)" x (proj_rec i n))
-          (Printf.sprintf "((%s).%s)" y (proj_rec i n))) ts
-    in
-    Collections.printList (fun s -> s) recEq "(" " && " ")"
+      let n = List.length ts in
+      let recEq =
+        List.mapi
+          (fun i ty ->
+            attr_ty_to_equality ty
+              (Printf.sprintf "((%s).%s)" x (proj_rec i n))
+              (Printf.sprintf "((%s).%s)" y (proj_rec i n)))
+          ts
+      in
+      Collections.printList (fun s -> s) recEq "(" " && " ")"
   | TOption ty ->
-    let recEq = attr_ty_to_equality ty "x" "y" in
-    Printf.sprintf "(match %s, %s with\n\
-      | None, None -> true\n\
-      | Some x, Some y -> %s\n\
-      | _, _ -> false)" x y recEq
+      let recEq = attr_ty_to_equality ty "x" "y" in
+      Printf.sprintf
+        "(match %s, %s with\n\
+         | None, None -> true\n\
+         | Some x, Some y -> %s\n\
+         | _, _ -> false)" x y recEq
   | TArrow _ | TRecord _ -> failwith "Cannot be in attribute type"
-
 
 (** Translate a declaration to an OCaml program*)
 let compile_decl decl =

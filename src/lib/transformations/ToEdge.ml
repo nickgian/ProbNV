@@ -22,27 +22,10 @@ open ProbNv_lang.Syntax
    | _ -> None
  ***)
 
-let toEdge_decl decls =
+let toEdge_decl topology =
   let open ProbNv_datastructures in
   let n1_var = Var.create "n1" in
   let n2_var = Var.create "n2" in
-  (* if compile then
-       DLet
-         (
-           Var.create "toEdge",
-           None,
-           efun
-             {arg = n1_var; argty = None; resty = None;
-              body =
-                efun
-                  {arg = n2_var; argty = None; resty= None;
-                   body = esome (e_val (vedge (n1_var, n2_var)))
-                  }
-             }
-         )
-     else*)
-  (* print_endline @@ Nv_lang.Printing.declarations_to_string decls ; *)
-  let edges = get_edges decls |> ProbNv_utils.OCamlUtils.oget in
   let default_branch =
     addBranch PWild
       (aexp
@@ -52,13 +35,13 @@ let toEdge_decl decls =
       emptyBranch
   in
   let branches =
-    List.fold_left
-      (fun bs (n1, n2) ->
+    AdjGraph.fold_edges_e
+      (fun e bs ->
         addBranch
-          (PTuple [ PNode n1; PNode n2 ])
-          (esome (e_val (vedge (n1, n2))))
+          (PTuple [ PNode (AdjGraph.E.src e); PNode (AdjGraph.E.dst e) ])
+          (esome (e_val (vedge (AdjGraph.E.label e))))
           bs)
-      default_branch edges
+      topology default_branch
   in
   DLet
     ( Var.create "toEdge",
@@ -80,4 +63,29 @@ let toEdge_decl decls =
                 resty = Some (concrete (TOption (concrete TEdge)));
                 body = ematch (etuple [ evar n1_var; evar n2_var ]) branches;
               };
+        } )
+
+(* Likewise, a function returning the node points given an edge label - only for internal use! *)
+let fromEdge_decl topology =
+  let open ProbNv_datastructures in
+  let e_var = Var.create "e" in
+  let branches =
+    AdjGraph.fold_edges_e
+      (fun e bs ->
+        addBranch
+          (PEdgeId (AdjGraph.E.label e))
+          (e_val
+             (vtuple [ vnode @@ AdjGraph.E.src e; vnode @@ AdjGraph.E.dst e ]))
+          bs)
+      topology emptyBranch
+  in
+  DLet
+    ( Var.create "fromEdge",
+      efun
+        {
+          arg = e_var;
+          argty = Some (concrete TEdge);
+          resty = Some (concrete (TTuple [ concrete TNode; concrete TNode ]));
+          fmode = Some Concrete;
+          body = ematch (evar e_var) branches;
         } )

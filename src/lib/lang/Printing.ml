@@ -198,6 +198,7 @@ let rec pattern_to_string pattern =
   | POption (Some p) -> "Some " ^ pattern_to_string p
   | PRecord map -> print_record "=" pattern_to_string map
   | PNode n -> Printf.sprintf "%dn" n
+  | PEdgeId n -> Printf.sprintf "%de" n
   | PEdge (p1, p2) ->
       Printf.sprintf "%s~%s" (pattern_to_string p1) (pattern_to_string p2)
 
@@ -253,8 +254,7 @@ let pick_default_value map =
       !bs *)
 
 let bindings (map : mtbdd) =
-  match map with
-  | m, _ -> Array.to_list @@ Mtbddc.leaves m
+  match map with m, _ -> Array.to_list @@ Mtbddc.leaves m
 
 let rec value_env_to_string ~show_types env =
   Env.to_string (value_to_string_p ~show_types max_prec) env.value
@@ -307,15 +307,11 @@ and map_to_string ~show_types sep_s term_s m =
 and value_to_string_p ~show_types prec v =
   let value_to_string_p = value_to_string_p ~show_types in
   match v.v with
-  (* | VUnit -> "VUnit" *)
   | VBool true -> "true"
   | VBool false -> "false"
   | VInt i -> Integer.to_string i
-  | VTotalMap m -> 
-    (match snd m with
-    | None -> 
-      map_to_string ~show_types "\n" m
-    | _ -> "MAP")
+  | VTotalMap m -> (
+      match snd m with None -> map_to_string ~show_types "\n" m | _ -> "MAP" )
   | VTuple vs ->
       if List.is_empty vs then "VEmptyTuple"
       else "(" ^ comma_sep (value_to_string_p max_prec) vs ^ ")"
@@ -325,20 +321,22 @@ and value_to_string_p ~show_types prec v =
       if max_prec > prec then "(" ^ s ^ ")" else s
   | VRecord map -> print_record "=" (value_to_string_p prec) map
   | VNode n -> Printf.sprintf "%dn" n
-  | VEdge (n1, n2) -> Printf.sprintf "%d~%d" n1 n2
+  | VEdge e ->
+      let u, v = PrimitiveCollections.IntMap.find e !edge_mapping in
+      Printf.sprintf "%d~%d" u v
   | VClosure cl -> closure_to_string_p ~show_types prec cl
 
 and map_to_string ~show_types term_s m =
   let binding_to_string v =
     (* let key =
-      Array.fold_right
-        (fun x acc ->
-          match x with
-          | Man.True -> Printf.sprintf "1%s" acc
-          | Man.False -> Printf.sprintf "0%s" acc
-          | Man.Top -> Printf.sprintf "*%s" acc)
-        k ""
-    in *)
+         Array.fold_right
+           (fun x acc ->
+             match x with
+             | Man.True -> Printf.sprintf "1%s" acc
+             | Man.False -> Printf.sprintf "0%s" acc
+             | Man.Top -> Printf.sprintf "*%s" acc)
+           k ""
+       in *)
     Printf.sprintf "(%s, %s)" "_" (value_to_string_p ~show_types max_prec v)
   in
   let bs = bindings m in
@@ -347,7 +345,7 @@ and map_to_string ~show_types term_s m =
 and exp_to_string_p ~show_types prec e =
   let exp_to_string_p = exp_to_string_p ~show_types in
   let value_to_string_p = value_to_string_p ~show_types in
-  let p = prec_exp e in 
+  let p = prec_exp e in
   let s =
     match e.e with
     | EVar x -> Var.to_string x

@@ -16,19 +16,14 @@ let rec apply_all (s : Solution.t) fs =
   match fs with [] -> s | f :: fs -> apply_all (f s) fs
 
 (** Native simulator - compiles SRP to OCaml *)
-let run_compiled file _ _ decls fs =
+let run_compiled file _ _ decls topology fs =
   let path = Filename.remove_extension file in
   let name = Filename.basename path in
   let name =
     String.mapi (fun i c -> if i = 0 then Char.uppercase_ascii c else c) name
   in
   let newpath = name in
-  let solution = Loader.simulate newpath decls in
-  (* Printf.printf "simulation finished\n";
-     flush_all ();
-     let solution = (apply_all solution fs) in
-     Printf.printf "applied map back\n";
-     flush_all (); *)
+  let solution = Loader.simulate topology newpath decls in
   Solution.print_solution solution
 
 let parse_input (args : string array) =
@@ -41,8 +36,13 @@ let parse_input (args : string array) =
   let ds, info = Input.parse file in
   (* Parse probNV file *)
   let decls = ds in
+  let nodes = get_nodes decls |> ProbNv_utils.OCamlUtils.oget in
+  let edges = get_edges decls |> ProbNv_utils.OCamlUtils.oget in
+  let topology = AdjGraph.create nodes edges in
   (* Type check the HLL program *)
-  let decls = ToEdge.toEdge_decl decls :: decls in
+  let decls = ToEdge.toEdge_decl topology :: decls in
+  let decls = ToEdge.fromEdge_decl topology :: decls in
+  create_edge_mapping topology;
   let decls = Typing.HLLTypeInf.infer_declarations info decls in
   let decls, f = RecordUnrolling.unroll_declarations decls in
   let fs = [ f ] in
@@ -70,23 +70,4 @@ let parse_input (args : string array) =
   (* Printf.printf "LLL type checking after translation \n"; *)
   let decls = Typing.LLLTypeInf.infer_declarations info decls in
   (* Printf.printf "done type checking and translating \n"; *)
-  (cfg, info, file, decls, fs)
-
-(* print_endline @@ Printing.declarations_to_string decls ; *)
-(* let decls = (ToEdge.toEdge_decl decls) :: decls in *)
-(* let decls = Typing.infer_declarations info decls in *)
-(* Typing.check_annot_decls decls ;
-   Wellformed.check info decls ; *)
-(* let decls, f = RecordUnrolling.unroll_declarations decls in
-   let fs = [f] in *)
-(* let decls,fs = (* inlining definitions *)
-   if cfg.inline then
-     (* Note! Must rename before inling otherwise inling is unsound *)
-     let decls, f = Renaming.alpha_convert_declarations decls in
-     (Profile.time_profile "Inlining" (
-         fun () ->
-           Inline.inline_declarations decls |>
-           (* TODO: We could probably propagate type information through inlining *)
-           Typing.infer_declarations info), f :: fs)
-   else
-     (decls,fs) *)
+  (cfg, info, file, decls, topology, fs)

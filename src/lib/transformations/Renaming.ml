@@ -22,7 +22,7 @@ let rec rename_solve_vars bmap env e =
 let rec update_pattern (env : Var.t Env.t) (p : pattern) : pattern * Var.t Env.t
     =
   match p with
-  | PWild | PBool _ | PInt _ | PNode _ -> (p, env)
+  | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ -> (p, env)
   | PVar x ->
       let y = fresh x in
       (PVar y, Env.update env x y)
@@ -97,9 +97,8 @@ let rec alpha_convert_exp (env : Var.t Env.t) (e : exp) =
       ematch (alpha_convert_exp env e1) bs' |> wrap e
   | ESome e1 -> esome (alpha_convert_exp env e1) |> wrap e
   | ERecord map ->
-  erecord (StringMap.map (fun e -> alpha_convert_exp env e) map) |> wrap e
-  | EProject (e, l) ->
-    eproject (alpha_convert_exp env e) l |> wrap e
+      erecord (StringMap.map (fun e -> alpha_convert_exp env e) map) |> wrap e
+  | EProject (e, l) -> eproject (alpha_convert_exp env e) l |> wrap e
 
 let alpha_convert_declaration bmap (env : Var.t Env.t) (d : declaration) =
   match d with

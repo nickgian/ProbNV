@@ -7,9 +7,11 @@ open Cudd
 
 type node = int [@@deriving eq, ord]
 
-let tnode_sz = 10
+let tnode_sz = ref 10
 
-type edge = node * node [@@deriving eq, ord]
+let tedge_sz = ref 10
+
+type edge = int [@@deriving eq, ord]
 
 type bitwidth = int [@@deriving eq, ord, show]
 
@@ -81,6 +83,7 @@ type pattern =
   | PRecord of pattern StringMap.t
   | PNode of node
   | PEdge of pattern * pattern
+  | PEdgeId of int
 [@@deriving ord, eq]
 
 module Pat = struct
@@ -224,7 +227,7 @@ type distrPattern =
   | DistrPBool of bool
   | DistrPRange of Integer.t * Integer.t
   | DistrPNode of node
-  | DistrPEdge of edge
+  | DistrPEdge of node * node
   | DistrPTuple of distrPattern list
 
 type distrExpr = (distrPattern * probability) list
@@ -256,7 +259,7 @@ type declarations = declaration list
 let rec is_irrefutable pat =
   match pat with
   | PWild | PVar _ -> true
-  | PBool _ | PInt _ | PNode _ | PEdge _ | POption _ -> false
+  | PBool _ | PInt _ | PNode _ | PEdge _ | POption _ | PEdgeId _ -> false
   | PTuple pats -> List.for_all is_irrefutable pats
   | PRecord map -> StringMap.for_all (fun _ p -> is_irrefutable p) map
 
@@ -502,6 +505,7 @@ and equal_patterns p1 p2 =
   | PNode n1, PNode n2 -> n1 = n2
   | PEdge (p1, p2), PEdge (p1', p2') ->
       equal_patterns p1 p1' && equal_patterns p2 p2'
+  | PEdgeId p1, PEdgeId p2 -> p1 = p2
   | _ -> false
 
 and equal_patterns_list ps1 ps2 =
@@ -561,7 +565,7 @@ and hash_v ~hash_meta v =
   | VBool b -> if b then 1 else 0
   | VInt i -> (19 * Integer.to_int i) + 1
   | VNode n -> (19 * n) + 9
-  | VEdge (e1, e2) -> (19 * (e1 + (19 * e2))) + 10
+  | VEdge e -> (19 * e) + 10
   | VTuple vs ->
       let acc =
         List.fold_left (fun acc v -> acc + hash_value ~hash_meta v) 0 vs
@@ -686,6 +690,7 @@ and hash_pattern p =
       + 8
   | PNode n -> (19 * n) + 9
   | PEdge (p1, p2) -> (19 * (hash_pattern p1 + (19 * hash_pattern p2))) + 10
+  | PEdgeId n -> (19 * n) + 11
 
 and hash_patterns ps = List.fold_left (fun acc p -> acc + hash_pattern p) 0 ps
 
@@ -1054,3 +1059,12 @@ let get_record_types ds =
 let compare_vs = compare_value
 
 let compare_es = compare_exp
+
+let edge_mapping = ref IntMap.empty
+
+let create_edge_mapping topology =
+  edge_mapping :=
+    AdjGraph.fold_edges_e
+      (fun e acc ->
+        IntMap.add (AdjGraph.E.label e) (AdjGraph.E.src e, AdjGraph.E.dst e) acc)
+      topology IntMap.empty

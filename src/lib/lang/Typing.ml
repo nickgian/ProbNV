@@ -1098,6 +1098,9 @@ module HLLTypeInf = struct
         infer_patterns (i + 1) info env e
           [ concrete TNode; concrete TNode ]
           [ p1; p2 ]
+    | PEdgeId _ ->
+        unify info e tmatch (concrete TEdge);
+        env
     | PTuple ps ->
         let ts = BatList.map (fun _ -> concrete @@ fresh_tyvar ()) ps in
         let ty = concrete (TTuple ts) in
@@ -1134,7 +1137,7 @@ module HLLTypeInf = struct
 
   and valid_pattern env p =
     match p with
-    | PWild | PBool _ | PInt _ | PNode _ -> env
+    | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ -> env
     | PVar x -> (
         match Env.lookup_opt env x with
         | None -> Env.update env x ()
@@ -1427,8 +1430,8 @@ module LLLTypeInf = struct
               texp (ematch e1 branches, t, e1.espan)
           | Some _ ->
               (* Printf.printf "tmatch: %s\n" (Printing.ty_to_string tmatch);
-              Printf.printf "Match: %s\n"
-                (Printing.exp_to_string ~show_types:true e); *)
+                 Printf.printf "Match: %s\n"
+                   (Printing.exp_to_string ~show_types:true e); *)
               Console.error_position info e.espan
                 "Symbolic/Multivalue guard - mistyped mode in Match" )
       | ERecord emap ->
@@ -1492,10 +1495,10 @@ module LLLTypeInf = struct
       | EToBdd e1 -> (
           (* Based on rule ToBdd of LLL*)
           (* Printf.printf "toBdd before infer: %s\n"
-            (Printing.exp_to_string ~show_types:true e1); *)
+             (Printing.exp_to_string ~show_types:true e1); *)
           let e1, ty1 = infer_exp e1 |> textract in
           (* Printf.printf "toBdd: %s\n"
-            (Printing.exp_to_string ~show_types:true e1); *)
+             (Printing.exp_to_string ~show_types:true e1); *)
           match get_mode ty1 with
           | Some Concrete -> etoBdd e1
           | _ ->
@@ -1504,7 +1507,7 @@ module LLLTypeInf = struct
       | EToMap e1 -> (
           (* Based on rule ToMap of LLL*)
           (* Printf.printf "ETomap: %s\n"
-            (Printing.ty_to_string (OCamlUtils.oget e1.ety)); *)
+             (Printing.ty_to_string (OCamlUtils.oget e1.ety)); *)
           let e1, ty1 = e1 |> textract in
           (* Printf.printf "ETomap: %s\n" (Printing.ty_to_string ty1); *)
           match get_mode ty1 with
@@ -1597,6 +1600,9 @@ module LLLTypeInf = struct
         infer_patterns (i + 1) info env e
           [ concrete TNode; concrete TNode ]
           [ p1; p2 ]
+    | PEdgeId _ ->
+        unify info e tmatch (concrete TEdge);
+        env
     | PTuple ps ->
         let ts = BatList.map (fun _ -> concrete @@ fresh_tyvar ()) ps in
         let ty = concrete (TTuple ts) in
@@ -1633,7 +1639,7 @@ module LLLTypeInf = struct
 
   and valid_pattern env p =
     match p with
-    | PWild | PBool _ | PInt _ | PNode _ -> env
+    | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ -> env
     | PVar x -> (
         match Env.lookup_opt env x with
         | None -> Env.update env x ()

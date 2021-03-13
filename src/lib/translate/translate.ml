@@ -68,8 +68,8 @@ let opToBddOp op =
   | UAdd n -> BddAdd n
   | ULess n -> BddLess n
   | ULeq n -> BddLeq n
-  | NLess -> BddLess tnode_sz
-  | NLeq -> BddLeq tnode_sz
+  | NLess -> BddLess !tnode_sz
+  | NLeq -> BddLeq !tnode_sz
   | BddAnd | BddAdd _ | BddOr | BddNot | BddEq | BddLess _ | BddLeq _ -> op
   | MCreate | MGet | MSet | TGet _ ->
       failwith "Can't convert operation to symbolic operation"
@@ -455,7 +455,7 @@ and translate_branches bs mode =
 
 let rec pattern_vars p =
   match p with
-  | PWild | PBool _ | PInt _ | PNode _ -> VarSet.empty
+  | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ -> VarSet.empty
   | PVar v -> VarSet.singleton v
   | PEdge (p1, p2) -> pattern_vars (PTuple [ p1; p2 ])
   | POption None -> VarSet.empty

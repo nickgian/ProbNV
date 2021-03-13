@@ -15,7 +15,7 @@ let is_function_ty e =
 
 let rec has_var p x =
   match p with
-  | PWild | PBool _ | PInt _ | PNode _ -> false
+  | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ -> false
   | PVar y -> Var.equals x y
   | PEdge (p1, p2) -> has_var p1 x || has_var p2 x
   | PTuple ps -> BatList.exists (fun p -> has_var p x) ps
@@ -29,7 +29,7 @@ let rec has_var p x =
 
 let rec remove_all env p =
   match p with
-  | PWild | PBool _ | PInt _ | PNode _ -> env
+  | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ -> env
   | PVar x -> Env.remove env x
   | PEdge (p1, p2) -> remove_all env (PTuple [ p1; p2 ])
   | PTuple ps -> BatList.fold_left (fun acc p -> remove_all acc p) env ps
@@ -73,9 +73,8 @@ let rec substitute x e1 e2 =
   | ETuple es -> etuple (BatList.map (fun e -> substitute x e e2) es) |> wrap e1
   | ESome e -> esome (substitute x e e2) |> wrap e1
   | ERecord map ->
-  erecord (StringMap.map (fun e -> substitute x e e2) map) |> wrap e1
-  | EProject (e, l) ->
-    eproject (substitute x e e2) l |> wrap e1
+      erecord (StringMap.map (fun e -> substitute x e e2) map) |> wrap e1
+  | EProject (e, l) -> eproject (substitute x e e2) l |> wrap e1
 
 and substitute_pattern x e2 (p, e) =
   if has_var p x then (p, e) else (p, substitute x e e2)
@@ -109,8 +108,7 @@ let rec inline_app cond env e1 e2 : exp =
           mapBranches (fun (p, e) -> inline_branch_app cond env e2 (p, e)) bs
         in
         ematch e branches
-    | ERecord _ | EProject _ 
-    | ESome _ | EOp _ | EVal _ | ETuple _ ->
+    | ERecord _ | EProject _ | ESome _ | EOp _ | EVal _ | ETuple _ ->
         failwith
           (Printf.sprintf "inline_app: %s"
              (ProbNv_lang.Printing.exp_to_string e1))
@@ -162,6 +160,7 @@ and inline_exp (cond : ty -> bool) (env : exp Env.t) (e : exp) : exp =
   | ESome e1 -> esome (inline_exp env e1) |> wrap e
   | ERecord map -> erecord (StringMap.map (inline_exp env) map) |> wrap e
   | EProject (e, l) -> eproject (inline_exp env e) l |> wrap e
+
 (* 
 
    | ETy (e1, ty) -> ety (inline_exp env e1) ty |> wrap e *)

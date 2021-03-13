@@ -50,10 +50,8 @@ let rec embed_value (record_fns : int * int -> 'a -> 'b) (typ : Syntax.ty) :
         (Printf.sprintf "Function %s computed as value"
            (Printing.ty_to_string typ))
   | TRecord _ -> failwith "Trecord"
-  | TNode ->
-      fun v ->
-        Syntax.vint (Integer.create ~value:(Obj.magic v) ~size:Syntax.tnode_sz)
-  | TEdge -> fun v -> Syntax.vedge (fst (Obj.magic v), snd (Obj.magic v))
+  | TNode -> fun v -> Syntax.vnode (Obj.magic v)
+  | TEdge -> fun v -> Syntax.vedge (Obj.magic v)
   | TVar { contents = Link ty } -> embed_value record_fns ty
   | TVar _ | QVar _ -> failwith "TVars and QVars should not show up here"
 
