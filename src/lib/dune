@@ -12,7 +12,6 @@
     integers
     str
     batteries
-    lru-cache
     zarith)
   (preprocess
     (pps ppx_deriving.std ppx_deriving_argparse))

@@ -7,7 +7,5 @@
    probNv_datastructures
    probNv_utils
    findlib.dynload
-   fix
-   parmap
  )
 )

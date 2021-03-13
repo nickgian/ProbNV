@@ -1,0 +1,68 @@
+include "fat6_control.nv"
+
+symbolic f0 : tedge
+symbolic f1 : tedge
+symbolic f2 : tedge
+symbolic f3 : tedge
+
+let mergeLinkFaults u (x : [M]attribute) (y : [M]attribute) =
+  merge u x y
+
+let transLinkFaults d e (x : [M]attribute) =
+  if (f0= e)|| (f1= e)|| (f2= e)|| (f3= e) then
+    {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+  else trans d e x
+
+let initLinkFaults d u = init d u 
+
+let d = (70.0.26.0/24)
+
+let linkFaults = solution(initLinkFaults d, transLinkFaults d, mergeLinkFaults)
+
+let reachable u =
+  match linkFaults[u].selected with | None -> false | _ -> true
+
+assert(reachable 1n, 0.99p)
+assert(reachable 2n, 0.99p)
+assert(reachable 3n, 0.99p)
+assert(reachable 4n, 0.99p)
+assert(reachable 5n, 0.99p)
+assert(reachable 6n, 0.99p)
+assert(reachable 7n, 0.99p)
+assert(reachable 8n, 0.99p)
+assert(reachable 9n, 0.99p)
+assert(reachable 10n, 0.99p)
+assert(reachable 11n, 0.99p)
+assert(reachable 12n, 0.99p)
+assert(reachable 13n, 0.99p)
+assert(reachable 14n, 0.99p)
+assert(reachable 15n, 0.99p)
+assert(reachable 16n, 0.99p)
+assert(reachable 17n, 0.99p)
+assert(reachable 18n, 0.99p)
+assert(reachable 19n, 0.99p)
+assert(reachable 20n, 0.99p)
+assert(reachable 21n, 0.99p)
+assert(reachable 22n, 0.99p)
+assert(reachable 23n, 0.99p)
+assert(reachable 24n, 0.99p)
+assert(reachable 25n, 0.99p)
+assert(reachable 26n, 0.99p)
+assert(reachable 27n, 0.99p)
+assert(reachable 28n, 0.99p)
+assert(reachable 29n, 0.99p)
+assert(reachable 30n, 0.99p)
+assert(reachable 31n, 0.99p)
+assert(reachable 32n, 0.99p)
+assert(reachable 33n, 0.99p)
+assert(reachable 34n, 0.99p)
+assert(reachable 35n, 0.99p)
+assert(reachable 36n, 0.99p)
+assert(reachable 37n, 0.99p)
+assert(reachable 38n, 0.99p)
+assert(reachable 39n, 0.99p)
+assert(reachable 40n, 0.99p)
+assert(reachable 41n, 0.99p)
+assert(reachable 42n, 0.99p)
+assert(reachable 43n, 0.99p)
+assert(reachable 44n, 0.99p)

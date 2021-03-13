@@ -310,10 +310,10 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
         queue = q;
         queueSet = AdjGraph.VertexSet.singleton 0;
         worklist =
-        Array.init n (fun i -> AdjGraph.VertexSet.singleton i);
+          Array.init n (fun i -> AdjGraph.VertexSet.singleton i)
           (* Array.init n (fun i ->
               if i = 0 then AdjGraph.VertexSet.singleton i
-              else AdjGraph.VertexSet.empty); *)
+              else AdjGraph.VertexSet.empty); *);
       }
     in
     (AdjGraph.VertexMap.empty, initGlobal)
@@ -345,9 +345,9 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     let neighbors = AdjGraph.succ G.graph u in
     BatList.iter
       (fun v ->
-        if not(AdjGraph.VertexSet.mem v global.queueSet) then
+        if not (AdjGraph.VertexSet.mem v global.queueSet) then
           BatQueueExt.add v global.queue;
-          global.queueSet <- AdjGraph.VertexSet.add v global.queueSet;
+        global.queueSet <- AdjGraph.VertexSet.add v global.queueSet;
         global.worklist.(v) <- AdjGraph.VertexSet.add u global.worklist.(v))
       neighbors
 

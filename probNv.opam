@@ -10,7 +10,6 @@ depends: [
   "integers"
   "ANSITerminal"
   "batteries"
-  "lru-cache"
   "zarith"
   "mlcuddidl" { <= "3.0.4" }
   "ocamlgraph"
