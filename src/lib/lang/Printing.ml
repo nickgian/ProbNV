@@ -310,8 +310,10 @@ and value_to_string_p ~show_types prec v =
   | VBool true -> "true"
   | VBool false -> "false"
   | VInt i -> Integer.to_string i
-  | VTotalMap m -> (
-      match snd m with None -> map_to_string ~show_types "\n" m | _ -> "MAP" )
+  | VTotalMap (m, meta) -> (
+      match meta with
+      | None -> multivalue_to_string ~show_types "\n" m
+      | Some (kty, range) -> map_to_string ~show_types ", " m kty range )
   | VTuple vs ->
       if List.is_empty vs then "VEmptyTuple"
       else "(" ^ comma_sep (value_to_string_p max_prec) vs ^ ")"
@@ -326,8 +328,8 @@ and value_to_string_p ~show_types prec v =
       Printf.sprintf "%d~%d" u v
   | VClosure cl -> closure_to_string_p ~show_types prec cl
 
-and map_to_string ~show_types term_s m =
-  let binding_to_string v =
+and map_to_string ~show_types term_s m kty range =
+  let binding_to_string (_, v) =
     (* let key =
          Array.fold_right
            (fun x acc ->
@@ -339,8 +341,13 @@ and map_to_string ~show_types term_s m =
        in *)
     Printf.sprintf "(%s, %s)" "_" (value_to_string_p ~show_types max_prec v)
   in
-  let bs = bindings m in
+  let bs = Array.to_list @@ Mtbddc.guardleafs m in
   Printf.sprintf "{ %s }" (term term_s binding_to_string bs)
+
+and multivalue_to_string ~show_types term_s m =
+  let bs = Array.to_list @@ Mtbddc.leaves m in
+  Printf.sprintf "{\n%s\n}"
+    (term term_s (fun v -> Printf.sprintf "  %s" (value_to_string_p ~show_types max_prec v)) bs)
 
 and exp_to_string_p ~show_types prec e =
   let exp_to_string_p = exp_to_string_p ~show_types in
@@ -459,13 +466,16 @@ let rec declaration_to_string ?(show_types = false) d =
   | DSymbolic (x, ty, Some distr) ->
       Printf.sprintf "symbolic %s : %s = %s" (Var.to_string x) (ty_to_string ty)
         (distrExpr_to_string distr)
-  | DAssert (e, prob) -> Printf.sprintf "assert(%s, %f)" (exp_to_string e) prob
+  | DAssert (name, e, prob) -> Printf.sprintf "assert(%s, %s, %f)" name (exp_to_string e) prob
   | DSolve { aty; var_names; init; trans; merge } ->
       Printf.sprintf "let %s = solution<%s> {init = %s; trans = %s; merge = %s}"
         (exp_to_string var_names)
         (match aty with None -> "None" | Some ty -> ty_to_string ty)
         (exp_to_string init) (exp_to_string trans) (exp_to_string merge)
-  | DNodes n -> "let nodes = " ^ string_of_int n
+  | DNodes (n, xs) -> "let nodes = " ^ string_of_int n ^ List.fold_right
+  (fun (u, r) s -> Printf.sprintf "%s%d: %s;" s u r)
+  xs ""
+^ "}"
   | DEdges es ->
       "let edges = {"
       ^ List.fold_right

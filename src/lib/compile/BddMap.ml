@@ -18,10 +18,11 @@ let tbl = BddUtils.tbl
 (* Number of variables for maps *)
 let nvars = ref 0
 
-(* Number of variables for symbolics *)
+(* Number of variables for symbolics - initially -1 until the first map is created*)
 let svars = ref (-1)
 
 let set_size sz =
+  (* Map requires sz number of variables, there are currently num_vars *)
   let num_vars = !nvars in
   if num_vars < sz then (
     for _ = 1 to sz - num_vars do
@@ -29,17 +30,28 @@ let set_size sz =
     done;
     nvars := num_vars + (sz - num_vars);
     Man.group mgr !svars !nvars Man.MTR_FIXED;
-    Man.group mgr 0 (!svars + !nvars) Man.MTR_FIXED )
+    Man.group mgr 0 (!svars + !nvars) Man.MTR_FIXED;
+    (* In this case, since the manager has less variables than necessary, the range
+       of the map type is represented through the first variable up to the last.
+       We start from !svars as we need to ignore variables used for symbolics *)
+    (!svars, !svars + sz - 1) )
+  else
+    (* In this case the manager has enough variables allocated to represent the
+       given type. According to ithvar we use variables starting from zero (!svars),
+       hence the range for this map is also !svars + !svars + sz - 1*)
+    (!svars, !svars + sz - 1)
 
 let ithvar i =
-  set_size (i + 1);
+  (* set_size (i + 1); *)
   Bdd.ithvar mgr (!svars + i)
 
+(* Assumes that symbolics are created before maps *)
 let create ~(key_ty_id : int) ~(val_ty_id : int) (vnat : 'v) : 'v t =
+  (* Update the number of symbolics if not yet done *)
   if !svars = -1 then svars := Man.get_bddvar_nb mgr;
   let key_ty = TypeIds.get_elt type_store key_ty_id in
-  set_size (BddUtils.ty_to_size key_ty);
-  { bdd = Mtbddc.cst mgr tbl vnat; key_ty_id; val_ty_id }
+  let r = set_size (BddUtils.ty_to_size key_ty) in
+  { bdd = Mtbddc.cst mgr tbl vnat; key_ty_id; val_ty_id; var_range = r }
 
 (** * Functions for find *)
 let rec default_value ty =

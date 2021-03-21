@@ -2,8 +2,13 @@ open ProbNv_lang
 open Syntax
 open Cudd
 
-(* BddMap plus the type of the values*)
-type 'a t = { bdd : 'a Mtbddc.t; key_ty_id : int; val_ty_id : int }
+(* BddMap plus the type of the values and the range of BDD variables used to represent the map*)
+type 'a t = {
+  bdd : 'a Mtbddc.t;
+  key_ty_id : int;
+  val_ty_id : int;
+  var_range : int * int;
+}
 
 (** ** Support for MapIf*)
 

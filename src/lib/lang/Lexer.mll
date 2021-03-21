@@ -18,7 +18,7 @@
 }
 
 let id = ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '_' '0'-'9']*
-let symbol = ['~' '`' '!' '@' '#' '$' '%' '^' '&' '|' ':' '?' '>' '<' '[' ']' '=' '-' '.']+
+let symbol = ['~' '`' '!' '@' '#' '$' '%' '^' '&' '|' ':' '?' '>' '<' '[' ']' '=' '-' '.' '_']+
 let num = ['0'-'9']+
 let prob_literal = (['0']['.']['0'-'9']+)"p" | ("1.0p")
 let width = "u"num
@@ -26,6 +26,7 @@ let tid = ['\'']['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '_' '0'-'9']*
 let node = num"n"
 let wspace = [' ' '\t']
 let filename = "\""(['a'-'z' 'A'-'Z' '0'-'9' '_' '\\' '/' '.' '-'])+"\""
+let string = "\""(['a'-'z' 'A'-'Z' '0'-'9'] | symbol | wspace)*"\""
 
 rule token = parse
   | "include" wspace* filename {token lexbuf} (* Include directives are processed separately *)
@@ -65,6 +66,7 @@ rule token = parse
   | num width as n    { NUM (position lexbuf, ProbNv_datastructures.Integer.of_string n) }
   | num as n          { NUM (position lexbuf, ProbNv_datastructures.Integer.of_string n) }
   | prob_literal as n { PROB (position lexbuf, float_of_string (String.rchop ~n:1 n))}
+  | string as s       { STRING (position lexbuf, s)}
   | "&&"              { AND (position lexbuf) }
   | "||"              { OR (position lexbuf) }
   | "|"               { BAR (position lexbuf) }

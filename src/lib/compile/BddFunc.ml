@@ -390,7 +390,7 @@ let uniform_distribution (res : t) ty (g : AdjGraph.t) :
           Mtbddc.cst B.mgr B.tbl_probabilities (uniform_probability_ty ty g)
         in
         (* If it's a node type, assign 0 probability to invalid nodes *)
-        match lt res (BInt (mk_int (AdjGraph.nb_vertex g) !tnode_sz)) with
+        match leq res (BInt (mk_int ((AdjGraph.nb_vertex g)-1) !tnode_sz)) with
         | BBool isValidNode ->
             Mtbddc.ite isValidNode prob
               (Mtbddc.cst B.mgr B.tbl_probabilities 0.0)
@@ -399,7 +399,7 @@ let uniform_distribution (res : t) ty (g : AdjGraph.t) :
         let prob =
           Mtbddc.cst B.mgr B.tbl_probabilities (uniform_probability_ty ty g)
         in
-        match lt res (BInt (mk_int (AdjGraph.nb_edges g) !tedge_sz)) with
+      match leq res (BInt (mk_int ((AdjGraph.nb_edges g)-1) !tedge_sz))  with
         | BBool isValidEdge ->
             Mtbddc.ite isValidEdge prob
               (Mtbddc.cst B.mgr B.tbl_probabilities 0.0)
@@ -428,13 +428,15 @@ let uniform_distribution (res : t) ty (g : AdjGraph.t) :
   aux ty res
 
 (* Given a type creates a BDD representing all possible values of that type*)
-let create_value (dist : distrExpr option) (ty : ty) (g : AdjGraph.t) : t =
+let create_value (name : string) (dist : distrExpr option) (ty : ty)
+    (g : AdjGraph.t) : t =
   let rec aux ty =
     match ty.typ with
     | TBool -> BBool (B.freshvar ())
     | TInt sz -> BInt (Array.init sz (fun _ -> B.freshvar ()))
     | TNode -> aux (concrete @@ TInt !tnode_sz)
-    | TEdge -> aux (concrete @@ TInt !tedge_sz)
+    | TEdge -> 
+      aux (concrete @@ TInt !tedge_sz)
     | TTuple ts ->
         let bs =
           List.fold_left
@@ -463,11 +465,11 @@ let create_value (dist : distrExpr option) (ty : ty) (g : AdjGraph.t) : t =
     | None -> uniform_distribution res typ g
     | Some dexpr -> computeDistr dexpr (res, typ) g
   in
-  B.push_symbolic_vars (symbolic_start, symbolic_end, typ, distr);
+  B.push_symbolic_vars (name, symbolic_start, symbolic_end, typ, distr);
   res
 
-let create_value (dist_id : int) (ty_id : int) g : t =
-  create_value
+let create_value name (dist_id : int) (ty_id : int) g : t =
+  create_value name
     (DistrIds.get_elt distr_store dist_id)
     (TypeIds.get_elt type_store ty_id)
     g

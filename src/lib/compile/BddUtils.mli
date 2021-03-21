@@ -24,14 +24,12 @@ val tbl_bool : bool Cudd.Mtbddc.table *)
 (* Given a type returns the number of decision variables required to represent its values *)
 val ty_to_size : Syntax.ty -> int
 
-val vars_list : (int * int * Syntax.ty * distribution) list ref
+type symbolic_var = string * int * int * ProbNv_lang.Syntax.ty * distribution
 
-val push_symbolic_vars :
-  int * int * ProbNv_lang.Syntax.ty * distribution -> unit
+val vars_list : symbolic_var list ref
+
+val push_symbolic_vars : symbolic_var -> unit
 (** Push a new symbolic variable (BDD variables range, type and distribution) to the top of the list *)
-
-val freshvars : ProbNv_lang.Syntax.ty -> int * int * Cudd.Man.v Cudd.Bdd.t array
-(** [freshvars ty] returns the decision variables necessary to represent this type *)
 
 val freshvar : unit -> Cudd.Man.v Cudd.Bdd.t
 
@@ -43,15 +41,18 @@ val tbool_to_obool : Cudd.Man.tbool -> bool option
 
 val computeTrueProbabilityOld :
   bool Cudd.Mtbddc.t ->
-  (int * int * ProbNv_lang.Syntax.ty * float Cudd.Mtbddc.t) list ->
+  (string * int * int * ProbNv_lang.Syntax.ty * float Cudd.Mtbddc.t) list ->
   float
 
+val createDistributionMap :
+  symbolic_var list -> (int * int * distribution) BatMap.Int.t
+
 val computeTrueProbability :
-  bool Cudd.Mtbddc.t ->
-  (int * int * ProbNv_lang.Syntax.ty * float Cudd.Mtbddc.t) list ->
-  float
+  bool Cudd.Mtbddc.t -> (int * int * float Cudd.Mtbddc.t) BatMap.Int.t -> float
 
 val computeTrueProbabilityBDD :
   bool Cudd.Mtbddc.t -> float Cudd.Mtbddc.t BatMap.Int.t -> float
+
+val generateSat : bool Cudd.Mtbddc.t -> symbolic_var list -> unit
 
 val get_statistics : unit -> unit

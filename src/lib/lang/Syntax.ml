@@ -177,7 +177,7 @@ and closure =
 and env = { ty : ty Env.t; value : value Env.t }
 
 and mtbdd =
-  (value Mtbddc.t * ty option
+  (value Mtbddc.t * (ty * (int * int)) option
   [@compare fun _ _ -> failwith "Map value comparison not supported"])
 
 (** Expression Language for both HLL + LLL combined *)
@@ -244,9 +244,9 @@ type solve = {
 type declaration =
   | DLet of var * exp
   | DSymbolic of var * ty * distrExpr option
-  | DAssert of (exp * probability)
+  | DAssert of (string * exp * probability)
   | DSolve of solve
-  | DNodes of int
+  | DNodes of int * ((node * string) list)
   | DEdges of (node * node) list
   | DUserTy of var * ty
 
@@ -969,7 +969,7 @@ let get_edges ds =
   with Not_found -> None
 
 let get_nodes ds =
-  get_decl ds (fun d -> match d with DNodes i -> Some i | _ -> None)
+  get_decl ds (fun d -> match d with DNodes (i, xs) -> Some (i, xs) | _ -> None)
 
 let get_symbolics ds =
   List.fold_left
@@ -1060,11 +1060,22 @@ let compare_vs = compare_value
 
 let compare_es = compare_exp
 
-let edge_mapping = ref IntMap.empty
+let nb_bits i = Z.log2up (Z.of_int i)
 
-let create_edge_mapping topology =
+let edge_mapping = ref IntMap.empty
+let node_mapping : string IntMap.t ref = ref IntMap.empty
+
+(* Create mapping between edge labels and edges, and node ids and router names, and sets the number of bits required
+to represent the edges and nodes in the network *)
+let create_topology_mapping nodes topology =
+  tnode_sz := nb_bits (AdjGraph.nb_vertex topology);
+  tedge_sz := nb_bits (AdjGraph.nb_edges topology);
   edge_mapping :=
     AdjGraph.fold_edges_e
       (fun e acc ->
         IntMap.add (AdjGraph.E.label e) (AdjGraph.E.src e, AdjGraph.E.dst e) acc)
-      topology IntMap.empty
+      topology IntMap.empty;
+  node_mapping := 
+    List.fold_left (fun acc (uid, u) ->
+      IntMap.add uid u acc
+    ) IntMap.empty nodes

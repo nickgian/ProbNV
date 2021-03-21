@@ -30,6 +30,54 @@ let eq xs ys =
   Array.iter2 (fun x y -> acc := Bdd.dand !acc (Bdd.eq x y)) xs ys;
   !acc
 
+  let lt xs ys =
+    match (leq xs ys, eq xs ys) with
+    | b1, b2 ->
+        let b = Bdd.dand b1 (Bdd.dnot b2) in
+        b
+
+let bdd_of_bool b = if b then Bdd.dtrue mgr else Bdd.dfalse mgr
+
+ let get_bit (n : int) (i : int) : bool =
+  let marker = Z.shift_left Z.one i in
+  Z.logand (Z.of_int n) marker <> Z.zero
+
+let mk_int n sz =
+  Array.init sz (fun j ->
+        let bit = get_bit n j in
+        bdd_of_bool bit)  
+  ;;
+
+let x = Array.init 3 (fun _ -> Bdd.newvar mgr)
+
+let space = 1./.6.0
+
+let maxNum = mk_int 6 3;;
+
+let isValid = lt x maxNum
+
+let distrX = Mtbdd.ite isValid  (Mtbdd.cst mgr tbl_prob space) (Mtbdd.cst mgr tbl_prob 0.0) 
+
+let rec printBdd distr =
+  match Mtbdd.inspect distr with
+  | Leaf _ -> Printf.printf "Leaf: %b\n" (Mtbdd.dval distr)
+  | Ite (i, t, e) ->
+      Printf.printf "top: %d: \n" i;
+      Printf.printf "  dthen: ";
+      printBdd t;
+      Printf.printf "  delse: ";
+      printBdd e
+
+      let rec printBddB x =
+        match Bdd.inspect x with
+        | Bdd.Bool b -> Printf.printf "Leaf: %b\n" b
+        | Bdd.Ite (i, t, e) ->
+            Printf.printf "top: %d: \n" i;
+            Printf.printf "  dthen: ";
+            printBddB t;
+            Printf.printf "  delse: ";
+            printBddB e
+
 (** Addition between bdds*)
 let add xs ys =
   let var3 = ref (Bdd.dfalse mgr) in

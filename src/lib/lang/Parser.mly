@@ -141,6 +141,7 @@
 %token <ProbNv_datastructures.Span.t * ProbNv_datastructures.Integer.t> NUM
 %token <ProbNv_datastructures.Span.t * float> PROB
 %token <ProbNv_datastructures.Span.t * int> NODE
+%token <ProbNv_datastructures.Span.t * string> STRING
 %token <ProbNv_datastructures.Span.t> AND
 %token <ProbNv_datastructures.Span.t> OR
 %token <ProbNv_datastructures.Span.t> NOT
@@ -307,10 +308,12 @@ component:
     | LET letvars EQ expr                       { global_let $2 $4 $4.espan (Span.extend $1 $4.espan) }
     | SYMBOLIC ID COLON bty                    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, None) }
     | SYMBOLIC ID COLON bty EQ distBranches    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, Some $6) }
-    | ASSERT LPAREN expr COMMA PROB RPAREN      { DAssert ($3,snd $5) }
+    | ASSERT LPAREN expr COMMA PROB RPAREN      { DAssert ("\"\"", $3,snd $5) }
+    | ASSERT LPAREN STRING COMMA expr COMMA PROB RPAREN      { DAssert (snd $3, $5, snd $7) }
     | LET EDGES EQ LBRACE RBRACE        { DEdges [] }
     | LET EDGES EQ LBRACE edges RBRACE  { DEdges $5 }
-    | LET NODES EQ NUM                  { DNodes (ProbNv_datastructures.Integer.to_int (snd $4)) }
+    | LET NODES EQ NUM                  { DNodes (ProbNv_datastructures.Integer.to_int (snd $4), []) }
+    | LET NODES EQ LPAREN NUM COMMA LBRACE nodes RBRACE RPAREN  { DNodes (ProbNv_datastructures.Integer.to_int (snd $5), $8) }
     | TYPE ID EQ ty                     { (add_user_type (snd $2) $4; DUserTy (snd $2, $4)) }
 ;
 
@@ -435,6 +438,13 @@ edges:
     | edge                              { $1 }
     | edge edges                        { $1 @ $2 }
 ;
+
+node:
+    | NODE COLON STRING               { [(snd $1,snd $3)] }
+
+nodes:
+    | node SEMI                         { $1 }
+    | node SEMI nodes                   { $1 @ $3}
 
   pattern:
     | UNDERSCORE                        { PWild }

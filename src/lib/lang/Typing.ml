@@ -126,7 +126,7 @@ let rec check_annot (e : exp) =
 
 let check_annot_decl (d : declaration) =
   match d with
-  | DLet (_, e) | DAssert (e, _) -> check_annot e
+  | DLet (_, e) | DAssert (_, e, _) -> check_annot e
   | DSolve { var_names; init; trans; merge; _ } ->
       check_annot var_names;
       check_annot init;
@@ -545,7 +545,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
       let e1, ty_e1 = infer_exp e1 |> textract in
       (Env.update env x ty_e1, DLet (x, texp (e1, ty_e1, e1.espan)))
   | DSymbolic (x, ty, prob) -> (Env.update env x ty, DSymbolic (x, ty, prob))
-  | DAssert (e, prob) -> (
+  | DAssert (name, e, prob) -> (
       let e' = infer_exp e in
       let ty = oget e'.ety in
       (* Printf.printf "Assertion type: %s" (Printing.ty_to_string ty); *)
@@ -555,7 +555,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
       (*According to rule Assert we need to check that mode = Multivalue or Concrete *)
       match ty.mode with
       | Some Concrete | Some Multivalue ->
-          (Env.update env (Var.create "assert") ty, DAssert (e', prob))
+          (Env.update env (Var.create "assert") ty, DAssert (name, e', prob))
       | None | Some Symbolic ->
           Console.error_position info e.espan "Wrong mode for assertion" )
   | DSolve { aty; var_names; init; trans; merge } -> (
@@ -1324,9 +1324,9 @@ module LLLTypeInf = struct
                 Console.error_position info e.espan "Mode mismatch in operation"
           )
       | EFun { arg = x; argty; resty; body } ->
-          let arg_mode =
-            match argty with None -> Some Concrete | Some typ -> typ.mode
-          in
+          (* let arg_mode =
+               match argty with None -> Some Concrete | Some typ -> typ.mode
+             in *)
           let e, ty_e =
             textract body
             (* _infer_exp (i + 1) info

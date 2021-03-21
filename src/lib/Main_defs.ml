@@ -23,7 +23,8 @@ let run_compiled file _ _ decls topology fs =
     String.mapi (fun i c -> if i = 0 then Char.uppercase_ascii c else c) name
   in
   let newpath = name in
-  let solution = Loader.simulate topology newpath decls in
+  let nodeNames = !node_mapping in
+  let solution = apply_all (Loader.simulate nodeNames topology newpath decls) fs in
   Solution.print_solution solution
 
 let parse_input (args : string array) =
@@ -38,11 +39,11 @@ let parse_input (args : string array) =
   let decls = ds in
   let nodes = get_nodes decls |> ProbNv_utils.OCamlUtils.oget in
   let edges = get_edges decls |> ProbNv_utils.OCamlUtils.oget in
-  let topology = AdjGraph.create nodes edges in
+  let topology = AdjGraph.create (fst nodes) edges in
   (* Type check the HLL program *)
   let decls = ToEdge.toEdge_decl topology :: decls in
   let decls = ToEdge.fromEdge_decl topology :: decls in
-  create_edge_mapping topology;
+  create_topology_mapping (snd nodes) topology;
   let decls = Typing.HLLTypeInf.infer_declarations info decls in
   let decls, f = RecordUnrolling.unroll_declarations decls in
   let fs = [ f ] in

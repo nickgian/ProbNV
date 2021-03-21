@@ -7,13 +7,15 @@ open Batteries
 
 type distribution = float Mtbddc.t
 
+type symbolic_var = string * int * int * ProbNv_lang.Syntax.ty * distribution
+
 let mgr = Man.make_v ()
 
 let set_reordering reorder =
   match reorder with
   | None -> ()
   | Some i -> (
-      Cudd.Man.set_next_autodyn mgr 1000000;
+      Cudd.Man.set_next_autodyn mgr 10000000;
       match i with
       | 0 -> Cudd.Man.enable_autodyn mgr REORDER_WINDOW2
       | 1 -> Cudd.Man.enable_autodyn mgr REORDER_WINDOW2_CONV
@@ -40,16 +42,11 @@ let rec ty_to_size ty =
       failwith ("internal error (ty_to_size): " ^ Printing.ty_to_string ty)
 
 (* A list of the range of BDD variables, the type and the distribution, of every symbolic *)
-let vars_list : (int * int * Syntax.ty * distribution) list ref = ref []
+let vars_list : (string * int * int * Syntax.ty * distribution) list ref =
+  ref []
 
-let push_symbolic_vars v = vars_list := v :: !vars_list
-
-let freshvars ty =
-  let symbolic_start = Man.get_bddvar_nb mgr in
-  let sz = ty_to_size ty in
-  let symbolic_end = symbolic_start + sz - 1 in
-  let res = Array.init sz (fun _ -> Bdd.newvar mgr) in
-  (symbolic_start, symbolic_end, res)
+let push_symbolic_vars (name, i, j, typ, distr) =
+  vars_list := (name, i, j, typ, distr) :: !vars_list
 
 let freshvar () = Bdd.newvar mgr
 
@@ -141,10 +138,10 @@ let rec printBdd distr =
 (* Computes the probability of a cube happening - includes all symbolics. 
 This is super slow but might be useful for debugging so I am keeping it around. *)
 let rec cubeProbability (cube : Cudd.Man.tbool array)
-    (bounds : (int * int * Syntax.ty * float Cudd.Mtbddc.t) list) =
+    (bounds : (string * int * int * Syntax.ty * float Cudd.Mtbddc.t) list) =
   match bounds with
   | [] -> 1.0
-  | (xstart, xend, _, xdistribution) :: bounds ->
+  | (_, xstart, xend, _, xdistribution) :: bounds ->
       (* compute the probability for one variable *)
       (* printBdd xdistribution;
          flush_all(); *)
@@ -152,8 +149,8 @@ let rec cubeProbability (cube : Cudd.Man.tbool array)
 
       (* debugging code *)
       (* Printf.printf "range:(%d,%d) " xstart xend;
-         (* Printf.printf "cube: ";
-         printCube cube; *)
+         Printf.printf "cube: ";
+         printCube cube;
          Printf.printf " symbProb: %f\n" p; *)
       p *. cubeProbability cube bounds
 
@@ -196,11 +193,10 @@ let computeTrueProbabilityBDD (assertion : bool Cudd.Mtbddc.t) distrs =
   let memoized_aux = memoize aux in
   memoized_aux trueBdd
 
-let create_symbolics_map (bounds : (int * int * Syntax.ty * distribution) list)
-    =
+let createDistributionMap (bounds : symbolic_var list) =
   let m = ref BatMap.Int.empty in
   List.iter
-    (fun (start, finish, _, distr) ->
+    (fun (_, start, finish, _, distr) ->
       for i = start to finish do
         m := BatMap.Int.add i (start, finish, distr) !m
       done)
@@ -235,12 +231,11 @@ let memoize2 f1 f2 =
   g1
 
 (* Algorithm currently used to compute probability of an assertion being true *)
-let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds =
-  let distrs = create_symbolics_map bounds in
+let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) distrs =
   (* Compute the probability of the full BDD *)
   let rec computeProb _ probSymbolic guard =
     match Bdd.inspect guard with
-    | Bool false -> 0.0
+    | Bool false -> Printf.printf "False\n%!"; 0.0
     | Bool true -> 1.0
     | Ite (i, _, _) ->
         let start_var, end_var, distr = BatMap.Int.find i distrs in
@@ -269,8 +264,8 @@ let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds =
             (* If the distribution is still not concrete then we recursively
                descend on it. we multiple by the number of integers we have covered
                until this point, i.e. 2^(j - start_var). Recursion restarts at j+1 *)
-            (* Printf.printf "probSymbolic Bool true/Ite: %d, %d, j:%d\n" start_var
-               end_var j; *)
+            Printf.printf "probSymbolic Bool true/Ite: %d, %d, j:%d\n" start_var
+               end_var j;
             let space = cardinality j start_var in
             space
             *. ( self (guard, j + 1, end_var, td)
@@ -425,3 +420,150 @@ let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds =
   computeProb trueBdd*)
 
 let get_statistics () = Man.print_info mgr
+
+let createTypeMap (bounds : (int * int * Syntax.ty * distribution) list) =
+  let m = ref BatMap.Int.empty in
+  List.iter
+    (fun (start, finish, typ, _) ->
+      for i = start to finish do
+        m := BatMap.Int.add i (start, finish, typ) !m
+      done)
+    bounds;
+  !m
+
+type svalue =
+  | SBool of Man.tbool (* Booleans are either true, false, or "Top" *)
+  | SInt of Integer.t list option
+  | SNode of node list option
+  | SEdge of (node * node) list option
+
+let rec expand (vars : Man.tbool list) sz : Man.tbool list list =
+  if sz = 0 then [ vars ]
+  else
+    match vars with
+    | [] -> [ [] ]
+    | Man.Top :: xs ->
+        let vars = expand xs (sz - 1) in
+        let trus = List.map (fun v -> Man.False :: v) vars in
+        let fals = List.map (fun v -> Man.True :: v) vars in
+        fals @ trus
+    | x :: xs ->
+        let vars = expand xs sz in
+        List.map (fun v -> x :: v) vars
+
+let tbool_to_bool tb =
+  match tb with Man.Top | Man.False -> false | Man.True -> true
+
+let vars_to_int size vars =
+  let rec aux i vars acc =
+    match vars with
+    | [] -> acc
+    | v :: vars ->
+        let bit = tbool_to_bool v in
+        if bit then
+          aux (i + 1) vars
+            (Integer.add
+               (Integer.shift_left (Integer.create ~value:1 ~size) i)
+               acc)
+        else aux (i + 1) vars acc
+  in
+  aux 0 vars (Integer.create ~value:0 ~size)
+
+let vars_to_int size (vars : Man.tbool list) =
+  let rec aux i vars =
+    match vars with
+    | [] -> [ Integer.create ~value:0 ~size ]
+    | v :: vars -> (
+        let rest = aux (i + 1) vars in
+        match v with
+        | Man.Top ->
+            let x = Integer.shift_left (Integer.create ~value:1 ~size) i in
+            let trus = List.map (fun v -> Integer.add x v) rest in
+            rest @ trus
+        | Man.True ->
+            let rest = aux (i + 1) vars in
+            let x = Integer.shift_left (Integer.create ~value:1 ~size) i in
+            List.map (fun v -> Integer.add x v) rest
+        | Man.False -> aux (i + 1) vars )
+  in
+  aux 0 vars
+
+let vars_to_value (vars, ty) =
+  match ty.typ with
+  | TBool -> SBool (List.hd vars)
+  | TInt size ->
+      if List.exists (fun p -> not (p = Man.Top)) vars then
+        SInt (Some (vars_to_int size vars))
+        (* let vars_expanded = expand vars 5 in
+           SInt (Some (List.map (fun vars -> vars_to_int size vars) vars_expanded)) *)
+      else SInt None
+  | TNode ->
+      (* Was encoded as int, so decode same way *)
+      if List.exists (fun p -> not (p = Man.Top)) vars then
+        SNode (Some (List.map Integer.to_int (vars_to_int !tnode_sz vars)))
+        (* let vars_expanded = expand vars 5 in
+           SNode
+             (Some
+                (List.map
+                   (fun vars -> Integer.to_int @@ vars_to_int !tnode_sz vars)
+                   vars_expanded)) *)
+      else SNode None
+  | TEdge ->
+      if List.exists (fun p -> not (p = Man.Top)) vars then
+        SEdge
+          (Some
+             (List.map
+                (fun v ->
+                  let e = Integer.to_int @@ v in
+                  let u, v = PrimitiveCollections.IntMap.find e !edge_mapping in
+                  Printf.printf "%d = (%d, %d)\n" e u v;
+                  (u, v))
+                (vars_to_int !tedge_sz vars)))
+        (* let vars_expanded = expand vars 5 in *)
+        (* SEdge
+           (Some
+              (List.map
+                 (fun vars ->
+                   let e = Integer.to_int @@ vars_to_int !tedge_sz vars in
+                   let u, v = PrimitiveCollections.IntMap.find e !edge_mapping in
+                   (* Printf.printf "%d = (%d, %d)\n" e u v; *)
+                   (u, v))
+                 vars_expanded)) *)
+      else SEdge None
+  | TOption _ | TTuple _ | TRecord _ | TArrow _ | TMap _ | TVar _ | QVar _ ->
+      failwith "internal error (unsupported types for symbolics)"
+
+let vars_to_value =
+  let tbl = Hashtbl.create 10000 in
+  fun x ->
+    try Hashtbl.find tbl x
+    with Not_found ->
+      let res = vars_to_value x in
+      Hashtbl.add tbl x res;
+      res
+
+let arrSubList arr start fin =
+  let rec aux arr i fin =
+    if i > fin then [] else arr.(i) :: aux arr (i + 1) fin
+  in
+  aux arr start fin
+
+let rec splitCube arr bounds =
+  match bounds with
+  | [] -> []
+  | (name, start, fin, ty, _) :: bounds ->
+      let subCube = arrSubList arr start fin in
+      (* let subCube = Array.sub arr start (fin - start) |> Array.to_list in *)
+      (name, vars_to_value (subCube, ty)) :: splitCube arr bounds
+
+(* Function that returns assignment to symbolics that generated a counter-example *)
+let rec generateSat (assertion : bool Cudd.Mtbddc.t) bounds =
+  let guard_f = Mtbddc.guard_of_leaf_u assertion (Mtbddc.unique tbl false) in
+  let cubes = ref [] in
+  Bdd.iter_cube
+    (fun arr ->
+      (* printCube arr;
+         Printf.printf "\n"; *)
+      let cube = splitCube arr bounds in
+      cubes := cube :: !cubes)
+    guard_f

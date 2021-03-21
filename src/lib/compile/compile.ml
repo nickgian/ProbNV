@@ -523,13 +523,13 @@ let compile_decl decl =
   | DSymbolic (x, ty, dist) ->
       let ty_id = get_fresh_type_id type_store ty in
       let dist_id = Collections.DistrIds.fresh_id distr_store dist in
-      Printf.sprintf "let %s = BddFunc.create_value %d %d SIM.graph\n"
-        (varname x) dist_id ty_id
+      Printf.sprintf "let %s = BddFunc.create_value \"%s\" %d %d SIM.graph\n"
+        (varname x) (varname x) dist_id ty_id
   | DLet (x, e) ->
       Printf.sprintf "let %s = %s" (varname x) (exp_to_ocaml_string e)
-  | DAssert (e, prob) ->
-      Printf.sprintf "let () = SIM.assertions := (%s, %f) :: !SIM.assertions\n"
-        (exp_to_ocaml_string e) prob
+  | DAssert (name, e, prob) ->
+      Printf.sprintf "let () = SIM.assertions := (%s, %s, %f) :: !SIM.assertions\n"
+        name (exp_to_ocaml_string e) prob
   | DSolve solve -> (
       match solve.var_names.e with
       | EVar x -> (

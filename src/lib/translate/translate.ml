@@ -992,13 +992,13 @@ let translateDecl d =
       BddBinds.clearStore ();
       let merge' = translateMerge merge route_ty in
       DSolve { aty; var_names; init = init'; trans = trans'; merge = merge' }
-  | DAssert (e, prob) ->
+  | DAssert (name, e, prob) ->
       BddBinds.clearStore ();
       let e', r = translate e in
       let fv = free e in
       let rho = BddBinds.union r fv in
-      if BddBinds.isEmpty rho then DAssert (e', prob)
-      else DAssert (buildApply e' rho, prob)
+      if BddBinds.isEmpty rho then DAssert (name, e', prob)
+      else DAssert (name, buildApply e' rho, prob)
   | DNodes _ | DEdges _ | DSymbolic _ | DUserTy _ -> d
 
 let translate_declarations ds = List.map translateDecl ds

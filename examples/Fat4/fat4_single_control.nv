@@ -1787,7 +1787,7 @@ let trans edge x =
   {connected=None; static=None; ospf=o; bgp=b; selected=None}
 
 
-let nodes = 20
+let nodes = (20, {2n:"core-0"})
 
 let edges = {
   2-16; (*core-0,Serial0 --> aggregation-8,Serial0*)

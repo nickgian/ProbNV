@@ -120,7 +120,7 @@ let alpha_convert_declaration bmap (env : Var.t Env.t) (d : declaration) =
       in
       let env, y = rename_solve_vars bmap env var_names in
       (env, DSolve { aty; var_names = y; init; trans; merge })
-  | DAssert (e, prob) -> (env, DAssert (alpha_convert_exp env e, prob))
+  | DAssert (name, e, prob) -> (env, DAssert (name, alpha_convert_exp env e, prob))
   | DUserTy _ | DNodes _ | DEdges _ -> (env, d)
 
 let rec alpha_convert_aux bmap env (ds : declarations) : declarations =

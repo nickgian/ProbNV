@@ -13,7 +13,7 @@ let load_srp name =
   try Fl_dynload.load_packages [ name ]
   with Dynlink.Error err -> Printf.printf "%s\n" (Dynlink.error_message err)
 
-let simulate topology name decls =
+let simulate nodeNames topology name decls =
   (* Compile the program to OCaml *)
   ignore (Compile.compile_ocaml name decls);
   (* Load compiled program *)
@@ -46,6 +46,5 @@ let simulate topology name decls =
   Printf.printf "Native simulation took: %f\n%!" (finish_time -. start_time);
   BddUtils.get_statistics ();
   (* Get the computed solutions *)
-  build_solutions
-    (AdjGraph.nb_vertex topology)
+  build_solutions (AdjGraph.nb_vertex topology, nodeNames)
     Srp.record_fns !SrpSimulator.solved !SrpSimulator.assertions

@@ -49,22 +49,18 @@ let exp_transformer (rtys : ty StringMap.t list)
 let map_back_transformer recurse _ v orig_ty =
   match (v.v, orig_ty.typ) with
   | VTuple vs, TRecord tmap ->
-  Printf.printf "in tuple/record case, before the crash\n";
-  flush_all();
       let vtys = get_record_entries tmap in
       let vlabels = get_record_labels tmap in
       let mapped_back_vs = List.map2 recurse vs vtys in
       let zipped = List.combine vlabels mapped_back_vs in
-      Printf.printf "never made it out\n";
-      flush_all();
       Some
         (vrecord
            (List.fold_left
               (fun acc (l, v) -> StringMap.add l v acc)
               StringMap.empty zipped))
   | VTotalMap bdd, TMap (kty, vty) -> (
-    Printf.printf "in total map/map case, before the crash\n with map type: %s" (Printing.ty_to_string orig_ty);
-    flush_all();
+    (* Printf.printf "in total map/map case, before the crash\n with map type: %s" (Printing.ty_to_string orig_ty);
+    flush_all(); *)
       match kty.typ with
       | TRecord _ as rty ->
           (* let op_key = (e_val v, BatSet.PSet.empty) in
@@ -72,25 +68,25 @@ let map_back_transformer recurse _ v orig_ty =
             BddMap.map op_key (fun v -> recurse v vty) bdd
             |> BddMap.change_key_type (Some { typ = rty; mode = kty.mode })
           in *)
-          Printf.printf "made it out of the map/map\n";
-          flush_all();
+          (* Printf.printf "made it out of the map/map\n";
+          flush_all(); *)
           None
           (* Some (vmap record (Some orig_ty)) *)
       | _ -> 
-      Printf.printf "made it out of the map/map\n";
-      flush_all();
+      (* Printf.printf "made it out of the map/map\n";
+      flush_all(); *)
       None )
   | VTotalMap (bdd, kty), TRecord _ ->
       (* case of multi-value record *)
-      Printf.printf "in this case, before the crash\n";
-      flush_all();
+      (* Printf.printf "in this case, before the crash\n";
+      flush_all(); *)
       let g x =
         recurse (Cudd.Mtbddc.get x) orig_ty |> Cudd.Mtbddc.unique BddUtils.tbl_nv
       in
       let record = Cudd.Mapleaf.mapleaf1 g bdd in
       (* let record = BddMap.map op_key (fun v -> recurse v orig_ty) bdd in *)
-      Printf.printf "never made it out\n";
-      flush_all();
+      (* Printf.printf "never made it out\n";
+      flush_all(); *)
       Some (vmap (record, kty) None)
   | _ -> None
 

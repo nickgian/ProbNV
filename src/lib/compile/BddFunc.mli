@@ -13,7 +13,7 @@ val print : t -> string
 
 val equal_t : t -> t -> bool
 
-val create_value : int -> int -> AdjGraph.t -> t
+val create_value : string -> int -> int -> AdjGraph.t -> t
 (** Given a distribution index, a type index, and the topology, creates a BDD
     value representing all possible values of this type. *)
 

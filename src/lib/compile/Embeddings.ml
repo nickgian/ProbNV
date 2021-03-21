@@ -36,15 +36,13 @@ let rec embed_value (record_fns : int * int -> 'a -> 'b) (typ : Syntax.ty) :
         | None -> Syntax.voption None
         | Some v' -> Syntax.voption (Some (f v')) )
   | TMap (kty, vty) ->
-      (* trivial as we represent maps with the same mtbdd + key type id + value type id*)
-      (* no longer trivial *)
       let g x =
         embed_value record_fns vty (Mtbddc.get x) |> Mtbddc.unique B.tbl_nv
       in
       fun v ->
         let omap = Obj.magic v in
         let vbdd = Mapleaf.mapleaf1 g omap.bdd in
-        Syntax.vmap (vbdd, Some kty) (Some typ)
+        Syntax.vmap (vbdd, Some (kty, omap.var_range)) (Some typ)
   | TArrow _ ->
       failwith
         (Printf.sprintf "Function %s computed as value"

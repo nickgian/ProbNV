@@ -187,7 +187,7 @@ let transform_decl ~(name : string) (transformers : transformers)
   let transform_symbolic = transform_symbolic ~name transformers in
   match d with
   | DLet (x, e) -> DLet (x, transform_exp e)
-  | DAssert (e, p) -> DAssert (transform_exp e, p)
+  | DAssert (name, e, p) -> DAssert (name, transform_exp e, p)
   | DSolve { aty; var_names; init; trans; merge } ->
       let var_names, init, trans, merge =
         ( transform_exp var_names,
