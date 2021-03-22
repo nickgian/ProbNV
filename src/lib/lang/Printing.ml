@@ -329,7 +329,7 @@ and value_to_string_p ~show_types prec v =
   | VClosure cl -> closure_to_string_p ~show_types prec cl
 
 and map_to_string ~show_types term_s m kty range =
-  let binding_to_string (_, v) =
+  let binding_to_string (k, v) =
     (* let key =
          Array.fold_right
            (fun x acc ->
@@ -339,7 +339,7 @@ and map_to_string ~show_types term_s m kty range =
              | Man.Top -> Printf.sprintf "*%s" acc)
            k ""
        in *)
-    Printf.sprintf "(%s, %s)" "_" (value_to_string_p ~show_types max_prec v)
+    Printf.sprintf "(%d, %s)" (Bdd.size k) (value_to_string_p ~show_types max_prec v)
   in
   let bs = Array.to_list @@ Mtbddc.guardleafs m in
   Printf.sprintf "{ %s }" (term term_s binding_to_string bs)
