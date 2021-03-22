@@ -109,6 +109,8 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
   let transfers = ref 0
 
   let simulate_step trans merge (s : 'a extendedSolution) (origin : int) =
+    Printf.printf "%d\n" origin;
+    flush_all ();
     let do_neighbor (_, initial_attribute) (s, todo) neighbor =
       let edge_id = AdjGraph.E.label @@ AdjGraph.find_edge graph origin neighbor in
       (* Compute the incoming attribute from origin *)
