@@ -42,7 +42,6 @@ let parse_input (args : string array) =
   let topology = AdjGraph.create (fst nodes) edges in
   (* Type check the HLL program *)
   let decls = ToEdge.toEdge_decl topology :: decls in
-  let decls = ToEdge.fromEdge_decl topology :: decls in
   create_topology_mapping (snd nodes) topology;
   let decls = Typing.HLLTypeInf.infer_declarations info decls in
   let decls, f = RecordUnrolling.unroll_declarations decls in
@@ -70,5 +69,7 @@ let parse_input (args : string array) =
   (* Type check the LLL program *)
   (* Printf.printf "LLL type checking after translation \n"; *)
   let decls = Typing.LLLTypeInf.infer_declarations info decls in
+  let decls, _ = EdgeTransformer.edge_transformer decls in
+  let decls = ToEdge.fromEdge_decl topology :: decls in
   (* Printf.printf "done type checking and translating \n"; *)
   (cfg, info, file, decls, topology, fs)

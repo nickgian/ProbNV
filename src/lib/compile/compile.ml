@@ -148,9 +148,10 @@ let rec pattern_to_ocaml_string pattern =
   | PNode n -> Printf.sprintf "%d" n
   | PEdgeId n -> Printf.sprintf "%d" n
   | PEdge (p1, p2) ->
-      Printf.sprintf "(%s, %s)"
+    pattern_to_ocaml_string (PTuple [p1; p2])
+      (* Printf.sprintf "(%s, %s)"
         (pattern_to_ocaml_string p1)
-        (pattern_to_ocaml_string p2)
+        (pattern_to_ocaml_string p2) *)
 
 (** ProbNv types to OCaml types*)
 let rec ty_to_ocaml_string t =

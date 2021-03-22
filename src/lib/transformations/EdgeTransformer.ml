@@ -8,22 +8,22 @@ open OCamlUtils
 open ProbNv_solution
 open ProbNv_compile
 
-let ty_transformer _ _ = None
+let ty_transformer _ ty = Some ty
 
 let pattern_transformer _ _ _ = None
 
 let value_transformer _ _ = None
 
-let exp_transformer _ e =
+let exp_transformer (recursors : Transformers.recursors) e =
   match e.e with
-  | EMatch (e1, _) -> (
+  | EMatch (e1, bs) -> (
       match e1.ety with
       | Some { typ = TEdge; mode = Some Concrete } ->
           Some
-            (aexp
+          (aexp(ematch (aexp
                ( eapp (evar @@ ProbNv_datastructures.Var.create "fromEdge") e1,
                  Some (concrete TEdge),
-                 e1.espan ))
+                 e1.espan)) (mapBranches (fun (p, ep) -> p, recursors.recurse_exp ep) bs), e.ety, e.espan))
       | _ -> None )
   | _ -> None
 
