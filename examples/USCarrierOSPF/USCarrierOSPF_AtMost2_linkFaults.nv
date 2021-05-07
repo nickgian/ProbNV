@@ -1,6 +1,6 @@
 include "USCarrierOSPF_control.nv"
 
-symbolic failures : int2 = | [0u2,0u2] -> 0.144p | [1u2,1u2] -> 0.28p | [2u2,2u2] -> 0.27p | [3u2,3u2] -> 0.306p
+symbolic failures : int2 = | [0u2,0u2] -> 0.144p | [1u2,1u2] -> 0.28p | [2u2,2u2] -> 0.27p | [3u2,3u2] -> 0.0p (*0.306p*)
 symbolic f0 : tedge
 symbolic f1 : tedge
 
@@ -10,7 +10,7 @@ let mergeLinkFaults u (x : [M]attribute) (y : [M]attribute) =
 let isFailed (e : [C]tedge) =
   (if failures = 0u2 then false
   else if failures = 1u2 then f0 = e
-  else if failures = 2u2 then ((f0 = e && (! (f1 = e))) || f1 = e)
+  else if failures = 2u2 then f0 = e || f1 = e (*((f0 = e && (! (f1 = e))) || f1 = e)*)
   else false : [S]bool)
 
 let transLinkFaults d e (x : [M]attribute) =
@@ -25,7 +25,8 @@ let d = (200.4.141.0/24)
 let linkFaults = solution(initLinkFaults d, transLinkFaults d, mergeLinkFaults)
 
 let reachable u =
-  match linkFaults[u].selected with | None -> false | _ -> true
+  match linkFaults[u].selected with | None -> false | _ -> 
+    if (failures = 2u2) && (f0 = f1) then false else true
 
 assert(reachable 1n, 0.99p)
 assert(reachable 2n, 0.99p)

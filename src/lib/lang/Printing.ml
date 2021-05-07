@@ -339,15 +339,19 @@ and map_to_string ~show_types term_s m kty range =
              | Man.Top -> Printf.sprintf "*%s" acc)
            k ""
        in *)
-    Printf.sprintf "(%d, %s)" (Bdd.size k) (value_to_string_p ~show_types max_prec v)
+    Printf.sprintf "((%f,%f), %s)" (Bdd.nbpaths k) (Bdd.nbtruepaths k)
+      (value_to_string_p ~show_types max_prec v)
   in
   let bs = Array.to_list @@ Mtbddc.guardleafs m in
   Printf.sprintf "{ %s }" (term term_s binding_to_string bs)
 
 and multivalue_to_string ~show_types term_s m =
   let bs = Array.to_list @@ Mtbddc.leaves m in
-  Printf.sprintf "{\n%s\n}"
-    (term term_s (fun v -> Printf.sprintf "  %s" (value_to_string_p ~show_types max_prec v)) bs)
+  Printf.sprintf "%f,%f\n{\n%s\n}" (Mtbddc.nbpaths m) (Mtbddc.nbnonzeropaths m)
+    (term term_s
+       (fun v ->
+         Printf.sprintf "  %s" (value_to_string_p ~show_types max_prec v))
+       bs)
 
 and exp_to_string_p ~show_types prec e =
   let exp_to_string_p = exp_to_string_p ~show_types in
@@ -466,16 +470,17 @@ let rec declaration_to_string ?(show_types = false) d =
   | DSymbolic (x, ty, Some distr) ->
       Printf.sprintf "symbolic %s : %s = %s" (Var.to_string x) (ty_to_string ty)
         (distrExpr_to_string distr)
-  | DAssert (name, e, prob) -> Printf.sprintf "assert(%s, %s, %f)" name (exp_to_string e) prob
+  | DAssert (name, e, prob) ->
+      Printf.sprintf "assert(%s, %s, %f)" name (exp_to_string e) prob
   | DSolve { aty; var_names; init; trans; merge } ->
       Printf.sprintf "let %s = solution<%s> {init = %s; trans = %s; merge = %s}"
         (exp_to_string var_names)
         (match aty with None -> "None" | Some ty -> ty_to_string ty)
         (exp_to_string init) (exp_to_string trans) (exp_to_string merge)
-  | DNodes (n, xs) -> "let nodes = " ^ string_of_int n ^ List.fold_right
-  (fun (u, r) s -> Printf.sprintf "%s%d: %s;" s u r)
-  xs ""
-^ "}"
+  | DNodes (n, xs) ->
+      "let nodes = " ^ string_of_int n
+      ^ List.fold_right (fun (u, r) s -> Printf.sprintf "%s%d: %s;" s u r) xs ""
+      ^ "}"
   | DEdges es ->
       "let edges = {"
       ^ List.fold_right

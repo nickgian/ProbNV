@@ -392,7 +392,7 @@ let rec translate (e : exp) : exp * BddBinds.t =
       | Some Symbolic ->
           ( {
               e with
-              e = (liftBdd (etuple esl)).e;
+              e = (etuple (List.map liftBdd esl)).e;
               ety = Some (fty (OCamlUtils.oget e.ety));
             },
             rs )

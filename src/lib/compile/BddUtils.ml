@@ -235,7 +235,7 @@ let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) distrs =
   (* Compute the probability of the full BDD *)
   let rec computeProb _ probSymbolic guard =
     match Bdd.inspect guard with
-    | Bool false -> Printf.printf "False\n%!"; 0.0
+    | Bool false -> 0.0
     | Bool true -> 1.0
     | Ite (i, _, _) ->
         let start_var, end_var, distr = BatMap.Int.find i distrs in
@@ -264,8 +264,8 @@ let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) distrs =
             (* If the distribution is still not concrete then we recursively
                descend on it. we multiple by the number of integers we have covered
                until this point, i.e. 2^(j - start_var). Recursion restarts at j+1 *)
-            Printf.printf "probSymbolic Bool true/Ite: %d, %d, j:%d\n" start_var
-               end_var j;
+            (* Printf.printf "probSymbolic Bool true/Ite: %d, %d, j:%d\n" start_var
+               end_var j; *)
             let space = cardinality j start_var in
             space
             *. ( self (guard, j + 1, end_var, td)

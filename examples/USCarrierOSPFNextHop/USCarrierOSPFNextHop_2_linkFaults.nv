@@ -15,7 +15,6 @@ let initLinkFaults d u = init d u
 
 let d = (200.4.141.0/24)
 
-
 let linkFaults = solution(initLinkFaults d, transLinkFaults d, mergeLinkFaults)
 
 let reachable u =

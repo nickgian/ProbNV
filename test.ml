@@ -313,3 +313,14 @@ let mapIte3 predicate1 predicate2 (v : int Mtbdd.t) (f : bool -> bool -> int -> 
 let exp =
   mapIte3 (wrap_mtbdd symbxLtThree) (wrap_mtbdd symbyEqThree) v (fun b1 b2 v ->
       if b1 then if b2 then v + 1 else v + 2 else v)
+
+
+      open Batteries
+      
+let rec exploreIsland grid (i,j) =
+  if grid.(i).(j) = '0' then
+
+
+let islands (grid: char array array) =
+  let visited = IntSet.empty in
+  exploreIsland grid (0,0)

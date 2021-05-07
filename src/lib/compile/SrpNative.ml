@@ -19,12 +19,18 @@ end
 (** Simulator signature*)
 module type SrpSimulationSig = sig
   val simulate_solve :
-    (int * int -> 'a -> 'b) -> (* record_fns *)
-    int -> (* attribute type id *)
-    string -> (* name of solution variable *)
-    (int -> 'a) -> (* init function *)
-    (int -> 'a -> 'a) -> (*transfer function, int argument is the edge id *)
-    (int -> 'a -> 'a -> 'a) -> (* merge function *)
+    (int * int -> 'a -> 'b) ->
+    (* record_fns *)
+    int ->
+    (* attribute type id *)
+    string ->
+    (* name of solution variable *)
+    (int -> 'a) ->
+    (* init function *)
+    (int -> 'a -> 'a) ->
+    (*transfer function, int argument is the edge id *)
+    (int -> 'a -> 'a -> 'a) ->
+    (* merge function *)
     'a CompileBDDs.t
   (** Takes as input record_fns, the attribute type id, the name of the
      variable storing the solutions, the init trans and merge functions and
@@ -110,7 +116,9 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
 
   let simulate_step trans merge (s : 'a extendedSolution) (origin : int) =
     let do_neighbor (_, initial_attribute) (s, todo) neighbor =
-      let edge_id = AdjGraph.E.label @@ AdjGraph.find_edge graph origin neighbor in
+      let edge_id =
+        AdjGraph.E.label @@ AdjGraph.find_edge graph origin neighbor
+      in
       (* Compute the incoming attribute from origin *)
       let n_incoming_attribute = trans edge_id initial_attribute in
       let n_received, n_old_attribute = get_attribute neighbor s in
@@ -370,7 +378,6 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
       (* Processing message from v to u *)
       (* Printf.printf "Processing message from: %d to %d\n" v u; *)
 
-
       (* Compute the incoming attribute from v *)
       (* init u can only be computed once so this is ok *)
       let n_incoming_attribute =
@@ -379,8 +386,8 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
           (* Printf.printf "  Size of message from %d: %d\n" v
                (Cudd.Mtbddc.size (Obj.magic (get_attribute_exn v local)));
              printBdd (Obj.magic (get_attribute_exn v local)); *)
-             (let edge_id = AdjGraph.E.label @@ AdjGraph.find_edge graph v u in
-          trans edge_id (get_attribute_exn v local))
+          let edge_id = AdjGraph.E.label @@ AdjGraph.find_edge graph v u in
+          trans edge_id (get_attribute_exn v local)
       in
 
       match AdjGraph.VertexMap.Exceptionless.find u local with
@@ -624,10 +631,10 @@ let build_solution record_fns (vals, ty) =
   else AdjGraph.VertexMap.empty
 
 (* Two modes of computation until we implement fast prob for all type of symbolics *)
-let check_assertion ((name, a, p) : string * bool Cudd.Mtbddc.t * float) distrs =
+let check_assertion ((name, a, p) : string * bool Cudd.Mtbddc.t * float) distrs
+    =
   let prob = BddUtils.computeTrueProbability a distrs in
   (name, prob >= p, prob)
-
 
 let build_solutions nodes record_fns
     (sols : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list)

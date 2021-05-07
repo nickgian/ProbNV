@@ -1,0 +1,55 @@
+(* A diamond network with bounded link failures *)
+
+let nodes = (4, {0n:"A"; 1n:"B"; 2n:"C"; 3n:"D";})
+
+let edges = {
+    3-2;
+    3-1;
+    1-0;
+    2-0;
+}
+
+(* Assuming every link fails with P(~A) = 0.1*)
+(* Computed via the formula: (n choose k) * P(~A)^k * P(A)^(n-k) for k = # failures.
+Let's assume we want to focus on at most 2 link failures *)
+symbolic failures : int2 = | [0u2,0u2] -> 0.6561p | [1u2,1u2] -> 0.2916p | [2u2,2u2] -> 0.0486p | [3u2,3u2] -> 0.0p 
+
+symbolic f1 : tedge (*indicates the first failed link - uniform distribution assumed*)
+symbolic f2 : tedge (*indicates the second failed link*)
+
+let init u = 
+  if u = 3n then Some 0 else None
+
+let costIncr x =
+  match x with
+  | None -> None
+  | Some y -> Some (y+1)
+
+let trans e (x :[M](option[int])) = 
+  if failures = 0u2 then costIncr x
+  else if failures = 1u2 then if f1 = e then None else costIncr x
+  else if failures = 2u2 then if (f1 = e) || (f2 = e) then None else costIncr x
+  else None (*we don't care what happens in other cases*)
+
+let merge u x y =
+ match (x,y) with
+ | (None, None) -> None
+ | (_, None) -> x
+ | (None, _) -> y
+ | (Some a, Some b) -> if a < b then Some a else Some b
+
+let rib = solution(init, trans, merge)
+
+let reachable u =
+  match rib[u] with | None -> false | _ ->
+    if (failures = 2u2) && (f1 = f2) then false else true
+
+ (* Check probability of reachability given that there is exactly one failure - should be 1.0 *)
+ let reachableOne u =
+  if (failures = 1u2) then    
+    (match rib[u] with | None -> false | _ -> true)
+  else true
+    
+
+assert(reachable 0n, 0.8p)
+assert(reachableOne 0n, 0.8p)

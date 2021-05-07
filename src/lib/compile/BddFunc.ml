@@ -80,7 +80,7 @@ let rec toBdd_typ (record_fns : int * int -> 'a -> 'b) (val_ty : ty) (v : 'v) :
       let bs = mk_int (Obj.magic v) !tnode_sz in
       BInt bs
   | TEdge ->
-      let bs = mk_int (fst @@ Obj.magic v) !tedge_sz in
+      let bs = mk_int (Obj.magic v) !tedge_sz in
       BInt bs
   | TTuple ts ->
       let n = BatList.length ts in
