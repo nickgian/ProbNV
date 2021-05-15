@@ -1,0 +1,119 @@
+(* A diamond network with bounded link failures *)
+
+let nodes = (4, {0n:"A"; 1n:"B"; 2n:"C"; 3n:"D";})
+
+let edges = {
+    3-2;
+    3-1;
+    1-0;
+    2-0;
+}
+
+(* Assuming every link fails with P(~A) = 0.1 EXCEPT for P(1-0) which fails with 0.2. *)
+(* Computed via the formula: (n choose k) * P(~A)^k * P(A)^(n-k) for k = # failures.
+Let's assume we want to focus on at most 2 link failures *)
+(* symbolic failures : int2 = | [0u2,0u2] -> 0.6561p | [1u2,1u2] -> 0.2916p | [2u2,2u2] -> 0.1944p | [3u2,3u2] -> 0.0p *)
+(* symbolic failures : int2 = | [0u2,0u2] -> 0.6561p | [1u2,1u2] -> 0.2916p | [2u2,2u2] -> 0.0702p | [3u2,3u2] -> 0.0p
+
+symbolic f1 : tedge =
+ | 1n~0n -> 0.4p
+ | 3~2 -> 0.2p
+ | 3~1 -> 0.2p
+ | 2~0 -> 0.2p
+
+symbolic f2 : tedge =
+ | 1n~0n -> 0.4p
+ | 3~2 -> 0.2p
+ | 3~1 -> 0.2p
+ | 2~0 -> 0.2p *)
+
+ symbolic failures : int2 = | [0u2,0u2] -> 0.0p | [1u2,1u2] -> 0.0p | [2u2,2u2] -> 0.295p | [3u2,3u2] -> 0.0p
+
+(* If  the failure rates are 0.5 , 0.5, 0.1, 0.1 then links 1-0 and 3~1 are 5 times more likely to be the failed links.
+0.5x + 0.5x + 0.1x + 0.1x = 1.0 => x = 1 / 1.2
+*)
+
+ symbolic f1 : tedge =
+  | 1n~0n -> 0.4166666p
+  | 3~2 -> 0.0833333p
+  | 3~1 -> 0.4166666p
+  | 2~0 -> 0.0833333p
+ 
+ symbolic f2 : tedge =
+ | 1n~0n -> 0.4166666p
+ | 3~2 -> 0.0833333p
+ | 3~1 -> 0.4166666p
+ | 2~0 -> 0.0833333p
+
+ (* symbolic f1 : tedge =
+ | 1n~0n -> 0.4p
+ | 3~2 -> 0.2p
+ | 3~1 -> 0.2p
+ | 2~0 -> 0.2p
+
+symbolic f2 : tedge =
+ | 1n~0n -> 0.4p
+ | 3~2 -> 0.2p
+ | 3~1 -> 0.2p
+ | 2~0 -> 0.2p *)
+
+(* 0.5*0.5*0.9*0.9 + 2*0.5*0.5*0.1*0.9 + 2*0.5*0.1*0.5*0.9 + 0.1*0.1*0.5*0.5 
+= 0.2025 + 0.045 + 0.045 + 0.0025 = 295p *)
+
+(* P(Reach | F = 2) = (0.2025 + 0.0025) * 0.295p / 0.295 *)
+(* what i compute: P(F=2) * (0.41666 * 0.416666 + 0.083333 * 0.083333) / P(F=2 /\ f1 < f2) = 0.1805555
+   P(f1 < f2) = 0.41666 * 
+
+*)
+
+(* what i compute with 0.4,0.2,0.2,0.2: 
+
+  P(F=2) * (0.4 * 0.2 + 0.2 * 0.2) / P(F=2 /\ f1 < f2) =
+  3 * 0.2 * 0.2 / (3*0.4*(0.2) + 2*0.2*0.2 + 0.2*0.2) =
+  3 * 0.2 * 0.2 / (9 * 0.2 * 0.2)
+  *)
+
+
+(*What if equal probability of failure?
+  P(F=2) * (2*p^2) / P(F=2) * (6*p*p)
+*)
+
+
+let init u = 
+  if u = 3n then Some 0 else None
+
+let costIncr x =
+  match x with
+  | None -> None
+  | Some y -> Some (y+1)
+
+let trans e (x :[M](option[int])) = 
+  if failures = 0u2 then costIncr x
+  else if failures = 1u2 then if f1 = e then None else costIncr x
+  else if failures = 2u2 then if (f1 = e) || (f2 = e) then None else costIncr x
+  else None (*we don't care what happens in other cases*)
+
+let merge u x y =
+ match (x,y) with
+ | (None, None) -> None
+ | (_, None) -> x
+ | (None, _) -> y
+ | (Some a, Some b) -> if a < b then Some a else Some b
+
+let rib = solution(init, trans, merge)
+
+let reachable u =
+  match rib[u] with | None -> false | _ -> true
+
+let reachableTwo u =
+    match rib[u] with | None -> false | _ -> if (failures = 2u2) then true else false
+
+assert(if (failures = 2u2) then ((reachable 0n)) else false, 0.8p, (f1 <e f2) && (failures = 2u2))
+assert((if (failures = 2u2) then true else false) && (!(reachable 0n)), 0.8p, (f1 <e f2))
+assert(if (failures = 2u2) then reachable 0n else false, 0.8p, (f1 <e f2))
+assert(reachableTwo 0n, 0.8p, (if (failures = 2u2) then (f1 <e f2) else true))
+assert(reachable 0n, 0.8p, (failures = 2u2 && (f1 <e f2)))
+
+
+(*P(reachable | failures = 2 /\ f1 < f2) = P(reachable | F = 2)*)
+

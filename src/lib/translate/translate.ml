@@ -70,6 +70,8 @@ let opToBddOp op =
   | ULeq n -> BddLeq n
   | NLess -> BddLess !tnode_sz
   | NLeq -> BddLeq !tnode_sz
+  | ELess -> BddLess !tedge_sz
+  | ELeq -> BddLeq !tedge_sz
   | BddAnd | BddAdd _ | BddOr | BddNot | BddEq | BddLess _ | BddLeq _ -> op
   | MCreate | MGet | MSet | TGet _ ->
       failwith "Can't convert operation to symbolic operation"
@@ -158,6 +160,8 @@ let rec translate (e : exp) : exp * BddBinds.t =
       | UAdd _, _
       | ULess _, _
       | ULeq _, _
+      | ELess, _
+      | ELeq, _
       | NLess, _
       | NLeq, _ -> (
           let esl, rs =
@@ -992,13 +996,18 @@ let translateDecl d =
       BddBinds.clearStore ();
       let merge' = translateMerge merge route_ty in
       DSolve { aty; var_names; init = init'; trans = trans'; merge = merge' }
-  | DAssert (name, e, prob) ->
+  | DAssert (name, e, prob, cond) ->
       BddBinds.clearStore ();
       let e', r = translate e in
       let fv = free e in
       let rho = BddBinds.union r fv in
-      if BddBinds.isEmpty rho then DAssert (name, e', prob)
-      else DAssert (name, buildApply e' rho, prob)
+      BddBinds.clearStore ();
+      let cond' =
+        match cond with None -> None | Some c -> Some (fst (translate c))
+        (* condition is symbolic so it should not generate any bindings *)
+      in
+      if BddBinds.isEmpty rho then DAssert (name, e', prob, cond')
+      else DAssert (name, buildApply e' rho, prob, cond')
   | DNodes _ | DEdges _ | DSymbolic _ | DUserTy _ -> d
 
 let translate_declarations ds = List.map translateDecl ds

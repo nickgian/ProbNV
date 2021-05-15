@@ -89,7 +89,7 @@ let mergeValues x y =
 
 let merge node x y = mergeValues x y
 
-let init (d : [S]([S]int32, int6)) node =
+let init d node =
   match node with
   | 0n -> 
 if d = (10.0.0.78/31) || d = (10.0.0.216/31) || d = (200.4.141.0/24) then

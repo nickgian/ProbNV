@@ -231,7 +231,7 @@ let memoize2 f1 f2 =
   g1
 
 (* Algorithm currently used to compute probability of an assertion being true *)
-let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) distrs =
+let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) distrs cond =
   (* Compute the probability of the full BDD *)
   let rec computeProb _ probSymbolic guard =
     match Bdd.inspect guard with
@@ -314,7 +314,13 @@ let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) distrs =
   in
   let trueBdd = Mtbddc.guard_of_leaf tbl assertion true in
   let computeProbMem = memoize2 computeProb probSymbolic in
-  computeProbMem trueBdd
+  match cond with
+  | None -> computeProbMem trueBdd
+  | Some c ->
+      let intersection = computeProbMem (Bdd.dand trueBdd c) in
+      let cprob = computeProbMem c in
+      (* Printf.printf "inter: %5f, %5f\n" intersection cprob; *)
+      intersection /. cprob
 
 (* Same algorithm as before but not memoized and with debug messages *)
 (*let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds =

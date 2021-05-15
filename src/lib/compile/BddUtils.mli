@@ -48,7 +48,10 @@ val createDistributionMap :
   symbolic_var list -> (int * int * distribution) BatMap.Int.t
 
 val computeTrueProbability :
-  bool Cudd.Mtbddc.t -> (int * int * float Cudd.Mtbddc.t) BatMap.Int.t -> float
+  bool Cudd.Mtbddc.t ->
+  (int * int * float Cudd.Mtbddc.t) BatMap.Int.t ->
+  Cudd.Bdd.vt option ->
+  float
 
 val computeTrueProbabilityBDD :
   bool Cudd.Mtbddc.t -> float Cudd.Mtbddc.t BatMap.Int.t -> float

@@ -41,7 +41,7 @@ module type SrpSimulationSig = sig
   val solved : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list ref
   (** List of solutions, each entry is the name of the SRP, a map from nodes to solutions, and the type of routes *)
 
-  val assertions : (string * bool Mtbddc.t * float) list ref
+  val assertions : (string * bool Mtbddc.t * float * BddFunc.t option) list ref
   (** List of assertions and the desired probability. To be checked if they hold. *)
 
   (*TODO: maybe make it a variant to distinguish between a boolean and an Mtbdd boolean. *)
@@ -284,7 +284,9 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
       :: !solved;
     bdd_full
 
-  let assertions : (string * bool Mtbddc.t * float) list ref = ref []
+  let assertions : (string * bool Mtbddc.t * float * BddFunc.t option) list ref
+      =
+    ref []
 end
 
 module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
@@ -613,7 +615,9 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
       :: !solved;
     bdd_full
 
-  let assertions : (string * bool Mtbddc.t * float) list ref = ref []
+  let assertions : (string * bool Mtbddc.t * float * BddFunc.t option) list ref
+      =
+    ref []
 end
 
 (** Given the attribute type of the network constructs an OCaml function
@@ -631,18 +635,26 @@ let build_solution record_fns (vals, ty) =
   else AdjGraph.VertexMap.empty
 
 (* Two modes of computation until we implement fast prob for all type of symbolics *)
-let check_assertion ((name, a, p) : string * bool Cudd.Mtbddc.t * float) distrs
-    =
-  let prob = BddUtils.computeTrueProbability a distrs in
+let check_assertion
+    ((name, a, p, cond) :
+      string * bool Cudd.Mtbddc.t * float * BddFunc.t option) distrs =
+  let cond =
+    match cond with
+    | Some (BBool b) -> Some b
+    | None -> None
+    | _ -> failwith "Impossible case - condition has typechecked to a boolean"
+  in
+  let prob = BddUtils.computeTrueProbability a distrs cond in
   (name, prob >= p, prob)
 
 let build_solutions nodes record_fns
     (sols : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list)
-    (assertions : (string * bool Cudd.Mtbddc.t * float) list) =
+    (assertions : (string * bool Cudd.Mtbddc.t * float * BddFunc.t option) list)
+    =
   let open Solution in
   let assertions = List.rev assertions in
-  let arr = Array.init (Cudd.Man.get_bddvar_nb BddUtils.mgr) (fun i -> i) in
-  Cudd.Man.shuffle_heap BddUtils.mgr arr;
+  (* let arr = Array.init (Cudd.Man.get_bddvar_nb BddUtils.mgr) (fun i -> i) in
+     Cudd.Man.shuffle_heap BddUtils.mgr arr; *)
   Cudd.Man.disable_autodyn BddUtils.mgr;
   let symbolic_bounds = List.rev !BddUtils.vars_list in
   let distrs = BddUtils.createDistributionMap symbolic_bounds in

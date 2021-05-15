@@ -25,7 +25,7 @@ let prec_op op =
   | MCreate -> 5
   | MGet -> 5
   | MSet -> 3
-  | ULess _ | BddLess _ | NLess | ULeq _ | NLeq | BddLeq _ -> 5
+  | ULess _ | BddLess _ | NLess | ULeq _ | NLeq | BddLeq _ | ELess | ELeq -> 5
   | TGet _ -> 5
 
 let prec_exp e =
@@ -179,6 +179,8 @@ let op_to_string op =
   | ULeq n -> "<=" ^ "u" ^ string_of_int n
   | NLess -> "<n"
   | NLeq -> "<=n"
+  | NLess -> "<e"
+  | NLeq -> "<=e"
   | MCreate -> "createMap"
   | MGet -> "at"
   | MSet -> "set"
@@ -470,8 +472,14 @@ let rec declaration_to_string ?(show_types = false) d =
   | DSymbolic (x, ty, Some distr) ->
       Printf.sprintf "symbolic %s : %s = %s" (Var.to_string x) (ty_to_string ty)
         (distrExpr_to_string distr)
-  | DAssert (name, e, prob) ->
-      Printf.sprintf "assert(%s, %s, %f)" name (exp_to_string e) prob
+  | DAssert (name, e, prob, cond) ->
+      let condString =
+        match cond with
+        | None -> ""
+        | Some cond -> Printf.sprintf ", %s" (exp_to_string cond)
+      in
+      Printf.sprintf "assert(%s, %s, %f%s)" name (exp_to_string e) prob
+        condString
   | DSolve { aty; var_names; init; trans; merge } ->
       Printf.sprintf "let %s = solution<%s> {init = %s; trans = %s; merge = %s}"
         (exp_to_string var_names)

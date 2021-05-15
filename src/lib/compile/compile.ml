@@ -105,7 +105,9 @@ let is_prefix_op op =
   | BddAnd | BddOr | BddAdd _ | BddNot | BddLess _ | BddLeq _ | BddEq | MGet
   | MCreate | MSet | TGet _ ->
       true
-  | And | Or | Not | UAdd _ | Eq | ULess _ | ULeq _ | NLess | NLeq -> false
+  | And | Or | Not | UAdd _ | Eq | ULess _ | ULeq _ | NLess | NLeq | ELess
+  | ELeq ->
+      false
 
 (** Translating LLL operators to OCaml operators*)
 let op_to_ocaml_string op =
@@ -119,8 +121,8 @@ let op_to_ocaml_string op =
   | Eq -> "="
   | ULess _ -> "<"
   | ULeq _ -> "<="
-  | NLess -> "<"
-  | NLeq -> "<="
+  | NLess | ELess -> "<"
+  | NLeq | ELeq -> "<="
   | BddAnd | BddOr | BddNot | BddEq | BddAdd _ | BddLess _ | BddLeq _ | MGet
   | MSet | MCreate | TGet _ ->
       failwith
@@ -147,11 +149,11 @@ let rec pattern_to_ocaml_string pattern =
   | PRecord _ -> failwith "Records should have been unrolled"
   | PNode n -> Printf.sprintf "%d" n
   | PEdgeId n -> Printf.sprintf "%d" n
-  | PEdge (p1, p2) ->
-    pattern_to_ocaml_string (PTuple [p1; p2])
-      (* Printf.sprintf "(%s, %s)"
-        (pattern_to_ocaml_string p1)
-        (pattern_to_ocaml_string p2) *)
+  | PEdge (p1, p2) -> pattern_to_ocaml_string (PTuple [ p1; p2 ])
+
+(* Printf.sprintf "(%s, %s)"
+   (pattern_to_ocaml_string p1)
+   (pattern_to_ocaml_string p2) *)
 
 (** ProbNv types to OCaml types*)
 let rec ty_to_ocaml_string t =
@@ -467,8 +469,8 @@ and prefix_op_to_ocaml_string op es ty =
             (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
       | MSet | MCreate ->
           failwith "Wrong number of arguments to MSet/MCreate operation"
-      | Eq | UAdd _ | ULess _ | NLess | ULeq _ | NLeq | And | Or | Not | BddNot
-      | TGet _ ->
+      | Eq | UAdd _ | ULess _ | NLess | ULeq _ | NLeq | ELess | ELeq | And | Or
+      | Not | BddNot | TGet _ ->
           failwith "not applicable" )
   | [ e1; e2; e3 ] -> (
       match op with
@@ -478,9 +480,9 @@ and prefix_op_to_ocaml_string op es ty =
              (Obj.magic (%s))))"
             (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
             (exp_to_ocaml_string e3)
-      | And | Or | Not | Eq | NLess | NLeq | MGet | MCreate | BddAnd | BddOr
-      | BddNot | BddEq | UAdd _ | ULess _ | ULeq _ | BddAdd _ | BddLess _
-      | BddLeq _ | TGet _ ->
+      | And | Or | Not | Eq | NLess | NLeq | ELess | ELeq | MGet | MCreate
+      | BddAnd | BddOr | BddNot | BddEq | UAdd _ | ULess _ | ULeq _ | BddAdd _
+      | BddLess _ | BddLeq _ | TGet _ ->
           failwith "Wrong number of arguments to operation." )
   | _ -> failwith "too many arguments to operation"
 
@@ -528,9 +530,15 @@ let compile_decl decl =
         (varname x) (varname x) dist_id ty_id
   | DLet (x, e) ->
       Printf.sprintf "let %s = %s" (varname x) (exp_to_ocaml_string e)
-  | DAssert (name, e, prob) ->
-      Printf.sprintf "let () = SIM.assertions := (%s, %s, %f) :: !SIM.assertions\n"
-        name (exp_to_ocaml_string e) prob
+  | DAssert (name, e, prob, cond) ->
+      let cond' =
+        match cond with
+        | None -> "None"
+        | Some c -> Printf.sprintf "Some (%s)" (exp_to_ocaml_string c)
+      in
+      Printf.sprintf
+        "let () = SIM.assertions := (%s, %s, %f, %s) :: !SIM.assertions\n" name
+        (exp_to_ocaml_string e) prob cond'
   | DSolve solve -> (
       match solve.var_names.e with
       | EVar x -> (

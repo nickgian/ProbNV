@@ -81,16 +81,20 @@ rule token = parse
   | "&" width as s    { UAND (position lexbuf, int_of_string @@ String.lchop ~n:2 s) }
   | "&"               { UAND (position lexbuf, 32) }
   | "<=n"             { NLEQ (position lexbuf) }
+  | "<=e"             { ELEQ (position lexbuf) }
   | "<=" width as s   { LEQ (position lexbuf, int_of_string @@ String.lchop ~n:3 s) }
   | "<="              { LEQ (position lexbuf, 32) }
   | ">=n"             { NGEQ (position lexbuf) }
+  | ">=e"             { EGEQ (position lexbuf) }
   | ">=" width as s   { GEQ (position lexbuf, int_of_string @@ String.lchop ~n:3 s) }
   | ">="              { GEQ (position lexbuf, 32) }
   | "="               { EQ (position lexbuf) }
   | "<n"              { NLESS (position lexbuf) }
+  | "<e"              { ELESS (position lexbuf) }
   | "<" width as s    { LESS (position lexbuf, int_of_string @@ String.lchop ~n:2 s) }
   | "<"               { LESS (position lexbuf, 32) }
   | ">n"              { NGREATER (position lexbuf) }
+  | ">e"              { EGREATER (position lexbuf) }
   | ">" width as s    { GREATER (position lexbuf, int_of_string @@ String.lchop ~n:2 s) }
   | ">"               { GREATER (position lexbuf, 32) }
   | ";"               { SEMI (position lexbuf) }

@@ -24,7 +24,9 @@ let run_compiled file _ _ decls topology fs =
   in
   let newpath = name in
   let nodeNames = !node_mapping in
-  let solution = apply_all (Loader.simulate nodeNames topology newpath decls) fs in
+  let solution =
+    apply_all (Loader.simulate nodeNames topology newpath decls) fs
+  in
   Solution.print_solution solution
 
 let parse_input (args : string array) =

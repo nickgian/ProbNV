@@ -126,7 +126,7 @@ let rec check_annot (e : exp) =
 
 let check_annot_decl (d : declaration) =
   match d with
-  | DLet (_, e) | DAssert (_, e, _) -> check_annot e
+  | DLet (_, e) | DAssert (_, e, _, _) -> check_annot e
   | DSolve { var_names; init; trans; merge; _ } ->
       check_annot var_names;
       check_annot init;
@@ -378,6 +378,8 @@ let op_typ op =
         concrete TBool )
   | NLess -> ([ concrete TNode; concrete TNode ], concrete TBool)
   | NLeq -> ([ concrete TNode; concrete TNode ], concrete TBool)
+  | ELess -> ([ concrete TEdge; concrete TEdge ], concrete TBool)
+  | ELeq -> ([ concrete TEdge; concrete TEdge ], concrete TBool)
   | TGet _ -> failwith "internal error (op_typ): tuple op"
   (* Map operations *)
   | MCreate | MGet | MSet | Eq ->
@@ -535,6 +537,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
   match d with
   | DLet (x, e1) when isHLL ->
       enter_level ();
+
       let e1, ty_e1 = infer_exp e1 |> textract in
       (* Printf.printf "Dlet : %s with ty = %s\n" (Var.to_string x)
          (Printing.ty_to_string ty_e1); *)
@@ -545,17 +548,33 @@ and infer_declaration isHLL infer_exp i info env record_types d :
       let e1, ty_e1 = infer_exp e1 |> textract in
       (Env.update env x ty_e1, DLet (x, texp (e1, ty_e1, e1.espan)))
   | DSymbolic (x, ty, prob) -> (Env.update env x ty, DSymbolic (x, ty, prob))
-  | DAssert (name, e, prob) -> (
+  | DAssert (name, e, prob, cond) -> (
       let e' = infer_exp e in
       let ty = oget e'.ety in
       (* Printf.printf "Assertion type: %s" (Printing.ty_to_string ty); *)
       (* Mode should not matter for unification - although it might matter in the TVar case
          but I don't think that case appears here *)
       unify isHLL info e ty { typ = TBool; mode = None };
+
       (*According to rule Assert we need to check that mode = Multivalue or Concrete *)
+
+      (* We also check that the condition is a symbolic boolean *)
+      let cond' =
+        match cond with
+        | None -> None
+        | Some cond -> (
+            let cond' = infer_exp cond in
+            let tyCond = oget cond'.ety in
+            unify isHLL info cond tyCond { typ = TBool; mode = None };
+            match tyCond.mode with
+            | Some Symbolic -> Some cond'
+            | _ ->
+                Console.error_position info e.espan
+                  "Conditional expression on assertion should be a symbolic \
+                   boolean" )
+      in
       match ty.mode with
-      | Some Concrete | Some Multivalue ->
-          (Env.update env (Var.create "assert") ty, DAssert (name, e', prob))
+      | Some Concrete | Some Multivalue -> (env, DAssert (name, e', prob, cond'))
       | None | Some Symbolic ->
           Console.error_position info e.espan "Wrong mode for assertion" )
   | DSolve { aty; var_names; init; trans; merge } -> (
@@ -851,11 +870,20 @@ module HLLTypeInf = struct
                   (Printf.sprintf "Function must have arrow type: %s"
                      (Printing.ty_to_string ty_fun))
           in
+
           (* suppose for now we restricted function arguments to C, i.e. symbolics
              are not allowed, ty_arg should be Concrete or Multivalue
              TODO: allow user to annotate the mode
           *)
+
           (* check that m1 = Concrete *)
+          (* Printf.printf "ty_fun: %s\n\n" (Printing.ty_to_string ty_fun);
+             Printf.printf "for expr: %s\n" (Printing.exp_to_string e1); *)
+          (* Printf.printf "ty_fun: %s\n\n" (Printing.ty_to_string ty_fun);
+             Printf.printf "mode: %s\n\n"
+               (Printing.mode_to_string (OCamlUtils.oget @@ get_mode fun_arg));
+             Printf.printf "modeActual: %s\n\n"
+               (Printing.mode_to_string (OCamlUtils.oget @@ fun_arg.mode)); *)
           assert (get_mode fun_arg = Some Concrete);
           (* If m1 is Concrete then m3 is Concrete or multi-value *)
           let _ =
@@ -1204,6 +1232,26 @@ module LLLTypeInf = struct
               (*ensure the modes match and are symbolic*)
               let m1 = OCamlUtils.oget (get_mode ty1) in
               let m2 = OCamlUtils.oget (get_mode ty2) in
+              if m1 = m2 && m1 = Symbolic then
+                texp (eop o [ e1; e2 ], mty (Some m1) TBool, e.espan)
+              else
+                Console.error_position info e.espan
+                  (Printf.sprintf "Mode mismatch in operation: %s and %s"
+                     (Printing.mode_to_string m1)
+                     (Printing.mode_to_string m2))
+          | BddLess n, [ e1; e2 ] | BddLeq n, [ e1; e2 ] ->
+              let e1, ty1 = infer_exp e1 |> textract in
+              let e2, ty2 = infer_exp e2 |> textract in
+              unify info e ty1 ty2;
+              (*ensure the modes match and are symbolic*)
+              let m1 = OCamlUtils.oget (get_mode ty1) in
+              let m2 = OCamlUtils.oget (get_mode ty2) in
+              ( match (get_inner_type ty1).typ with
+              | TInt _ -> ()
+              | TEdge | TNode -> ()
+              | _ ->
+                  Console.error_position info e.espan
+                    (Printf.sprintf "Type mismatch in equality operation") );
               if m1 = m2 && m1 = Symbolic then
                 texp (eop o [ e1; e2 ], mty (Some m1) TBool, e.espan)
               else

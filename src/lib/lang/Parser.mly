@@ -159,6 +159,10 @@
 %token <ProbNv_datastructures.Span.t> NGREATER
 %token <ProbNv_datastructures.Span.t> NLESS
 %token <ProbNv_datastructures.Span.t> NLEQ
+%token <ProbNv_datastructures.Span.t> EGEQ
+%token <ProbNv_datastructures.Span.t> EGREATER
+%token <ProbNv_datastructures.Span.t> ELESS
+%token <ProbNv_datastructures.Span.t> ELEQ
 %token <ProbNv_datastructures.Span.t> LET
 %token <ProbNv_datastructures.Span.t> IN
 %token <ProbNv_datastructures.Span.t> IF
@@ -283,7 +287,7 @@ distPattern:
     | UNDERSCORE                          { DistrPWild }                     
     | LBRACKET NUM COMMA NUM RBRACKET     { DistrPRange (snd $2,snd $4) }
     | NODE                                { DistrPNode (snd $1)}
-    | NODE TILDE NODE                     { DistrPEdge (snd $1, snd $3) }
+    | edgenode TILDE edgenode             { DistrPEdge ($1, $3) }
     | FALSE                               { DistrPBool false }
     | TRUE                                { DistrPBool true }
     /* | LPAREN distPatterns RPAREN          { distr_tuple_pattern $2} */
@@ -302,14 +306,18 @@ distBranches:
     | distBranch distBranches             { $1 :: $2 }
 
 
+assertion:
+| expr COMMA PROB COMMA expr              { ($1, (snd $3, Some $5))}
+| expr COMMA PROB                         { ($1, (snd $3, None))}
+
 component:
     /* | LET letvars EQ SOLUTION expr      { make_dsolve (fst $2) $5 } */
     | LET letvars EQ SOLUTION LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (fst $2) $6 $8 $10 }
     | LET letvars EQ expr                       { global_let $2 $4 $4.espan (Span.extend $1 $4.espan) }
     | SYMBOLIC ID COLON bty                    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, None) }
     | SYMBOLIC ID COLON bty EQ distBranches    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, Some $6) }
-    | ASSERT LPAREN expr COMMA PROB RPAREN      { DAssert ("\"\"", $3,snd $5) }
-    | ASSERT LPAREN STRING COMMA expr COMMA PROB RPAREN      { DAssert (snd $3, $5, snd $7) }
+    | ASSERT LPAREN assertion RPAREN      { DAssert ("\"\"", fst $3 , fst (snd $3), snd (snd $3)) }
+    | ASSERT LPAREN STRING COMMA assertion RPAREN      { DAssert (snd $3, fst $5, fst (snd $5), snd (snd $5)) }
     | LET EDGES EQ LBRACE RBRACE        { DEdges [] }
     | LET EDGES EQ LBRACE edges RBRACE  { DEdges $5 }
     | LET NODES EQ NUM                  { DNodes (ProbNv_datastructures.Integer.to_int (snd $4), []) }
@@ -369,10 +377,14 @@ expr:
     | expr GREATER expr                 { exp (eop (ULess (snd $2)) [$3;$1]) (Span.extend $1.espan $3.espan) }
     | expr LEQ expr                     { exp (eop (ULeq (snd $2)) [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr GEQ expr                     { exp (eop (ULeq (snd $2)) [$3;$1]) (Span.extend $1.espan $3.espan) }
+    | expr ELESS expr                   { exp (eop ELess [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr NLESS expr                   { exp (eop NLess [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr NGREATER expr                { exp (eop NLess [$3;$1]) (Span.extend $1.espan $3.espan) }
+    | expr EGREATER expr                { exp (eop ELess [$3;$1]) (Span.extend $1.espan $3.espan) }
     | expr NLEQ expr                    { exp (eop NLeq [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr NGEQ expr                    { exp (eop NLeq [$3;$1]) (Span.extend $1.espan $3.espan) }
+    | expr ELEQ expr                    { exp (eop ELeq [$1;$3]) (Span.extend $1.espan $3.espan) }
+    | expr EGEQ expr                    { exp (eop ELeq [$3;$1]) (Span.extend $1.espan $3.espan) }
     | LPAREN expr COLON ty RPAREN       { exp ~ty:(Some $4) $2 (Span.extend $1 $5) }
     | LPAREN expr RPAREN                { exp $2 (Span.extend $1 $3) }
     | expr DOT ID                       { exp (eproject $1 (Var.name (snd $3))) (Span.extend ($1.espan) (fst $3)) }

@@ -134,6 +134,8 @@ type op =
   | ULeq of bitwidth
   | NLess
   | NLeq
+  | ELess
+  | ELeq
   | MGet
   | MSet
   | MCreate
@@ -244,9 +246,9 @@ type solve = {
 type declaration =
   | DLet of var * exp
   | DSymbolic of var * ty * distrExpr option
-  | DAssert of (string * exp * probability)
+  | DAssert of (string * exp * probability * exp option)
   | DSolve of solve
-  | DNodes of int * ((node * string) list)
+  | DNodes of int * (node * string) list
   | DEdges of (node * node) list
   | DUserTy of var * ty
 
@@ -661,6 +663,8 @@ and hash_op op =
   | BddNot -> 12
   | NLess -> 14
   | NLeq -> 15
+  | ELess -> 16
+  | ELeq -> 17
   | TGet (idx, sz) -> 18 + idx + sz + (256 * 6)
 
 and hash_branches ~hash_meta bs =
@@ -702,7 +706,7 @@ let arity op =
   | Not -> 1
   | UAdd _ -> 2
   | Eq -> 2
-  | ULess _ | ULeq _ | NLeq | NLess -> 2
+  | ULess _ | ULeq _ | NLeq | NLess | ELess | ELeq -> 2
   | MCreate -> 1
   | MGet -> 2
   | MSet -> 3
@@ -969,7 +973,8 @@ let get_edges ds =
   with Not_found -> None
 
 let get_nodes ds =
-  get_decl ds (fun d -> match d with DNodes (i, xs) -> Some (i, xs) | _ -> None)
+  get_decl ds (fun d ->
+      match d with DNodes (i, xs) -> Some (i, xs) | _ -> None)
 
 let get_symbolics ds =
   List.fold_left
@@ -1063,6 +1068,7 @@ let compare_es = compare_exp
 let nb_bits i = Z.log2up (Z.of_int i)
 
 let edge_mapping = ref IntMap.empty
+
 let node_mapping : string IntMap.t ref = ref IntMap.empty
 
 (* Create mapping between edge labels and edges, and node ids and router names, and sets the number of bits required
@@ -1075,7 +1081,5 @@ let create_topology_mapping nodes topology =
       (fun e acc ->
         IntMap.add (AdjGraph.E.label e) (AdjGraph.E.src e, AdjGraph.E.dst e) acc)
       topology IntMap.empty;
-  node_mapping := 
-    List.fold_left (fun acc (uid, u) ->
-      IntMap.add uid u acc
-    ) IntMap.empty nodes
+  node_mapping :=
+    List.fold_left (fun acc (uid, u) -> IntMap.add uid u acc) IntMap.empty nodes
