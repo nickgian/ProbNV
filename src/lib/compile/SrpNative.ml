@@ -104,6 +104,65 @@ struct
   (** Current state of each interface/link *)
   type 'packet interfaceState = 'packet AdjGraph.EdgeMap.t 
   
+    (* List holding the solutions of solved SRPs*)
+    let solved : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list ref =
+      ref []
+  
+    let fwd_time = ref 0.0
+  
+    let logging_time = ref 0.0
+  
+    let simulate_forwarding record_fns hv_ty_id he_ty_id nameV nameE initFwd fwdIn fwdOut hinitV hinitE logV logE =
+      let s = create_state (AdjGraph.nb_vertex G.graph) init in
+      let trans e x =
+        incr transfers;
+        Profile.time_profile_total transfer_time (fun () -> trans e x)
+      in
+      let merge u x y =
+        incr merges;
+        Profile.time_profile_total merge_time (fun () -> merge u x y)
+      in
+      let vals =
+        match (Cmdline.get_cfg ()).bound with
+        | None ->
+            simulate_init trans merge s
+            |> AdjGraph.VertexMap.map (fun (_, v) -> v)
+        | Some b ->
+            fst @@ simulate_init_bound trans merge s b
+            |> AdjGraph.VertexMap.map (fun (_, v) -> v)
+      in
+  
+      Printf.printf "Number of incremental merges: %d\n" !incr_merges;
+      Printf.printf "Number of calls to merge: %d\n" !merges;
+      Printf.printf "Number of transfers: %d\n" !transfers;
+      Printf.printf "Transfer time: %f\n" !transfer_time;
+      Printf.printf "Merge time: %f\n" !merge_time;
+      Printf.printf "Apply2 time: %f\n" !BddFunc.apply2_time;
+      Printf.printf "Apply3 time: %f\n" !BddFunc.apply3_time;
+      let default = AdjGraph.VertexMap.choose vals |> snd in
+      (* Constructing a function from the solutions *)
+      let bdd_base =
+        BddMap.create
+          ~key_ty_id:
+            (Collections.TypeIds.get_id CompileBDDs.type_store
+               Syntax.(concrete TNode))
+          ~val_ty_id:attr_ty_id default
+      in
+      let bdd_full =
+        AdjGraph.VertexMap.fold
+          (fun n v acc ->
+            BddMap.update (Obj.magic record_fns) acc (Obj.magic n) (Obj.magic v))
+          vals bdd_base
+      in
+  
+      (* Storing the AdjGraph.VertexMap in the solved list, but returning
+         the function to the ProbNV program *)
+      solved :=
+        ( name,
+          ( Obj.magic vals,
+            Collections.TypeIds.get_elt CompileBDDs.type_store attr_ty_id ) )
+        :: !solved;
+      bdd_full
   
 end
 
