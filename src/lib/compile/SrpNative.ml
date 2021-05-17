@@ -36,6 +36,33 @@ module type SrpSimulationSig = sig
      variable storing the solutions, the init trans and merge functions and
      computes the solutions.*)
 
+  val simulate_forwarding :
+    (int * int -> 'a -> 'b) ->
+    (* record_fns *)
+    int ->
+    (* vertex history type id *)
+    int ->
+    (* edge history type id *)
+    string ->
+    (* name of vertex variable *)
+    string ->
+    (* name of edge variable *)
+    (int -> 'packet) ->
+    (* fwdInit function *)
+    (int -> 'packet -> 'packet) ->
+    (*fwdOut function, int argument is the edge id *)
+    (int -> 'packet -> 'packet) ->
+    (*fwdOut function, int argument is the edge id *)
+    (int -> 'historyV) ->
+    (* hinitV function - int is the node id*)
+    (int -> 'historyE) ->
+    (* hinitE function - int is the edge id *)
+    (int -> 'packet -> 'historyV -> 'historyV) ->
+    (* logV function - int is the node id*)
+    (int -> 'packet -> 'historyE -> 'historyE) ->
+    (* logE function - int is the edge id*)
+    'a CompileBDDs.t
+
   val graph : AdjGraph.t
 
   val solved : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list ref
@@ -63,6 +90,21 @@ let get_srp () =
 
 module type Topology = sig
   val graph : AdjGraph.t
+end
+
+module ForwardingSimulation (G: Topology) =
+struct
+  (** Keeping track of the history of each node *)
+  type 'hV historyV = 'hV AdjGraph.VertexMap.t
+  (** Keeping track of the history of each link *)
+  type 'hE historyE = 'hE AdjGraph.EdgeMap.t
+
+  (** Current state of each switch/node *)
+  type 'packet switchState = 'packet AdjGraph.VertexMap.t
+  (** Current state of each interface/link *)
+  type 'packet interfaceState = 'packet AdjGraph.EdgeMap.t 
+  
+  
 end
 
 module SrpSimulation (G : Topology) : SrpSimulationSig = struct

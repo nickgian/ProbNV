@@ -120,6 +120,33 @@ let alpha_convert_declaration bmap (env : Var.t Env.t) (d : declaration) =
       in
       let env, y = rename_solve_vars bmap env var_names in
       (env, DSolve { aty; var_names = y; init; trans; merge })
+  | DForward
+      { names_V; names_E; fwdInit; fwdOut; fwdIn; hinitV; hinitE; logE; logV }
+    ->
+      let fwdInit, fwdOut, fwdIn, hinitV, hinitE, logE, logV =
+        ( alpha_convert_exp env fwdInit,
+          alpha_convert_exp env fwdOut,
+          alpha_convert_exp env fwdIn,
+          alpha_convert_exp env hinitV,
+          alpha_convert_exp env hinitE,
+          alpha_convert_exp env logE,
+          alpha_convert_exp env logV )
+      in
+      let env, names_V = rename_solve_vars bmap env names_V in
+      let env, names_E = rename_solve_vars bmap env names_E in
+      ( env,
+        DForward
+          {
+            names_V;
+            names_E;
+            fwdInit;
+            fwdOut;
+            fwdIn;
+            hinitV;
+            hinitE;
+            logE;
+            logV;
+          } )
   | DAssert (name, e, prob, None) ->
       (env, DAssert (name, alpha_convert_exp env e, prob, None))
   | DAssert (name, e, prob, Some c) ->

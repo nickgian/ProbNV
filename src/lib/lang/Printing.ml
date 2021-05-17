@@ -179,8 +179,8 @@ let op_to_string op =
   | ULeq n -> "<=" ^ "u" ^ string_of_int n
   | NLess -> "<n"
   | NLeq -> "<=n"
-  | NLess -> "<e"
-  | NLeq -> "<=e"
+  | ELess -> "<e"
+  | ELeq -> "<=e"
   | MCreate -> "createMap"
   | MGet -> "at"
   | MSet -> "set"
@@ -485,6 +485,13 @@ let rec declaration_to_string ?(show_types = false) d =
         (exp_to_string var_names)
         (match aty with None -> "None" | Some ty -> ty_to_string ty)
         (exp_to_string init) (exp_to_string trans) (exp_to_string merge)
+  | DForward
+      { names_V; names_E; fwdInit; fwdOut; fwdIn; hinitV; hinitE; logE; logV }
+    ->
+      Printf.sprintf "let (%s, %s) = forward(%s, %s, %s, %s, %s, %s, %s)"
+        (exp_to_string names_V) (exp_to_string names_E) (exp_to_string fwdInit)
+        (exp_to_string fwdOut) (exp_to_string fwdIn) (exp_to_string hinitV)
+        (exp_to_string hinitE) (exp_to_string logV) (exp_to_string logE)
   | DNodes (n, xs) ->
       "let nodes = " ^ string_of_int n
       ^ List.fold_right (fun (u, r) s -> Printf.sprintf "%s%d: %s;" s u r) xs ""

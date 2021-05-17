@@ -195,6 +195,32 @@ let inline_declaration (cond : ty -> bool) (env : exp Env.t) (d : declaration) =
         (inline_exp env init, inline_exp env trans, inline_exp env merge)
       in
       (env, Some (DSolve { aty; var_names; init; trans; merge }))
+  | DForward
+      { names_V; names_E; fwdInit; fwdOut; fwdIn; hinitV; hinitE; logE; logV }
+    ->
+      let fwdInit, fwdOut, fwdIn, hinitV, hinitE, logE, logV =
+        ( inline_exp env fwdInit,
+          inline_exp env fwdOut,
+          inline_exp env fwdIn,
+          inline_exp env hinitV,
+          inline_exp env hinitE,
+          inline_exp env logE,
+          inline_exp env logV )
+      in
+      ( env,
+        Some
+          (DForward
+             {
+               names_V;
+               names_E;
+               fwdInit;
+               fwdOut;
+               fwdIn;
+               hinitV;
+               hinitE;
+               logE;
+               logV;
+             }) )
   | DUserTy _ | DNodes _ | DEdges _ -> (env, Some d)
 
 let rec inline_declarations_aux cond env (ds : declarations) : declarations =

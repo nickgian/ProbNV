@@ -28,6 +28,30 @@ let merge_ty aty =
 let trans_ty aty =
   concrete (TArrow (concrete edge_ty, concrete (TArrow (aty, aty))))
 
+let fwdInit_ty aty = concrete (TArrow (concrete node_ty, aty))
+
+let fwdOut_ty aty =
+  concrete (TArrow (concrete edge_ty, concrete (TArrow (aty, aty))))
+
+let fwdIn_ty aty =
+  concrete (TArrow (concrete edge_ty, concrete (TArrow (aty, aty))))
+
+let logVInit_ty aty = concrete (TArrow (concrete node_ty, aty))
+
+let logV_ty fwd_aty logV_aty =
+  concrete
+    (TArrow
+       ( concrete node_ty,
+         concrete (TArrow (fwd_aty, concrete (TArrow (logV_aty, logV_aty)))) ))
+
+let logEInit_ty aty = concrete (TArrow (concrete edge_ty, aty))
+
+let logE_ty fwd_aty logE_aty =
+  concrete
+    (TArrow
+       ( concrete edge_ty,
+         concrete (TArrow (fwd_aty, concrete (TArrow (logE_aty, logE_aty)))) ))
+
 (* let solve_ty aty =
    TRecord
     (StringMap.add "init" (init_ty aty)
@@ -511,6 +535,13 @@ and infer_values info env record_types vs =
       (v :: vs, t :: ts)
 
 (** * Infering Types for Declarations *)
+let getSecondArgMode info e =
+  match (OCamlUtils.oget e.ety).typ with
+  | TArrow (_, ty2) -> (
+      match ty2.typ with
+      | TArrow (tyarg, tyres) -> (get_mode tyarg, get_mode tyres)
+      | _ -> Console.error_position info e.espan "Must be of function type" )
+  | _ -> Console.error_position info e.espan "Must be of function type"
 
 (** Inference for declarations is mostly the same between HLL and LLL. One
     difference is the solution rule, so we reuse most of the code between the
@@ -643,6 +674,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
         | Some ty -> ty
         | None -> { typ = fresh_tyvar (); mode = Some m }
       in
+
       unify isHLL info init (oget init'.ety) (init_ty solve_aty);
       unify isHLL info trans (oget trans'.ety) (trans_ty solve_aty);
       unify isHLL info merge (oget merge'.ety) (merge_ty solve_aty);
@@ -664,6 +696,120 @@ and infer_declaration isHLL infer_exp i info env record_types d :
                 trans = trans';
                 merge = merge';
               } ) )
+  | DForward
+      { names_V; names_E; fwdInit; fwdOut; fwdIn; hinitV; hinitE; logE; logV }
+    ->
+      let fwdInit' = infer_exp fwdInit in
+      let fwdOut' = infer_exp fwdOut in
+      let fwdIn' = infer_exp fwdIn in
+      let hinitV' = infer_exp hinitV in
+      let hinitE' = infer_exp hinitE in
+      let logE' = infer_exp logE in
+      let logV' = infer_exp logV in
+      let varV, varE =
+        match (names_V.e, names_E.e) with
+        | EVar x, EVar y -> (x, y)
+        | _ ->
+            Console.error_position info fwdInit.espan
+              "Bad Forwarding Declaration"
+      in
+      let mFwd, mV, mE =
+        (* Computing the mode for the solutions according to Forwarding rule for HLL and LLL *)
+        let mfwdInit =
+          match (oget fwdInit'.ety).typ with
+          | TArrow (_, ty2) -> get_mode ty2
+          | _ ->
+              Console.error_position info fwdInit.espan
+                "FwdInit must be of function type"
+        in
+        let mfwdOut_arg, mfwdOut_res = getSecondArgMode info fwdOut' in
+        let mfwdIn_arg, mfwdIn_res = getSecondArgMode info fwdIn' in
+        let mhInitV =
+          match (oget hinitV'.ety).typ with
+          | TArrow (_, ty2) -> get_mode ty2
+          | _ ->
+              Console.error_position info fwdInit.espan
+                "HInitV must be of function type"
+        in
+        let mhInitE =
+          match (oget hinitE'.ety).typ with
+          | TArrow (_, ty2) -> get_mode ty2
+          | _ ->
+              Console.error_position info fwdInit.espan
+                "HInitE must be of function type"
+        in
+        let mlogV_arg, mlogV_res = getSecondArgMode info logV' in
+        let mlogE_arg, mlogE_res = getSecondArgMode info logE' in
+        (*For HLL*)
+        if isHLL then
+          let mFwd =
+            joinAll
+              (List.map OCamlUtils.oget [ mfwdInit; mfwdOut_res; mfwdIn_res ])
+          in
+          ( mFwd,
+            joinAll [ mFwd; OCamlUtils.oget mhInitV; OCamlUtils.oget mlogV_res ],
+            joinAll [ mFwd; OCamlUtils.oget mhInitE; OCamlUtils.oget mlogE_res ]
+          )
+        else if
+          (* For LLL *)
+          List.for_all
+            (fun m -> m = mfwdInit)
+            [
+              mfwdIn_arg;
+              mfwdIn_res;
+              mfwdOut_arg;
+              mfwdOut_res;
+              mlogV_arg;
+              mlogE_arg;
+              mlogE_res;
+              mlogV_res;
+              mhInitE;
+              mhInitV;
+            ]
+        then
+          ( OCamlUtils.oget mfwdInit,
+            OCamlUtils.oget mlogV_res,
+            OCamlUtils.oget mlogE_res )
+        else
+          Console.error_position info fwdInit.espan
+            "Modes of forwarding declarations do not match"
+      in
+      let fwd_aty = { typ = fresh_tyvar (); mode = Some mFwd } in
+      let logV_aty = { typ = fresh_tyvar (); mode = Some mV } in
+      let logE_aty = { typ = fresh_tyvar (); mode = Some mE } in
+
+      unify isHLL info fwdInit (oget fwdInit'.ety) (fwdInit_ty fwd_aty);
+      unify isHLL info fwdOut (oget fwdOut'.ety) (fwdOut_ty fwd_aty);
+      unify isHLL info fwdIn (oget fwdIn'.ety) (fwdIn_ty fwd_aty);
+
+      unify isHLL info hinitV (oget hinitV'.ety) (logVInit_ty logV_aty);
+      unify isHLL info hinitE (oget hinitE'.ety) (logEInit_ty logE_aty);
+      unify isHLL info logV (oget logV'.ety) (logV_ty fwd_aty logV_aty);
+      unify isHLL info logE (oget logE'.ety) (logE_ty fwd_aty logE_aty);
+
+      if mFwd = Symbolic || mV = Symbolic || mE = Symbolic then
+        Console.error_position info fwdInit.espan
+          "Forwarding cannot be symbolic"
+      else
+        let etyV =
+          { typ = TMap (concrete TNode, logV_aty); mode = Some Concrete }
+        in
+        let etyE =
+          { typ = TMap (concrete TEdge, logE_aty); mode = Some Concrete }
+        in
+        ( Env.update (Env.update env varV etyV) varE etyE,
+          DForward
+            {
+              names_V = aexp (evar varV, Some etyV, names_V.espan);
+              names_E = aexp (evar varE, Some etyE, names_E.espan);
+              fwdInit = fwdInit';
+              fwdOut = fwdOut';
+              fwdIn = fwdIn';
+              hinitV = hinitV';
+              hinitE = hinitE';
+              logE = logE';
+              logV = logV';
+            } )
   | DUserTy _ | DNodes _ | DEdges _ -> (env, d)
 
 (** High-Level Language Type Inference *)
@@ -1239,7 +1385,7 @@ module LLLTypeInf = struct
                   (Printf.sprintf "Mode mismatch in operation: %s and %s"
                      (Printing.mode_to_string m1)
                      (Printing.mode_to_string m2))
-          | BddLess n, [ e1; e2 ] | BddLeq n, [ e1; e2 ] ->
+          | BddLess _, [ e1; e2 ] | BddLeq _, [ e1; e2 ] ->
               let e1, ty1 = infer_exp e1 |> textract in
               let e2, ty2 = infer_exp e2 |> textract in
               unify info e ty1 ty2;

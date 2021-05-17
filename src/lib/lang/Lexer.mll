@@ -57,6 +57,7 @@ rule token = parse
   | "tedge"           { TEDGE (position lexbuf) }
   | "type"            { TYPE (position lexbuf) }
   | "solution"        { SOLUTION (position lexbuf) }
+  | "forward"         { FORWARD (position lexbuf) }
   | "assert"          { ASSERT (position lexbuf) }
   | "S"               { SYMB (position lexbuf)}
   | "M"               { MULTI (position lexbuf)}

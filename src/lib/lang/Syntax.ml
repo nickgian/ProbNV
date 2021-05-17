@@ -47,6 +47,11 @@ let join_opts m1 m2 =
   | _, None -> m1
   | Some m1, Some m2 -> join_opt m1 m2
 
+let joinAll (m : mode list) =
+  match m with
+  | [] -> failwith "Empty List"
+  | m1 :: m -> List.fold_left (fun acc m -> join m acc) m1 m
+
 (** Base types in probNV include an execution mode *)
 type baseTy =
   | TVar of tyvar ref
@@ -243,11 +248,25 @@ type solve = {
   merge : exp;
 }
 
+type forward = {
+  (* aty : ty option; *)
+  names_V : exp;
+  names_E : exp;
+  fwdInit : exp;
+  fwdOut : exp;
+  fwdIn : exp;
+  hinitV : exp;
+  hinitE : exp;
+  logE : exp;
+  logV : exp;
+}
+
 type declaration =
   | DLet of var * exp
   | DSymbolic of var * ty * distrExpr option
   | DAssert of (string * exp * probability * exp option)
   | DSolve of solve
+  | DForward of forward
   | DNodes of int * (node * string) list
   | DEdges of (node * node) list
   | DUserTy of var * ty

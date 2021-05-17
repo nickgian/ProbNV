@@ -54,6 +54,17 @@
   let make_dsolve ?ty:(ty=None) x init trans merge =
     DSolve ({aty = ty; var_names = evar x; init; trans; merge})
 
+  let make_dfwd x y init fwdOut fwdIn hinitV logV hinitE logE =
+    DForward { 
+      names_V = x; 
+      names_E = y; 
+      fwdInit = init;
+      fwdOut = fwdOut;
+      fwdIn = fwdIn;
+      hinitV = hinitV;
+      hinitE = hinitE;
+      logE = logE;
+      logV = logV; }
 
   let ensure_node_pattern p =
     match p with
@@ -190,6 +201,7 @@
 %token <ProbNv_datastructures.Span.t> CREATEMAP
 %token <ProbNv_datastructures.Span.t> TOPTION
 %token <ProbNv_datastructures.Span.t> SOLUTION
+%token <ProbNv_datastructures.Span.t> FORWARD
 %token <ProbNv_datastructures.Span.t> ASSERT
 %token <ProbNv_datastructures.Span.t> TYPE
 %token <ProbNv_datastructures.Span.t> COLON
@@ -312,7 +324,8 @@ assertion:
 
 component:
     /* | LET letvars EQ SOLUTION expr      { make_dsolve (fst $2) $5 } */
-    | LET letvars EQ SOLUTION LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (fst $2) $6 $8 $10 }
+    | LET ID EQ SOLUTION LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (snd $2) $6 $8 $10 }
+    | LET LPAREN ID COMMA ID RPAREN EQ FORWARD LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN     { make_dfwd (evar (snd $3)) (evar (snd $5)) $10 $12 $14 $16 $18 $20 $22 }
     | LET letvars EQ expr                       { global_let $2 $4 $4.espan (Span.extend $1 $4.espan) }
     | SYMBOLIC ID COLON bty                    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, None) }
     | SYMBOLIC ID COLON bty EQ distBranches    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, Some $6) }
