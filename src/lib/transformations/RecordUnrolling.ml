@@ -78,8 +78,6 @@ let map_back_transformer recurse _ v orig_ty =
       None )
   | VTotalMap (bdd, kty), TRecord _ ->
       (* case of multi-value record *)
-      (* Printf.printf "in this case, before the crash\n";
-      flush_all(); *)
       let g x =
         recurse (Cudd.Mtbddc.get x) orig_ty |> Cudd.Mtbddc.unique BddUtils.tbl_nv
       in

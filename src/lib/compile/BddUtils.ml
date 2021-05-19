@@ -212,9 +212,10 @@ let isNextSymbolic dd end_var =
   match Bdd.inspect dd with Bool _ -> false | Ite (i, _, _) -> i > end_var
 
 (* Memoization for mutually recursive functions *)
-let memoize2 f1 f2 =
-  let tbl1 = Hashtbl.create 1000 in
-  let tbl2 = Hashtbl.create 1000 in
+let memoize2 =
+  let tbl1 = Hashtbl.create 2000 in
+  let tbl2 = Hashtbl.create 2000 in
+  fun f1 f2 ->
   let rec g1 x =
     try Hashtbl.find tbl1 x
     with Not_found ->
@@ -317,113 +318,11 @@ let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) distrs cond =
   match cond with
   | None -> computeProbMem trueBdd
   | Some c ->
-      let intersection = computeProbMem (Bdd.dand trueBdd c) in
+      let intersection = Bdd.dand trueBdd c in
+      let intersectionProb = computeProbMem intersection in
       let cprob = computeProbMem c in
       (* Printf.printf "inter: %5f, %5f\n" intersection cprob; *)
-      intersection /. cprob
-
-(* Same algorithm as before but not memoized and with debug messages *)
-(*let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds =
-  let distrs = create_symbolics_map bounds in
-  (* Compute the probability of the full BDD *)
-  let rec computeProb guard =
-    match Bdd.inspect guard with
-    | Bool false ->
-        (* Printf.printf "computeProb false\n%!"; *)
-        0.0
-    | Bool true ->
-        (* Printf.printf "computeProb true\n%!"; *)
-        1.0
-    | Ite (i, _, _) ->
-        let start_var, end_var, distr = BatMap.Int.find i distrs in
-        (* Printf.printf "computeProb Ite: %d, %d\n%!" start_var end_var; *)
-        probSymbolic (guard, start_var, end_var, distr)
-  and probSymbolic (guard, start_var, end_var, distr) =
-    match Bdd.inspect guard with
-    | Bool false ->
-        (* Printf.printf "probSymbolic Bool false: %d, %d\n" start_var end_var; *)
-        0.0
-    | Bool true -> (
-        (* Printf.printf "probSymbolic Bool true: %d, %d\n" start_var end_var; *)
-        match Mtbddc.inspect distr with
-        | Leaf p ->
-            (* If the distribution is at a leaf and the guard has reached a true leaf
-               then the probability is the one given by the distribution multiplied by
-               the number of integers left in the space of the symbolic: i.e. 2^(end_var - start_var) *)
-            (* Printf.printf "probSymbolic Bool true/Leaf %f: %d, %d\n%!"
-               (Mtbddc.get p) start_var end_var; *)
-            let res =
-              if end_var - start_var > 0 then
-                Mtbddc.get p *. cardinality end_var start_var
-              else Mtbddc.get p
-            in
-            (* Printf.printf "computed probability: %f\n%!" res; *)
-            res
-        | Ite (j, td, ed) ->
-            (* If the distribution is still not concrete then we recursively
-               descend on it. we multiple by the number of integers we have covered
-               until this point, i.e. 2^(j - start_var). Recursion restarts at j *)
-            let space = cardinality j start_var in
-            (* Printf.printf "probSymbolic Bool true/Ite: %d, %d, j:%d\n%!"
-               start_var end_var j; *)
-            space
-            *. ( probSymbolic (guard, j + 1, end_var, td)
-               +. probSymbolic (guard, j + 1, end_var, ed) ) )
-    | Ite (i, t, e) -> (
-        match Mtbddc.inspect distr with
-        | Leaf p ->
-            (* In case the distribution is at a leaf, we need to be careful with
-               the recursion. There are two cases: Either we are still recursing
-               on the same symbolic or we are recursing on the next one. If we
-               are recurring on the next one, call computeProb to recursively
-               compute the probability of the next symbolics and then multiple
-               that result with the probability of the existing symbolic, i.e. p
-               * cardinality (end-i) just like in the Bool/leaf case.
-            *)
-            (* Printf.printf "probSymbolic Bool Ite/Leaf %f: %d, %d, i:%d\n%!"
-               (Mtbddc.get p) start_var end_var i; *)
-            if i > end_var then
-              computeProb guard
-              *.
-              if end_var - (start_var - 1) > 0 then
-                Mtbddc.get p *. cardinality end_var (start_var - 1)
-              else Mtbddc.get p
-            else
-              let space = cardinality i start_var in
-              let rec_true =
-                (* if isNextSymbolic t end_var then
-                     computeProb t *. Mtbddc.get p *. cardinality end_var i
-                   else *)
-                probSymbolic (t, i + 1, end_var, distr)
-              in
-              let rec_false =
-                (* if isNextSymbolic e end_var then
-                     computeProb e *. Mtbddc.get p *. cardinality end_var i
-                   else *)
-                probSymbolic (e, i + 1, end_var, distr)
-              in
-              space *. (rec_true +. rec_false)
-        | Ite (j, td, ed) ->
-            (* Printf.printf "probSymbolic Bool Ite/Ite: %d, %d, i:%d, j:%d\n%!"
-               start_var end_var i j; *)
-            if i = j then
-              (* Step both the distribution and the guard. We fork at this point and continue recursively *)
-              cardinality i start_var
-              *. ( probSymbolic (t, i + 1, end_var, td)
-                 +. probSymbolic (e, i + 1, end_var, ed) )
-            else if i > j then
-              (* Need to move the distribution. We fork at point j, and hence the start var for the recursion is j+1 *)
-              cardinality j start_var
-              *. ( probSymbolic (guard, j + 1, end_var, td)
-                 +. probSymbolic (guard, j + 1, end_var, ed) )
-            else
-              (* if j > i, we move the guard, hence the new start_var is i+1. *)
-              cardinality i start_var
-              *. ( probSymbolic (t, i + 1, end_var, distr)
-                 +. probSymbolic (e, i + 1, end_var, distr) ) )
-  in
-  let trueBdd = Mtbddc.guard_of_leaf tbl assertion true in
-  computeProb trueBdd*)
+      intersectionProb /. cprob
 
 let get_statistics () = Man.print_info mgr
 
@@ -573,3 +472,106 @@ let rec generateSat (assertion : bool Cudd.Mtbddc.t) bounds =
       let cube = splitCube arr bounds in
       cubes := cube :: !cubes)
     guard_f
+
+(* Same algorithm as before but not memoized and with debug messages *)
+(*let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds =
+  let distrs = create_symbolics_map bounds in
+  (* Compute the probability of the full BDD *)
+  let rec computeProb guard =
+    match Bdd.inspect guard with
+    | Bool false ->
+        (* Printf.printf "computeProb false\n%!"; *)
+        0.0
+    | Bool true ->
+        (* Printf.printf "computeProb true\n%!"; *)
+        1.0
+    | Ite (i, _, _) ->
+        let start_var, end_var, distr = BatMap.Int.find i distrs in
+        (* Printf.printf "computeProb Ite: %d, %d\n%!" start_var end_var; *)
+        probSymbolic (guard, start_var, end_var, distr)
+  and probSymbolic (guard, start_var, end_var, distr) =
+    match Bdd.inspect guard with
+    | Bool false ->
+        (* Printf.printf "probSymbolic Bool false: %d, %d\n" start_var end_var; *)
+        0.0
+    | Bool true -> (
+        (* Printf.printf "probSymbolic Bool true: %d, %d\n" start_var end_var; *)
+        match Mtbddc.inspect distr with
+        | Leaf p ->
+            (* If the distribution is at a leaf and the guard has reached a true leaf
+               then the probability is the one given by the distribution multiplied by
+               the number of integers left in the space of the symbolic: i.e. 2^(end_var - start_var) *)
+            (* Printf.printf "probSymbolic Bool true/Leaf %f: %d, %d\n%!"
+               (Mtbddc.get p) start_var end_var; *)
+            let res =
+              if end_var - start_var > 0 then
+                Mtbddc.get p *. cardinality end_var start_var
+              else Mtbddc.get p
+            in
+            (* Printf.printf "computed probability: %f\n%!" res; *)
+            res
+        | Ite (j, td, ed) ->
+            (* If the distribution is still not concrete then we recursively
+               descend on it. we multiple by the number of integers we have covered
+               until this point, i.e. 2^(j - start_var). Recursion restarts at j *)
+            let space = cardinality j start_var in
+            (* Printf.printf "probSymbolic Bool true/Ite: %d, %d, j:%d\n%!"
+               start_var end_var j; *)
+            space
+            *. ( probSymbolic (guard, j + 1, end_var, td)
+               +. probSymbolic (guard, j + 1, end_var, ed) ) )
+    | Ite (i, t, e) -> (
+        match Mtbddc.inspect distr with
+        | Leaf p ->
+            (* In case the distribution is at a leaf, we need to be careful with
+               the recursion. There are two cases: Either we are still recursing
+               on the same symbolic or we are recursing on the next one. If we
+               are recurring on the next one, call computeProb to recursively
+               compute the probability of the next symbolics and then multiple
+               that result with the probability of the existing symbolic, i.e. p
+               * cardinality (end-i) just like in the Bool/leaf case.
+            *)
+            (* Printf.printf "probSymbolic Bool Ite/Leaf %f: %d, %d, i:%d\n%!"
+               (Mtbddc.get p) start_var end_var i; *)
+            if i > end_var then
+              computeProb guard
+              *.
+              if end_var - (start_var - 1) > 0 then
+                Mtbddc.get p *. cardinality end_var (start_var - 1)
+              else Mtbddc.get p
+            else
+              let space = cardinality i start_var in
+              let rec_true =
+                (* if isNextSymbolic t end_var then
+                     computeProb t *. Mtbddc.get p *. cardinality end_var i
+                   else *)
+                probSymbolic (t, i + 1, end_var, distr)
+              in
+              let rec_false =
+                (* if isNextSymbolic e end_var then
+                     computeProb e *. Mtbddc.get p *. cardinality end_var i
+                   else *)
+                probSymbolic (e, i + 1, end_var, distr)
+              in
+              space *. (rec_true +. rec_false)
+        | Ite (j, td, ed) ->
+            (* Printf.printf "probSymbolic Bool Ite/Ite: %d, %d, i:%d, j:%d\n%!"
+               start_var end_var i j; *)
+            if i = j then
+              (* Step both the distribution and the guard. We fork at this point and continue recursively *)
+              cardinality i start_var
+              *. ( probSymbolic (t, i + 1, end_var, td)
+                 +. probSymbolic (e, i + 1, end_var, ed) )
+            else if i > j then
+              (* Need to move the distribution. We fork at point j, and hence the start var for the recursion is j+1 *)
+              cardinality j start_var
+              *. ( probSymbolic (guard, j + 1, end_var, td)
+                 +. probSymbolic (guard, j + 1, end_var, ed) )
+            else
+              (* if j > i, we move the guard, hence the new start_var is i+1. *)
+              cardinality i start_var
+              *. ( probSymbolic (t, i + 1, end_var, distr)
+                 +. probSymbolic (e, i + 1, end_var, distr) ) )
+  in
+  let trueBdd = Mtbddc.guard_of_leaf tbl assertion true in
+  computeProb trueBdd*)

@@ -530,15 +530,15 @@ let compile_decl decl =
         (varname x) (varname x) dist_id ty_id
   | DLet (x, e) ->
       Printf.sprintf "let %s = %s" (varname x) (exp_to_ocaml_string e)
-  | DAssert (name, e, prob, cond) ->
+  | DInfer (name, e, cond) ->
       let cond' =
         match cond with
         | None -> "None"
         | Some c -> Printf.sprintf "Some (%s)" (exp_to_ocaml_string c)
       in
       Printf.sprintf
-        "let () = SIM.assertions := (%s, %s, %f, %s) :: !SIM.assertions\n" name
-        (exp_to_ocaml_string e) prob cond'
+        "let () = SIM.assertions := (%s, %s, %s) :: !SIM.assertions\n" name
+        (exp_to_ocaml_string e) cond'
   | DSolve solve -> (
       match solve.var_names.e with
       | EVar x -> (

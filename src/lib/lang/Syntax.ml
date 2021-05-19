@@ -246,7 +246,7 @@ type solve = {
 type declaration =
   | DLet of var * exp
   | DSymbolic of var * ty * distrExpr option
-  | DAssert of (string * exp * probability * exp option)
+  | DInfer of (string * exp * exp option)
   | DSolve of solve
   | DNodes of int * (node * string) list
   | DEdges of (node * node) list

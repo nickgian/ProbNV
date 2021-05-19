@@ -126,7 +126,7 @@ let rec check_annot (e : exp) =
 
 let check_annot_decl (d : declaration) =
   match d with
-  | DLet (_, e) | DAssert (_, e, _, _) -> check_annot e
+  | DLet (_, e) | DInfer (_, e, _) -> check_annot e
   | DSolve { var_names; init; trans; merge; _ } ->
       check_annot var_names;
       check_annot init;
@@ -548,7 +548,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
       let e1, ty_e1 = infer_exp e1 |> textract in
       (Env.update env x ty_e1, DLet (x, texp (e1, ty_e1, e1.espan)))
   | DSymbolic (x, ty, prob) -> (Env.update env x ty, DSymbolic (x, ty, prob))
-  | DAssert (name, e, prob, cond) -> (
+  | DInfer (name, e, cond) -> (
       let e' = infer_exp e in
       let ty = oget e'.ety in
       (* Printf.printf "Assertion type: %s" (Printing.ty_to_string ty); *)
@@ -574,7 +574,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
                    boolean" )
       in
       match ty.mode with
-      | Some Concrete | Some Multivalue -> (env, DAssert (name, e', prob, cond'))
+      | Some Concrete | Some Multivalue -> (env, DInfer (name, e', cond'))
       | None | Some Symbolic ->
           Console.error_position info e.espan "Wrong mode for assertion" )
   | DSolve { aty; var_names; init; trans; merge } -> (

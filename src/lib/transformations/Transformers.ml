@@ -187,9 +187,9 @@ let transform_decl ~(name : string) (transformers : transformers)
   let transform_symbolic = transform_symbolic ~name transformers in
   match d with
   | DLet (x, e) -> DLet (x, transform_exp e)
-  | DAssert (name, e, p, None) -> DAssert (name, transform_exp e, p, None)
-  | DAssert (name, e, p, Some c) ->
-      DAssert (name, transform_exp e, p, Some (transform_exp c))
+  | DInfer (name, e, None) -> DInfer (name, transform_exp e, None)
+  | DInfer (name, e, Some c) ->
+      DInfer (name, transform_exp e, Some (transform_exp c))
   | DSolve { aty; var_names; init; trans; merge } ->
       let var_names, init, trans, merge =
         ( transform_exp var_names,
@@ -234,6 +234,12 @@ let rec map_back_value ~(name : string) (sol : Solution.t)
             (Some orig_ty)
       | VClosure _, _ ->
           failwith @@ name ^ ": Can't have closures in attributes"
+      | VTotalMap (bdd, kty), _ ->
+        let g x =
+          map_back_value (Cudd.Mtbddc.get x) orig_ty |> Cudd.Mtbddc.unique BddUtils.tbl_nv
+        in
+        let bdd' = Cudd.Mapleaf.mapleaf1 g bdd in
+        vmap (bdd', kty) None
       | (VOption _ | VTuple _ | VRecord _ | VTotalMap _), _ ->
           failwith
           @@ Printf.sprintf

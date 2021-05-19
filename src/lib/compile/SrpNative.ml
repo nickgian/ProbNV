@@ -41,8 +41,8 @@ module type SrpSimulationSig = sig
   val solved : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list ref
   (** List of solutions, each entry is the name of the SRP, a map from nodes to solutions, and the type of routes *)
 
-  val assertions : (string * bool Mtbddc.t * float * BddFunc.t option) list ref
-  (** List of assertions and the desired probability. To be checked if they hold. *)
+  val assertions : (string * bool Mtbddc.t * BddFunc.t option) list ref
+  (** List of assertions. We compute the probability they hold. *)
 
   (*TODO: maybe make it a variant to distinguish between a boolean and an Mtbdd boolean. *)
 end
@@ -284,9 +284,7 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
       :: !solved;
     bdd_full
 
-  let assertions : (string * bool Mtbddc.t * float * BddFunc.t option) list ref
-      =
-    ref []
+  let assertions : (string * bool Mtbddc.t * BddFunc.t option) list ref = ref []
 end
 
 module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
@@ -306,24 +304,24 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
 
   type 'a state = 'a nodeState AdjGraph.VertexMap.t * globalState
 
-  let create_initial_state (n : int) : 'a state =
+  let create_initial_state (n : int) initArr : 'a state =
     let q = BatQueue.create () in
-    (* for i = n downto 1 do
-         BatQueue.add (i - 1) q
-       done; *)
-    (* for i = 1 to n do
-         BatQueue.add (i - 1) q
-       done; *)
-    BatQueue.add 0 q;
+
+    (* Add to the initial queue only the nodes that have some initial route *)
+    let qMap =
+      BatArray.fold_lefti
+        (fun acc i route ->
+            BatMap.update_stdlib route (fun is -> match is with | None -> Some [i] | Some is -> Some (i :: is)) acc)
+        BatMap.empty initArr
+    in
+    let (_, maxElts) = BatMap.max_binding qMap in
+    let qSet = List.fold_left (fun acc i -> BatQueue.add i q; AdjGraph.VertexSet.add i acc) AdjGraph.VertexSet.empty maxElts in
+    
     let initGlobal =
       {
         queue = q;
-        queueSet = AdjGraph.VertexSet.singleton 0;
-        worklist =
-          Array.init n (fun i -> AdjGraph.VertexSet.singleton i)
-          (* Array.init n (fun i ->
-              if i = 0 then AdjGraph.VertexSet.singleton i
-              else AdjGraph.VertexSet.empty); *);
+        queueSet = qSet;
+        worklist = Array.init n (fun i -> AdjGraph.VertexSet.singleton i);
       }
     in
     (AdjGraph.VertexMap.empty, initGlobal)
@@ -383,7 +381,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
       (* Compute the incoming attribute from v *)
       (* init u can only be computed once so this is ok *)
       let n_incoming_attribute =
-        if u = v then init u
+        if u = v then init.(u)
         else
           (* Printf.printf "  Size of message from %d: %d\n" v
                (Cudd.Mtbddc.size (Obj.magic (get_attribute_exn v local)));
@@ -569,7 +567,9 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
   let simulate_solve record_fns attr_ty_id name init trans merge =
     let mgr = BddUtils.mgr in
     Cudd.Man.group mgr 0 !BddMap.svars Cudd.Man.MTR_DEFAULT;
-    let local, global = create_initial_state (AdjGraph.nb_vertex G.graph) in
+    let n = AdjGraph.nb_vertex G.graph in
+    let initArr = Array.init n (fun i -> init i) in
+    let local, global = create_initial_state n initArr in
     let trans e x =
       incr transfers;
       Profile.time_profile_total transfer_time (fun () -> trans e x)
@@ -580,7 +580,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     in
     skips := (Cmdline.get_cfg ()).sim_skip;
     let vals =
-      simulate_init init trans merge global local
+      simulate_init initArr trans merge global local
       |> AdjGraph.VertexMap.map (fun v -> v.labels)
     in
     Printf.printf "Number of incremental merges: %d\n" !incr_merges;
@@ -615,9 +615,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
       :: !solved;
     bdd_full
 
-  let assertions : (string * bool Mtbddc.t * float * BddFunc.t option) list ref
-      =
-    ref []
+  let assertions : (string * bool Mtbddc.t * BddFunc.t option) list ref = ref []
 end
 
 (** Given the attribute type of the network constructs an OCaml function
@@ -636,8 +634,7 @@ let build_solution record_fns (vals, ty) =
 
 (* Two modes of computation until we implement fast prob for all type of symbolics *)
 let check_assertion
-    ((name, a, p, cond) :
-      string * bool Cudd.Mtbddc.t * float * BddFunc.t option) distrs =
+    ((name, a, cond) : string * bool Cudd.Mtbddc.t * BddFunc.t option) distrs =
   let cond =
     match cond with
     | Some (BBool b) -> Some b
@@ -645,12 +642,11 @@ let check_assertion
     | _ -> failwith "Impossible case - condition has typechecked to a boolean"
   in
   let prob = BddUtils.computeTrueProbability a distrs cond in
-  (name, prob >= p, prob)
+  (name, prob)
 
 let build_solutions nodes record_fns
     (sols : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list)
-    (assertions : (string * bool Cudd.Mtbddc.t * float * BddFunc.t option) list)
-    =
+    (assertions : (string * bool Cudd.Mtbddc.t * BddFunc.t option) list) =
   let open Solution in
   let assertions = List.rev assertions in
   (* let arr = Array.init (Cudd.Man.get_bddvar_nb BddUtils.mgr) (fun i -> i) in

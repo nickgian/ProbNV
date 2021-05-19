@@ -1,26 +1,47 @@
-let nodes = 6
+(* A diamond network with bounded link failures *)
 
-let edges = {0=1; 0=2; 1=3; 2=3; 1=4; 2=5;}
+(* Declaring the nodes of the network in the form (#nodes, {nodeId:nodeName} ) *)
+(* you can also just do 'let nodes = 4'*)
+let nodes = (4, {0n:"A"; 1n:"B"; 2n:"C"; 3n:"D";})
 
-symbolic f1: tedge
+(* Declaring the edges of the network. Use '-' for directed edges and '=' for bidirectional edges*)
+let edges = {
+    3-2;
+    3-1;
+    1-0;
+    2-0;
+}
 
-let trans (e: [C]tedge) (route:[M](option[int])) =
-      (*if (e = f1) || (e = f2) || (e = f3) || (e = f4) || (e = f5) then None*)
-      if (e = f1) then None
-      else
-        match route with
-        | None -> None
-        | Some r -> Some (r+1)
+symbolic f1 : tedge (*indicates the first failed link - uniform distribution assumed*)
+symbolic f2 : tedge (*indicates the second failed link*)
 
-let merge u (r1 : [M](option[int])) (r2: [M](option[int])) =
-        (match (r1,r2) with
-         | (_, None) -> r1
-         | (None, _) -> r2
-         | (Some a, Some b) -> if a <= b then Some a else Some b)
+(* The destination is node 3 announcing a route with zero cost.*)
+let init u = 
+  if u = 3n then Some 0 else None
 
-let init u =
-  if u = 0n then Some 0 else None
+let costIncr x =
+  match x with
+  | None -> None
+  | Some y -> Some (y+1)
+
+(* we need the type annotation for the mode here *)
+let trans e (x :[M](option[int])) = 
+  (* if the link e is either of the failed edges then drop the route *)
+  if (f1 = f2) || (f2 = e) then None else costIncr x 
 
 
+let merge u x y =
+ match (x,y) with
+ | (None, None) -> None
+ | (_, None) -> x
+ | (None, _) -> y
+ | (Some a, Some b) -> if a < b then Some a else Some b
 
-let s = solution(init, trans, merge)
+(* compute the routes of the given model *)
+let rib = solution(init, trans, merge)
+
+let reachable u =
+  match rib[u] with | None -> false | _ -> true
+
+(* What is the probability node 3 has a route, given that one or two links fail *)
+assert(reachable 0n | f1 = f2 || f1 <e f2)
