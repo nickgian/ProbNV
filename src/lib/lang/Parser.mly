@@ -319,8 +319,8 @@ distBranches:
 
 
 assertion:
-| expr COMMA PROB COMMA expr              { ($1, (snd $3, Some $5))}
-| expr COMMA PROB                         { ($1, (snd $3, None))}
+| expr BAR expr             { ($1, Some $3)}
+| expr                      { ($1, None)}
 
 component:
     /* | LET letvars EQ SOLUTION expr      { make_dsolve (fst $2) $5 } */
@@ -329,8 +329,8 @@ component:
     | LET letvars EQ expr                       { global_let $2 $4 $4.espan (Span.extend $1 $4.espan) }
     | SYMBOLIC ID COLON bty                    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, None) }
     | SYMBOLIC ID COLON bty EQ distBranches    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, Some $6) }
-    | ASSERT LPAREN assertion RPAREN      { DAssert ("\"\"", fst $3 , fst (snd $3), snd (snd $3)) }
-    | ASSERT LPAREN STRING COMMA assertion RPAREN      { DAssert (snd $3, fst $5, fst (snd $5), snd (snd $5)) }
+    | ASSERT LPAREN assertion RPAREN      { DInfer ("\"\"", fst $3 , snd $3) }
+    | ASSERT LPAREN STRING COMMA assertion RPAREN      { DInfer (snd $3, fst $5, snd $5) }
     | LET EDGES EQ LBRACE RBRACE        { DEdges [] }
     | LET EDGES EQ LBRACE edges RBRACE  { DEdges $5 }
     | LET NODES EQ NUM                  { DNodes (ProbNv_datastructures.Integer.to_int (snd $4), []) }

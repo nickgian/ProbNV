@@ -1,0 +1,19 @@
+(* Bounded link faults *)
+
+include "../fat20_control.nv"
+
+symbolic f0 : tedge
+symbolic f1 : tedge
+symbolic f2 : tedge
+symbolic f3 : tedge
+
+let mergeLinkFaults u (x : [M]attribute) (y : [M]attribute) =
+  merge u x y
+
+let transLinkFaults d e (x : [M]attribute) =
+  if (f0 = e)|| (f1 = e)|| (f2 = e)|| (f3 = e) then
+    {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+  else trans d e x
+
+let initLinkFaults d u = init d u 
+

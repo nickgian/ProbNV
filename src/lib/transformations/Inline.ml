@@ -183,11 +183,11 @@ let inline_declaration (cond : ty -> bool) (env : exp Env.t) (d : declaration) =
       if cond (OCamlUtils.oget e.ety) then (Env.update env x e, None)
       else (env, Some (DLet (x, e)))
   | DSymbolic (x, ty, p) -> (env, Some (DSymbolic (x, ty, p)))
-  | DAssert (name, e, prob, None) ->
-      (env, Some (DAssert (name, inline_exp env e, prob, None)))
-  | DAssert (name, e, prob, Some c) ->
+  | DInfer (name, e, None) ->
+      (env, Some (DInfer (name, inline_exp env e, None)))
+  | DInfer (name, e, Some c) ->
       ( env,
-        Some (DAssert (name, inline_exp env e, prob, Some (inline_exp env c)))
+        Some (DInfer (name, inline_exp env e, Some (inline_exp env c)))
       )
   | DSolve { aty; var_names; init; trans; merge } ->
       (* Inline within the functions but don't inline e in future expressions *)

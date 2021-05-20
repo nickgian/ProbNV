@@ -264,7 +264,7 @@ type forward = {
 type declaration =
   | DLet of var * exp
   | DSymbolic of var * ty * distrExpr option
-  | DAssert of (string * exp * probability * exp option)
+  | DInfer of (string * exp * exp option)
   | DSolve of solve
   | DForward of forward
   | DNodes of int * (node * string) list

@@ -349,7 +349,6 @@ and map_to_string ~show_types term_s m kty range =
 
 and multivalue_to_string ~show_types term_s m =
   let bs = Array.to_list @@ Mtbddc.leaves m in
-  Printf.sprintf "%f,%f\n{\n%s\n}" (Mtbddc.nbpaths m) (Mtbddc.nbnonzeropaths m)
     (term term_s
        (fun v ->
          Printf.sprintf "  %s" (value_to_string_p ~show_types max_prec v))
@@ -472,13 +471,13 @@ let rec declaration_to_string ?(show_types = false) d =
   | DSymbolic (x, ty, Some distr) ->
       Printf.sprintf "symbolic %s : %s = %s" (Var.to_string x) (ty_to_string ty)
         (distrExpr_to_string distr)
-  | DAssert (name, e, prob, cond) ->
+  | DInfer (name, e, cond) ->
       let condString =
         match cond with
         | None -> ""
-        | Some cond -> Printf.sprintf ", %s" (exp_to_string cond)
+        | Some cond -> Printf.sprintf " | %s" (exp_to_string cond)
       in
-      Printf.sprintf "assert(%s, %s, %f%s)" name (exp_to_string e) prob
+      Printf.sprintf "assert(%s, %s%s)" name (exp_to_string e)
         condString
   | DSolve { aty; var_names; init; trans; merge } ->
       Printf.sprintf "let %s = solution<%s> {init = %s; trans = %s; merge = %s}"

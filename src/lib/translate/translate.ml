@@ -996,7 +996,7 @@ let translateDecl d =
       BddBinds.clearStore ();
       let merge' = translateMerge merge route_ty in
       DSolve { aty; var_names; init = init'; trans = trans'; merge = merge' }
-  | DAssert (name, e, prob, cond) ->
+  | DInfer (name, e, cond) ->
       BddBinds.clearStore ();
       let e', r = translate e in
       let fv = free e in
@@ -1006,8 +1006,8 @@ let translateDecl d =
         match cond with None -> None | Some c -> Some (fst (translate c))
         (* condition is symbolic so it should not generate any bindings *)
       in
-      if BddBinds.isEmpty rho then DAssert (name, e', prob, cond')
-      else DAssert (name, buildApply e' rho, prob, cond')
+      if BddBinds.isEmpty rho then DInfer (name, e', cond')
+      else DInfer (name, buildApply e' rho, cond')
   | DNodes _ | DEdges _ | DSymbolic _ | DUserTy _ -> d
 
 let translate_declarations ds = List.map translateDecl ds
