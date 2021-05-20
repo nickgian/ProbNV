@@ -1,0 +1,784 @@
+include "../sp8_control.nv"
+
+symbolic b0_34: bool = | true -> 0.001p | false -> 0.999p
+symbolic b0_28: bool = | true -> 0.001p | false -> 0.999p
+symbolic b0_25: bool = | true -> 0.001p | false -> 0.999p
+symbolic b0_32: bool = | true -> 0.001p | false -> 0.999p
+symbolic b34_55: bool = | true -> 0.001p | false -> 0.999p
+symbolic b1_34: bool = | true -> 0.001p | false -> 0.999p
+symbolic b31_34: bool = | true -> 0.001p | false -> 0.999p
+symbolic b34_52: bool = | true -> 0.001p | false -> 0.999p
+symbolic b29_34: bool = | true -> 0.001p | false -> 0.999p
+symbolic b34_49: bool = | true -> 0.001p | false -> 0.999p
+symbolic b34_54: bool = | true -> 0.001p | false -> 0.999p
+symbolic b28_31: bool = | true -> 0.001p | false -> 0.999p
+symbolic b28_41: bool = | true -> 0.001p | false -> 0.999p
+symbolic b28_43: bool = | true -> 0.001p | false -> 0.999p
+symbolic b1_28: bool = | true -> 0.001p | false -> 0.999p
+symbolic b28_40: bool = | true -> 0.001p | false -> 0.999p
+symbolic b28_29: bool = | true -> 0.001p | false -> 0.999p
+symbolic b28_46: bool = | true -> 0.001p | false -> 0.999p
+symbolic b25_31: bool = | true -> 0.001p | false -> 0.999p
+symbolic b25_66: bool = | true -> 0.001p | false -> 0.999p
+symbolic b1_25: bool = | true -> 0.001p | false -> 0.999p
+symbolic b25_70: bool = | true -> 0.001p | false -> 0.999p
+symbolic b25_29: bool = | true -> 0.001p | false -> 0.999p
+symbolic b25_72: bool = | true -> 0.001p | false -> 0.999p
+symbolic b25_71: bool = | true -> 0.001p | false -> 0.999p
+symbolic b31_32: bool = | true -> 0.001p | false -> 0.999p
+symbolic b1_32: bool = | true -> 0.001p | false -> 0.999p
+symbolic b29_32: bool = | true -> 0.001p | false -> 0.999p
+symbolic b32_57: bool = | true -> 0.001p | false -> 0.999p
+symbolic b32_68: bool = | true -> 0.001p | false -> 0.999p
+symbolic b32_67: bool = | true -> 0.001p | false -> 0.999p
+symbolic b32_56: bool = | true -> 0.001p | false -> 0.999p
+symbolic b6_55: bool = | true -> 0.001p | false -> 0.999p
+symbolic b55_60: bool = | true -> 0.001p | false -> 0.999p
+symbolic b39_55: bool = | true -> 0.001p | false -> 0.999p
+symbolic b17_55: bool = | true -> 0.001p | false -> 0.999p
+symbolic b44_55: bool = | true -> 0.001p | false -> 0.999p
+symbolic b55_78: bool = | true -> 0.001p | false -> 0.999p
+symbolic b55_65: bool = | true -> 0.001p | false -> 0.999p
+symbolic b39_52: bool = | true -> 0.001p | false -> 0.999p
+symbolic b17_52: bool = | true -> 0.001p | false -> 0.999p
+symbolic b52_60: bool = | true -> 0.001p | false -> 0.999p
+symbolic b6_52: bool = | true -> 0.001p | false -> 0.999p
+symbolic b52_78: bool = | true -> 0.001p | false -> 0.999p
+symbolic b52_65: bool = | true -> 0.001p | false -> 0.999p
+symbolic b44_52: bool = | true -> 0.001p | false -> 0.999p
+symbolic b39_49: bool = | true -> 0.001p | false -> 0.999p
+symbolic b49_60: bool = | true -> 0.001p | false -> 0.999p
+symbolic b17_49: bool = | true -> 0.001p | false -> 0.999p
+symbolic b6_49: bool = | true -> 0.001p | false -> 0.999p
+symbolic b44_49: bool = | true -> 0.001p | false -> 0.999p
+symbolic b49_78: bool = | true -> 0.001p | false -> 0.999p
+symbolic b49_65: bool = | true -> 0.001p | false -> 0.999p
+symbolic b6_54: bool = | true -> 0.001p | false -> 0.999p
+symbolic b54_60: bool = | true -> 0.001p | false -> 0.999p
+symbolic b44_54: bool = | true -> 0.001p | false -> 0.999p
+symbolic b39_54: bool = | true -> 0.001p | false -> 0.999p
+symbolic b54_78: bool = | true -> 0.001p | false -> 0.999p
+symbolic b17_54: bool = | true -> 0.001p | false -> 0.999p
+symbolic b54_65: bool = | true -> 0.001p | false -> 0.999p
+symbolic b35_41: bool = | true -> 0.001p | false -> 0.999p
+symbolic b7_41: bool = | true -> 0.001p | false -> 0.999p
+symbolic b41_69: bool = | true -> 0.001p | false -> 0.999p
+symbolic b41_47: bool = | true -> 0.001p | false -> 0.999p
+symbolic b41_61: bool = | true -> 0.001p | false -> 0.999p
+symbolic b41_75: bool = | true -> 0.001p | false -> 0.999p
+symbolic b19_41: bool = | true -> 0.001p | false -> 0.999p
+symbolic b43_75: bool = | true -> 0.001p | false -> 0.999p
+symbolic b7_43: bool = | true -> 0.001p | false -> 0.999p
+symbolic b43_47: bool = | true -> 0.001p | false -> 0.999p
+symbolic b35_43: bool = | true -> 0.001p | false -> 0.999p
+symbolic b43_61: bool = | true -> 0.001p | false -> 0.999p
+symbolic b43_69: bool = | true -> 0.001p | false -> 0.999p
+symbolic b19_43: bool = | true -> 0.001p | false -> 0.999p
+symbolic b35_40: bool = | true -> 0.001p | false -> 0.999p
+symbolic b7_40: bool = | true -> 0.001p | false -> 0.999p
+symbolic b40_61: bool = | true -> 0.001p | false -> 0.999p
+symbolic b40_69: bool = | true -> 0.001p | false -> 0.999p
+symbolic b40_47: bool = | true -> 0.001p | false -> 0.999p
+symbolic b40_75: bool = | true -> 0.001p | false -> 0.999p
+symbolic b19_40: bool = | true -> 0.001p | false -> 0.999p
+symbolic b35_46: bool = | true -> 0.001p | false -> 0.999p
+symbolic b7_46: bool = | true -> 0.001p | false -> 0.999p
+symbolic b46_47: bool = | true -> 0.001p | false -> 0.999p
+symbolic b46_61: bool = | true -> 0.001p | false -> 0.999p
+symbolic b46_69: bool = | true -> 0.001p | false -> 0.999p
+symbolic b46_75: bool = | true -> 0.001p | false -> 0.999p
+symbolic b19_46: bool = | true -> 0.001p | false -> 0.999p
+symbolic b14_66: bool = | true -> 0.001p | false -> 0.999p
+symbolic b9_66: bool = | true -> 0.001p | false -> 0.999p
+symbolic b50_66: bool = | true -> 0.001p | false -> 0.999p
+symbolic b66_79: bool = | true -> 0.001p | false -> 0.999p
+symbolic b30_66: bool = | true -> 0.001p | false -> 0.999p
+symbolic b62_66: bool = | true -> 0.001p | false -> 0.999p
+symbolic b58_66: bool = | true -> 0.001p | false -> 0.999p
+symbolic b62_70: bool = | true -> 0.001p | false -> 0.999p
+symbolic b70_79: bool = | true -> 0.001p | false -> 0.999p
+symbolic b9_70: bool = | true -> 0.001p | false -> 0.999p
+symbolic b50_70: bool = | true -> 0.001p | false -> 0.999p
+symbolic b30_70: bool = | true -> 0.001p | false -> 0.999p
+symbolic b14_70: bool = | true -> 0.001p | false -> 0.999p
+symbolic b58_70: bool = | true -> 0.001p | false -> 0.999p
+symbolic b14_72: bool = | true -> 0.001p | false -> 0.999p
+symbolic b9_72: bool = | true -> 0.001p | false -> 0.999p
+symbolic b50_72: bool = | true -> 0.001p | false -> 0.999p
+symbolic b72_79: bool = | true -> 0.001p | false -> 0.999p
+symbolic b62_72: bool = | true -> 0.001p | false -> 0.999p
+symbolic b30_72: bool = | true -> 0.001p | false -> 0.999p
+symbolic b58_72: bool = | true -> 0.001p | false -> 0.999p
+symbolic b62_71: bool = | true -> 0.001p | false -> 0.999p
+symbolic b50_71: bool = | true -> 0.001p | false -> 0.999p
+symbolic b9_71: bool = | true -> 0.001p | false -> 0.999p
+symbolic b14_71: bool = | true -> 0.001p | false -> 0.999p
+symbolic b58_71: bool = | true -> 0.001p | false -> 0.999p
+symbolic b30_71: bool = | true -> 0.001p | false -> 0.999p
+symbolic b71_79: bool = | true -> 0.001p | false -> 0.999p
+symbolic b57_77: bool = | true -> 0.001p | false -> 0.999p
+symbolic b57_59: bool = | true -> 0.001p | false -> 0.999p
+symbolic b57_63: bool = | true -> 0.001p | false -> 0.999p
+symbolic b15_57: bool = | true -> 0.001p | false -> 0.999p
+symbolic b38_57: bool = | true -> 0.001p | false -> 0.999p
+symbolic b53_57: bool = | true -> 0.001p | false -> 0.999p
+symbolic b11_57: bool = | true -> 0.001p | false -> 0.999p
+symbolic b15_68: bool = | true -> 0.001p | false -> 0.999p
+symbolic b63_68: bool = | true -> 0.001p | false -> 0.999p
+symbolic b53_68: bool = | true -> 0.001p | false -> 0.999p
+symbolic b68_77: bool = | true -> 0.001p | false -> 0.999p
+symbolic b38_68: bool = | true -> 0.001p | false -> 0.999p
+symbolic b11_68: bool = | true -> 0.001p | false -> 0.999p
+symbolic b59_68: bool = | true -> 0.001p | false -> 0.999p
+symbolic b63_67: bool = | true -> 0.001p | false -> 0.999p
+symbolic b53_67: bool = | true -> 0.001p | false -> 0.999p
+symbolic b67_77: bool = | true -> 0.001p | false -> 0.999p
+symbolic b38_67: bool = | true -> 0.001p | false -> 0.999p
+symbolic b15_67: bool = | true -> 0.001p | false -> 0.999p
+symbolic b11_67: bool = | true -> 0.001p | false -> 0.999p
+symbolic b59_67: bool = | true -> 0.001p | false -> 0.999p
+symbolic b56_77: bool = | true -> 0.001p | false -> 0.999p
+symbolic b53_56: bool = | true -> 0.001p | false -> 0.999p
+symbolic b56_63: bool = | true -> 0.001p | false -> 0.999p
+symbolic b15_56: bool = | true -> 0.001p | false -> 0.999p
+symbolic b56_59: bool = | true -> 0.001p | false -> 0.999p
+symbolic b38_56: bool = | true -> 0.001p | false -> 0.999p
+symbolic b11_56: bool = | true -> 0.001p | false -> 0.999p
+symbolic b6_26: bool = | true -> 0.001p | false -> 0.999p
+symbolic b6_33: bool = | true -> 0.001p | false -> 0.999p
+symbolic b6_23: bool = | true -> 0.001p | false -> 0.999p
+symbolic b6_24: bool = | true -> 0.001p | false -> 0.999p
+symbolic b16_60: bool = | true -> 0.001p | false -> 0.999p
+symbolic b10_60: bool = | true -> 0.001p | false -> 0.999p
+symbolic b8_60: bool = | true -> 0.001p | false -> 0.999p
+symbolic b18_60: bool = | true -> 0.001p | false -> 0.999p
+symbolic b37_39: bool = | true -> 0.001p | false -> 0.999p
+symbolic b4_39: bool = | true -> 0.001p | false -> 0.999p
+symbolic b5_39: bool = | true -> 0.001p | false -> 0.999p
+symbolic b36_39: bool = | true -> 0.001p | false -> 0.999p
+symbolic b17_27: bool = | true -> 0.001p | false -> 0.999p
+symbolic b17_20: bool = | true -> 0.001p | false -> 0.999p
+symbolic b17_21: bool = | true -> 0.001p | false -> 0.999p
+symbolic b17_22: bool = | true -> 0.001p | false -> 0.999p
+symbolic b13_44: bool = | true -> 0.001p | false -> 0.999p
+symbolic b3_44: bool = | true -> 0.001p | false -> 0.999p
+symbolic b12_44: bool = | true -> 0.001p | false -> 0.999p
+symbolic b2_44: bool = | true -> 0.001p | false -> 0.999p
+symbolic b42_78: bool = | true -> 0.001p | false -> 0.999p
+symbolic b51_78: bool = | true -> 0.001p | false -> 0.999p
+symbolic b45_78: bool = | true -> 0.001p | false -> 0.999p
+symbolic b48_78: bool = | true -> 0.001p | false -> 0.999p
+symbolic b64_65: bool = | true -> 0.001p | false -> 0.999p
+symbolic b65_73: bool = | true -> 0.001p | false -> 0.999p
+symbolic b65_76: bool = | true -> 0.001p | false -> 0.999p
+symbolic b65_74: bool = | true -> 0.001p | false -> 0.999p
+symbolic b35_37: bool = | true -> 0.001p | false -> 0.999p
+symbolic b5_35: bool = | true -> 0.001p | false -> 0.999p
+symbolic b35_36: bool = | true -> 0.001p | false -> 0.999p
+symbolic b4_35: bool = | true -> 0.001p | false -> 0.999p
+symbolic b7_26: bool = | true -> 0.001p | false -> 0.999p
+symbolic b7_33: bool = | true -> 0.001p | false -> 0.999p
+symbolic b7_23: bool = | true -> 0.001p | false -> 0.999p
+symbolic b7_24: bool = | true -> 0.001p | false -> 0.999p
+symbolic b45_69: bool = | true -> 0.001p | false -> 0.999p
+symbolic b42_69: bool = | true -> 0.001p | false -> 0.999p
+symbolic b51_69: bool = | true -> 0.001p | false -> 0.999p
+symbolic b48_69: bool = | true -> 0.001p | false -> 0.999p
+symbolic b13_47: bool = | true -> 0.001p | false -> 0.999p
+symbolic b12_47: bool = | true -> 0.001p | false -> 0.999p
+symbolic b2_47: bool = | true -> 0.001p | false -> 0.999p
+symbolic b3_47: bool = | true -> 0.001p | false -> 0.999p
+symbolic b16_61: bool = | true -> 0.001p | false -> 0.999p
+symbolic b10_61: bool = | true -> 0.001p | false -> 0.999p
+symbolic b8_61: bool = | true -> 0.001p | false -> 0.999p
+symbolic b18_61: bool = | true -> 0.001p | false -> 0.999p
+symbolic b74_75: bool = | true -> 0.001p | false -> 0.999p
+symbolic b73_75: bool = | true -> 0.001p | false -> 0.999p
+symbolic b64_75: bool = | true -> 0.001p | false -> 0.999p
+symbolic b75_76: bool = | true -> 0.001p | false -> 0.999p
+symbolic b19_20: bool = | true -> 0.001p | false -> 0.999p
+symbolic b19_22: bool = | true -> 0.001p | false -> 0.999p
+symbolic b19_27: bool = | true -> 0.001p | false -> 0.999p
+symbolic b19_21: bool = | true -> 0.001p | false -> 0.999p
+symbolic b14_26: bool = | true -> 0.001p | false -> 0.999p
+symbolic b14_24: bool = | true -> 0.001p | false -> 0.999p
+symbolic b14_23: bool = | true -> 0.001p | false -> 0.999p
+symbolic b14_33: bool = | true -> 0.001p | false -> 0.999p
+symbolic b9_20: bool = | true -> 0.001p | false -> 0.999p
+symbolic b9_27: bool = | true -> 0.001p | false -> 0.999p
+symbolic b9_21: bool = | true -> 0.001p | false -> 0.999p
+symbolic b9_22: bool = | true -> 0.001p | false -> 0.999p
+symbolic b12_50: bool = | true -> 0.001p | false -> 0.999p
+symbolic b3_50: bool = | true -> 0.001p | false -> 0.999p
+symbolic b2_50: bool = | true -> 0.001p | false -> 0.999p
+symbolic b13_50: bool = | true -> 0.001p | false -> 0.999p
+symbolic b48_79: bool = | true -> 0.001p | false -> 0.999p
+symbolic b51_79: bool = | true -> 0.001p | false -> 0.999p
+symbolic b45_79: bool = | true -> 0.001p | false -> 0.999p
+symbolic b42_79: bool = | true -> 0.001p | false -> 0.999p
+symbolic b30_37: bool = | true -> 0.001p | false -> 0.999p
+symbolic b4_30: bool = | true -> 0.001p | false -> 0.999p
+symbolic b30_36: bool = | true -> 0.001p | false -> 0.999p
+symbolic b5_30: bool = | true -> 0.001p | false -> 0.999p
+symbolic b10_62: bool = | true -> 0.001p | false -> 0.999p
+symbolic b8_62: bool = | true -> 0.001p | false -> 0.999p
+symbolic b16_62: bool = | true -> 0.001p | false -> 0.999p
+symbolic b18_62: bool = | true -> 0.001p | false -> 0.999p
+symbolic b58_64: bool = | true -> 0.001p | false -> 0.999p
+symbolic b58_73: bool = | true -> 0.001p | false -> 0.999p
+symbolic b58_76: bool = | true -> 0.001p | false -> 0.999p
+symbolic b58_74: bool = | true -> 0.001p | false -> 0.999p
+symbolic b42_77: bool = | true -> 0.001p | false -> 0.999p
+symbolic b45_77: bool = | true -> 0.001p | false -> 0.999p
+symbolic b51_77: bool = | true -> 0.001p | false -> 0.999p
+symbolic b48_77: bool = | true -> 0.001p | false -> 0.999p
+symbolic b59_64: bool = | true -> 0.001p | false -> 0.999p
+symbolic b59_73: bool = | true -> 0.001p | false -> 0.999p
+symbolic b59_76: bool = | true -> 0.001p | false -> 0.999p
+symbolic b59_74: bool = | true -> 0.001p | false -> 0.999p
+symbolic b16_63: bool = | true -> 0.001p | false -> 0.999p
+symbolic b10_63: bool = | true -> 0.001p | false -> 0.999p
+symbolic b8_63: bool = | true -> 0.001p | false -> 0.999p
+symbolic b18_63: bool = | true -> 0.001p | false -> 0.999p
+symbolic b15_26: bool = | true -> 0.001p | false -> 0.999p
+symbolic b15_33: bool = | true -> 0.001p | false -> 0.999p
+symbolic b15_24: bool = | true -> 0.001p | false -> 0.999p
+symbolic b15_23: bool = | true -> 0.001p | false -> 0.999p
+symbolic b37_38: bool = | true -> 0.001p | false -> 0.999p
+symbolic b4_38: bool = | true -> 0.001p | false -> 0.999p
+symbolic b36_38: bool = | true -> 0.001p | false -> 0.999p
+symbolic b5_38: bool = | true -> 0.001p | false -> 0.999p
+symbolic b3_53: bool = | true -> 0.001p | false -> 0.999p
+symbolic b12_53: bool = | true -> 0.001p | false -> 0.999p
+symbolic b2_53: bool = | true -> 0.001p | false -> 0.999p
+symbolic b13_53: bool = | true -> 0.001p | false -> 0.999p
+symbolic b11_20: bool = | true -> 0.001p | false -> 0.999p
+symbolic b11_27: bool = | true -> 0.001p | false -> 0.999p
+symbolic b11_21: bool = | true -> 0.001p | false -> 0.999p
+symbolic b11_22: bool = | true -> 0.001p | false -> 0.999p
+
+let isFailed e = 
+  match e with
+  | 0~34 -> b0_34
+  | 0~28 -> b0_28
+  | 0~25 -> b0_25
+  | 0~32 -> b0_32
+  | 1~34 -> b1_34
+  | 1~28 -> b1_28
+  | 1~32 -> b1_32
+  | 1~25 -> b1_25
+  | 2~44 -> b2_44
+  | 2~47 -> b2_47
+  | 2~50 -> b2_50
+  | 2~53 -> b2_53
+  | 3~44 -> b3_44
+  | 3~47 -> b3_47
+  | 3~50 -> b3_50
+  | 3~53 -> b3_53
+  | 4~38 -> b4_38
+  | 4~39 -> b4_39
+  | 4~30 -> b4_30
+  | 4~35 -> b4_35
+  | 5~38 -> b5_38
+  | 5~39 -> b5_39
+  | 5~30 -> b5_30
+  | 5~35 -> b5_35
+  | 6~52 -> b6_52
+  | 6~54 -> b6_54
+  | 6~26 -> b6_26
+  | 6~33 -> b6_33
+  | 6~23 -> b6_23
+  | 6~49 -> b6_49
+  | 6~24 -> b6_24
+  | 6~55 -> b6_55
+  | 7~26 -> b7_26
+  | 7~33 -> b7_33
+  | 7~23 -> b7_23
+  | 7~43 -> b7_43
+  | 7~40 -> b7_40
+  | 7~24 -> b7_24
+  | 7~46 -> b7_46
+  | 7~41 -> b7_41
+  | 8~60 -> b8_60
+  | 8~62 -> b8_62
+  | 8~63 -> b8_63
+  | 8~61 -> b8_61
+  | 9~20 -> b9_20
+  | 9~72 -> b9_72
+  | 9~70 -> b9_70
+  | 9~27 -> b9_27
+  | 9~21 -> b9_21
+  | 9~71 -> b9_71
+  | 9~66 -> b9_66
+  | 9~22 -> b9_22
+  | 10~62 -> b10_62
+  | 10~60 -> b10_60
+  | 10~63 -> b10_63
+  | 10~61 -> b10_61
+  | 11~20 -> b11_20
+  | 11~68 -> b11_68
+  | 11~57 -> b11_57
+  | 11~27 -> b11_27
+  | 11~21 -> b11_21
+  | 11~56 -> b11_56
+  | 11~67 -> b11_67
+  | 11~22 -> b11_22
+  | 12~44 -> b12_44
+  | 12~53 -> b12_53
+  | 12~50 -> b12_50
+  | 12~47 -> b12_47
+  | 13~44 -> b13_44
+  | 13~53 -> b13_53
+  | 13~50 -> b13_50
+  | 13~47 -> b13_47
+  | 14~26 -> b14_26
+  | 14~24 -> b14_24
+  | 14~70 -> b14_70
+  | 14~72 -> b14_72
+  | 14~23 -> b14_23
+  | 14~66 -> b14_66
+  | 14~71 -> b14_71
+  | 14~33 -> b14_33
+  | 15~26 -> b15_26
+  | 15~33 -> b15_33
+  | 15~67 -> b15_67
+  | 15~56 -> b15_56
+  | 15~24 -> b15_24
+  | 15~23 -> b15_23
+  | 15~57 -> b15_57
+  | 15~68 -> b15_68
+  | 16~60 -> b16_60
+  | 16~63 -> b16_63
+  | 16~62 -> b16_62
+  | 16~61 -> b16_61
+  | 17~27 -> b17_27
+  | 17~54 -> b17_54
+  | 17~49 -> b17_49
+  | 17~20 -> b17_20
+  | 17~21 -> b17_21
+  | 17~55 -> b17_55
+  | 17~22 -> b17_22
+  | 17~52 -> b17_52
+  | 18~60 -> b18_60
+  | 18~62 -> b18_62
+  | 18~63 -> b18_63
+  | 18~61 -> b18_61
+  | 19~20 -> b19_20
+  | 19~40 -> b19_40
+  | 19~22 -> b19_22
+  | 19~27 -> b19_27
+  | 19~41 -> b19_41
+  | 19~46 -> b19_46
+  | 19~43 -> b19_43
+  | 19~21 -> b19_21
+  | 20~17 -> b17_20
+  | 20~11 -> b11_20
+  | 20~19 -> b19_20
+  | 20~9 -> b9_20
+  | 21~11 -> b11_21
+  | 21~9 -> b9_21
+  | 21~19 -> b19_21
+  | 21~17 -> b17_21
+  | 22~11 -> b11_22
+  | 22~9 -> b9_22
+  | 22~17 -> b17_22
+  | 22~19 -> b19_22
+  | 23~14 -> b14_23
+  | 23~6 -> b6_23
+  | 23~15 -> b15_23
+  | 23~7 -> b7_23
+  | 24~7 -> b7_24
+  | 24~6 -> b6_24
+  | 24~14 -> b14_24
+  | 24~15 -> b15_24
+  | 25~31 -> b25_31
+  | 25~66 -> b25_66
+  | 25~1 -> b1_25
+  | 25~70 -> b25_70
+  | 25~29 -> b25_29
+  | 25~72 -> b25_72
+  | 25~71 -> b25_71
+  | 25~0 -> b0_25
+  | 26~14 -> b14_26
+  | 26~6 -> b6_26
+  | 26~15 -> b15_26
+  | 26~7 -> b7_26
+  | 27~11 -> b11_27
+  | 27~17 -> b17_27
+  | 27~9 -> b9_27
+  | 27~19 -> b19_27
+  | 28~31 -> b28_31
+  | 28~41 -> b28_41
+  | 28~43 -> b28_43
+  | 28~1 -> b1_28
+  | 28~40 -> b28_40
+  | 28~0 -> b0_28
+  | 28~29 -> b28_29
+  | 28~46 -> b28_46
+  | 29~34 -> b29_34
+  | 29~25 -> b25_29
+  | 29~32 -> b29_32
+  | 29~28 -> b28_29
+  | 30~37 -> b30_37
+  | 30~70 -> b30_70
+  | 30~72 -> b30_72
+  | 30~66 -> b30_66
+  | 30~4 -> b4_30
+  | 30~71 -> b30_71
+  | 30~36 -> b30_36
+  | 30~5 -> b5_30
+  | 31~34 -> b31_34
+  | 31~25 -> b25_31
+  | 31~32 -> b31_32
+  | 31~28 -> b28_31
+  | 32~31 -> b31_32
+  | 32~1 -> b1_32
+  | 32~29 -> b29_32
+  | 32~57 -> b32_57
+  | 32~68 -> b32_68
+  | 32~0 -> b0_32
+  | 32~67 -> b32_67
+  | 32~56 -> b32_56
+  | 33~6 -> b6_33
+  | 33~14 -> b14_33
+  | 33~15 -> b15_33
+  | 33~7 -> b7_33
+  | 34~55 -> b34_55
+  | 34~1 -> b1_34
+  | 34~31 -> b31_34
+  | 34~52 -> b34_52
+  | 34~29 -> b29_34
+  | 34~0 -> b0_34
+  | 34~49 -> b34_49
+  | 34~54 -> b34_54
+  | 35~37 -> b35_37
+  | 35~5 -> b5_35
+  | 35~46 -> b35_46
+  | 35~36 -> b35_36
+  | 35~40 -> b35_40
+  | 35~43 -> b35_43
+  | 35~41 -> b35_41
+  | 35~4 -> b4_35
+  | 36~38 -> b36_38
+  | 36~30 -> b30_36
+  | 36~35 -> b35_36
+  | 36~39 -> b36_39
+  | 37~35 -> b35_37
+  | 37~38 -> b37_38
+  | 37~39 -> b37_39
+  | 37~30 -> b30_37
+  | 38~37 -> b37_38
+  | 38~4 -> b4_38
+  | 38~56 -> b38_56
+  | 38~67 -> b38_67
+  | 38~36 -> b36_38
+  | 38~68 -> b38_68
+  | 38~57 -> b38_57
+  | 38~5 -> b5_38
+  | 39~37 -> b37_39
+  | 39~55 -> b39_55
+  | 39~4 -> b4_39
+  | 39~52 -> b39_52
+  | 39~5 -> b5_39
+  | 39~49 -> b39_49
+  | 39~54 -> b39_54
+  | 39~36 -> b36_39
+  | 40~28 -> b28_40
+  | 40~35 -> b35_40
+  | 40~7 -> b7_40
+  | 40~61 -> b40_61
+  | 40~69 -> b40_69
+  | 40~47 -> b40_47
+  | 40~75 -> b40_75
+  | 40~19 -> b19_40
+  | 41~28 -> b28_41
+  | 41~35 -> b35_41
+  | 41~7 -> b7_41
+  | 41~69 -> b41_69
+  | 41~47 -> b41_47
+  | 41~61 -> b41_61
+  | 41~75 -> b41_75
+  | 41~19 -> b19_41
+  | 42~78 -> b42_78
+  | 42~77 -> b42_77
+  | 42~79 -> b42_79
+  | 42~69 -> b42_69
+  | 43~75 -> b43_75
+  | 43~7 -> b7_43
+  | 43~47 -> b43_47
+  | 43~35 -> b35_43
+  | 43~61 -> b43_61
+  | 43~69 -> b43_69
+  | 43~19 -> b19_43
+  | 43~28 -> b28_43
+  | 44~13 -> b13_44
+  | 44~49 -> b44_49
+  | 44~3 -> b3_44
+  | 44~12 -> b12_44
+  | 44~2 -> b2_44
+  | 44~55 -> b44_55
+  | 44~54 -> b44_54
+  | 44~52 -> b44_52
+  | 45~79 -> b45_79
+  | 45~78 -> b45_78
+  | 45~77 -> b45_77
+  | 45~69 -> b45_69
+  | 46~28 -> b28_46
+  | 46~35 -> b35_46
+  | 46~7 -> b7_46
+  | 46~47 -> b46_47
+  | 46~61 -> b46_61
+  | 46~69 -> b46_69
+  | 46~75 -> b46_75
+  | 46~19 -> b19_46
+  | 47~40 -> b40_47
+  | 47~13 -> b13_47
+  | 47~12 -> b12_47
+  | 47~46 -> b46_47
+  | 47~41 -> b41_47
+  | 47~43 -> b43_47
+  | 47~2 -> b2_47
+  | 47~3 -> b3_47
+  | 48~78 -> b48_78
+  | 48~79 -> b48_79
+  | 48~77 -> b48_77
+  | 48~69 -> b48_69
+  | 49~39 -> b39_49
+  | 49~60 -> b49_60
+  | 49~17 -> b17_49
+  | 49~34 -> b34_49
+  | 49~6 -> b6_49
+  | 49~44 -> b44_49
+  | 49~78 -> b49_78
+  | 49~65 -> b49_65
+  | 50~72 -> b50_72
+  | 50~12 -> b12_50
+  | 50~3 -> b3_50
+  | 50~71 -> b50_71
+  | 50~2 -> b2_50
+  | 50~66 -> b50_66
+  | 50~70 -> b50_70
+  | 50~13 -> b13_50
+  | 51~79 -> b51_79
+  | 51~78 -> b51_78
+  | 51~77 -> b51_77
+  | 51~69 -> b51_69
+  | 52~39 -> b39_52
+  | 52~17 -> b17_52
+  | 52~60 -> b52_60
+  | 52~6 -> b6_52
+  | 52~34 -> b34_52
+  | 52~78 -> b52_78
+  | 52~65 -> b52_65
+  | 52~44 -> b44_52
+  | 53~56 -> b53_56
+  | 53~67 -> b53_67
+  | 53~3 -> b3_53
+  | 53~12 -> b12_53
+  | 53~2 -> b2_53
+  | 53~68 -> b53_68
+  | 53~13 -> b13_53
+  | 53~57 -> b53_57
+  | 54~6 -> b6_54
+  | 54~60 -> b54_60
+  | 54~34 -> b34_54
+  | 54~44 -> b44_54
+  | 54~39 -> b39_54
+  | 54~78 -> b54_78
+  | 54~17 -> b17_54
+  | 54~65 -> b54_65
+  | 55~6 -> b6_55
+  | 55~60 -> b55_60
+  | 55~39 -> b39_55
+  | 55~34 -> b34_55
+  | 55~17 -> b17_55
+  | 55~44 -> b44_55
+  | 55~78 -> b55_78
+  | 55~65 -> b55_65
+  | 56~77 -> b56_77
+  | 56~53 -> b53_56
+  | 56~63 -> b56_63
+  | 56~15 -> b15_56
+  | 56~32 -> b32_56
+  | 56~59 -> b56_59
+  | 56~38 -> b38_56
+  | 56~11 -> b11_56
+  | 57~77 -> b57_77
+  | 57~59 -> b57_59
+  | 57~63 -> b57_63
+  | 57~15 -> b15_57
+  | 57~32 -> b32_57
+  | 57~38 -> b38_57
+  | 57~53 -> b53_57
+  | 57~11 -> b11_57
+  | 58~64 -> b58_64
+  | 58~73 -> b58_73
+  | 58~66 -> b58_66
+  | 58~70 -> b58_70
+  | 58~76 -> b58_76
+  | 58~72 -> b58_72
+  | 58~71 -> b58_71
+  | 58~74 -> b58_74
+  | 59~64 -> b59_64
+  | 59~73 -> b59_73
+  | 59~68 -> b59_68
+  | 59~67 -> b59_67
+  | 59~56 -> b56_59
+  | 59~76 -> b59_76
+  | 59~57 -> b57_59
+  | 59~74 -> b59_74
+  | 60~49 -> b49_60
+  | 60~16 -> b16_60
+  | 60~10 -> b10_60
+  | 60~8 -> b8_60
+  | 60~52 -> b52_60
+  | 60~55 -> b55_60
+  | 60~18 -> b18_60
+  | 60~54 -> b54_60
+  | 61~16 -> b16_61
+  | 61~10 -> b10_61
+  | 61~46 -> b46_61
+  | 61~43 -> b43_61
+  | 61~8 -> b8_61
+  | 61~40 -> b40_61
+  | 61~41 -> b41_61
+  | 61~18 -> b18_61
+  | 62~10 -> b10_62
+  | 62~8 -> b8_62
+  | 62~66 -> b62_66
+  | 62~16 -> b16_62
+  | 62~71 -> b62_71
+  | 62~72 -> b62_72
+  | 62~18 -> b18_62
+  | 62~70 -> b62_70
+  | 63~16 -> b16_63
+  | 63~10 -> b10_63
+  | 63~67 -> b63_67
+  | 63~56 -> b56_63
+  | 63~57 -> b57_63
+  | 63~68 -> b63_68
+  | 63~8 -> b8_63
+  | 63~18 -> b18_63
+  | 64~65 -> b64_65
+  | 64~58 -> b58_64
+  | 64~75 -> b64_75
+  | 64~59 -> b59_64
+  | 65~49 -> b49_65
+  | 65~64 -> b64_65
+  | 65~73 -> b65_73
+  | 65~76 -> b65_76
+  | 65~54 -> b54_65
+  | 65~55 -> b55_65
+  | 65~52 -> b52_65
+  | 65~74 -> b65_74
+  | 66~14 -> b14_66
+  | 66~25 -> b25_66
+  | 66~9 -> b9_66
+  | 66~50 -> b50_66
+  | 66~79 -> b66_79
+  | 66~30 -> b30_66
+  | 66~62 -> b62_66
+  | 66~58 -> b58_66
+  | 67~63 -> b63_67
+  | 67~53 -> b53_67
+  | 67~77 -> b67_77
+  | 67~38 -> b38_67
+  | 67~15 -> b15_67
+  | 67~32 -> b32_67
+  | 67~11 -> b11_67
+  | 67~59 -> b59_67
+  | 68~15 -> b15_68
+  | 68~63 -> b63_68
+  | 68~53 -> b53_68
+  | 68~77 -> b68_77
+  | 68~38 -> b38_68
+  | 68~32 -> b32_68
+  | 68~11 -> b11_68
+  | 68~59 -> b59_68
+  | 69~46 -> b46_69
+  | 69~45 -> b45_69
+  | 69~41 -> b41_69
+  | 69~42 -> b42_69
+  | 69~51 -> b51_69
+  | 69~40 -> b40_69
+  | 69~48 -> b48_69
+  | 69~43 -> b43_69
+  | 70~62 -> b62_70
+  | 70~79 -> b70_79
+  | 70~9 -> b9_70
+  | 70~50 -> b50_70
+  | 70~25 -> b25_70
+  | 70~30 -> b30_70
+  | 70~14 -> b14_70
+  | 70~58 -> b58_70
+  | 71~62 -> b62_71
+  | 71~50 -> b50_71
+  | 71~9 -> b9_71
+  | 71~25 -> b25_71
+  | 71~14 -> b14_71
+  | 71~58 -> b58_71
+  | 71~30 -> b30_71
+  | 71~79 -> b71_79
+  | 72~14 -> b14_72
+  | 72~25 -> b25_72
+  | 72~9 -> b9_72
+  | 72~50 -> b50_72
+  | 72~79 -> b72_79
+  | 72~62 -> b62_72
+  | 72~30 -> b30_72
+  | 72~58 -> b58_72
+  | 73~65 -> b65_73
+  | 73~58 -> b58_73
+  | 73~75 -> b73_75
+  | 73~59 -> b59_73
+  | 74~65 -> b65_74
+  | 74~58 -> b58_74
+  | 74~75 -> b74_75
+  | 74~59 -> b59_74
+  | 75~46 -> b46_75
+  | 75~74 -> b74_75
+  | 75~73 -> b73_75
+  | 75~64 -> b64_75
+  | 75~41 -> b41_75
+  | 75~76 -> b75_76
+  | 75~40 -> b40_75
+  | 75~43 -> b43_75
+  | 76~65 -> b65_76
+  | 76~58 -> b58_76
+  | 76~75 -> b75_76
+  | 76~59 -> b59_76
+  | 77~42 -> b42_77
+  | 77~45 -> b45_77
+  | 77~51 -> b51_77
+  | 77~68 -> b68_77
+  | 77~57 -> b57_77
+  | 77~48 -> b48_77
+  | 77~67 -> b67_77
+  | 77~56 -> b56_77
+  | 78~42 -> b42_78
+  | 78~51 -> b51_78
+  | 78~45 -> b45_78
+  | 78~55 -> b55_78
+  | 78~52 -> b52_78
+  | 78~48 -> b48_78
+  | 78~49 -> b49_78
+  | 78~54 -> b54_78
+  | 79~72 -> b72_79
+  | 79~48 -> b48_79
+  | 79~51 -> b51_79
+  | 79~71 -> b71_79
+  | 79~66 -> b66_79
+  | 79~45 -> b45_79
+  | 79~70 -> b70_79
+  | 79~42 -> b42_79
+
+let mergeLinkFaults u (x : [M]attribute) (y : [M]attribute) =
+  merge u x y
+
+let transLinkFaults d e (x : [M]attribute) =
+  if isFailed e then
+    {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+  else trans d e x
+
+let initLinkFaults d u = init d u 
+

@@ -316,7 +316,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     in
     let (_, maxElts) = BatMap.max_binding qMap in
     let qSet = List.fold_left (fun acc i -> BatQueue.add i q; AdjGraph.VertexSet.add i acc) AdjGraph.VertexSet.empty maxElts in
-    
+
     let initGlobal =
       {
         queue = q;
@@ -641,6 +641,7 @@ let check_assertion
     | None -> None
     | _ -> failwith "Impossible case - condition has typechecked to a boolean"
   in
+  (* let prob' = BddUtils.computeTrueProbabilityOld *)
   let prob = BddUtils.computeTrueProbability a distrs cond in
   (name, prob)
 

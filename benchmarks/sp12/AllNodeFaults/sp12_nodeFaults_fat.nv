@@ -1,0 +1,379 @@
+include "../sp12_control.nv"
+
+symbolic b129: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b3: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b131: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b4: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b5: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b6: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b134: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b137: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b10: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b12: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b146: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b147: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b20: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b21: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b22: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b150: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b23: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b24: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b25: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b155: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b156: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b158: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b159: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b163: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b165: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b38: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b167: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b168: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b41: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b42: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b43: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b44: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b46: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b48: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b50: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b178: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b52: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b55: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b56: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b59: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b61: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b62: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b63: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b64: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b67: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b69: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b71: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b73: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b74: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b76: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b78: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b79: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b83: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b84: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b85: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b86: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b87: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b92: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b93: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b101: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b102: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b103: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b104: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b105: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b108: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b109: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b116: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b118: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b119: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b121: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b123: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b125: bool = | true -> 0.0001p | false -> 0.9999p 
+symbolic b128: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b130: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b132: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b133: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b135: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b138: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b140: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b142: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b143: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b144: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b145: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b94: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b95: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b96: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b160: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b161: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b98: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b162: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b100: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b169: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b170: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b107: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b172: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b173: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b174: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b111: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b175: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b176: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b113: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b115: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b117: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b120: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b122: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b124: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b126: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b127: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b0: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b1: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b2: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b7: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b8: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b136: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b9: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b11: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b139: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b13: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b141: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b14: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b15: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b16: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b17: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b18: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b19: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b148: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b149: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b151: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b152: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b153: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b26: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b154: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b27: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b28: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b29: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b157: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b30: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b31: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b32: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b33: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b34: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b35: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b36: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b164: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b37: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b166: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b39: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b40: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b171: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b45: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b47: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b49: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b177: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b51: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b179: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b53: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b54: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b57: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b58: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b60: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b65: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b66: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b68: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b70: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b72: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b75: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b77: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b80: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b81: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b82: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b88: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b89: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b90: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b91: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b97: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b99: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b106: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b110: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b112: bool = | true -> 0.0001p | false -> 0.9999p
+symbolic b114: bool = | true -> 0.0001p | false -> 0.9999p
+
+let isFailed u = 
+  match u with
+  | 0n -> b0
+  | 1n -> b1
+  | 2n -> b2
+  | 3n -> b3
+  | 4n -> b4
+  | 5n -> b5
+  | 6n -> b6
+  | 7n -> b7
+  | 8n -> b8
+  | 9n -> b9
+  | 10n -> b10
+  | 11n -> b11
+  | 12n -> b12
+  | 13n -> b13
+  | 14n -> b14
+  | 15n -> b15
+  | 16n -> b16
+  | 17n -> b17
+  | 18n -> b18
+  | 19n -> b19
+  | 20n -> b20
+  | 21n -> b21
+  | 22n -> b22
+  | 23n -> b23
+  | 24n -> b24
+  | 25n -> b25
+  | 26n -> b26
+  | 27n -> b27
+  | 28n -> b28
+  | 29n -> b29
+  | 30n -> b30
+  | 31n -> b31
+  | 32n -> b32
+  | 33n -> b33
+  | 34n -> b34
+  | 35n -> b35
+  | 36n -> b36
+  | 37n -> b37
+  | 38n -> b38
+  | 39n -> b39
+  | 40n -> b40
+  | 41n -> b41
+  | 42n -> b42
+  | 43n -> b43
+  | 44n -> b44
+  | 45n -> b45
+  | 46n -> b46
+  | 47n -> b47
+  | 48n -> b48
+  | 49n -> b49
+  | 50n -> b50
+  | 51n -> b51
+  | 52n -> b52
+  | 53n -> b53
+  | 54n -> b54
+  | 55n -> b55
+  | 56n -> b56
+  | 57n -> b57
+  | 58n -> b58
+  | 59n -> b59
+  | 60n -> b60
+  | 61n -> b61
+  | 62n -> b62
+  | 63n -> b63
+  | 64n -> b64
+  | 65n -> b65
+  | 66n -> b66
+  | 67n -> b67
+  | 68n -> b68
+  | 69n -> b69
+  | 70n -> b70
+  | 71n -> b71
+  | 72n -> b72
+  | 73n -> b73
+  | 74n -> b74
+  | 75n -> b75
+  | 76n -> b76
+  | 77n -> b77
+  | 78n -> b78
+  | 79n -> b79
+  | 80n -> b80
+  | 81n -> b81
+  | 82n -> b82
+  | 83n -> b83
+  | 84n -> b84
+  | 85n -> b85
+  | 86n -> b86
+  | 87n -> b87
+  | 88n -> b88
+  | 89n -> b89
+  | 90n -> b90
+  | 91n -> b91
+  | 92n -> b92
+  | 93n -> b93
+  | 94n -> b94
+  | 95n -> b95
+  | 96n -> b96
+  | 97n -> b97
+  | 98n -> b98
+  | 99n -> b99
+  | 100n -> b100
+  | 101n -> b101
+  | 102n -> b102
+  | 103n -> b103
+  | 104n -> b104
+  | 105n -> b105
+  | 106n -> b106
+  | 107n -> b107
+  | 108n -> b108
+  | 109n -> b109
+  | 110n -> b110
+  | 111n -> b111
+  | 112n -> b112
+  | 113n -> b113
+  | 114n -> b114
+  | 115n -> b115
+  | 116n -> b116
+  | 117n -> b117
+  | 118n -> b118
+  | 119n -> b119
+  | 120n -> b120
+  | 121n -> b121
+  | 122n -> b122
+  | 123n -> b123
+  | 124n -> b124
+  | 125n -> b125
+  | 126n -> b126
+  | 127n -> b127
+  | 128n -> b128
+  | 129n -> b129
+  | 130n -> b130
+  | 131n -> b131
+  | 132n -> b132
+  | 133n -> b133
+  | 134n -> b134
+  | 135n -> b135
+  | 136n -> b136
+  | 137n -> b137
+  | 138n -> b138
+  | 139n -> b139
+  | 140n -> b140
+  | 141n -> b141
+  | 142n -> b142
+  | 143n -> b143
+  | 144n -> b144
+  | 145n -> b145
+  | 146n -> b146
+  | 147n -> b147
+  | 148n -> b148
+  | 149n -> b149
+  | 150n -> b150
+  | 151n -> b151
+  | 152n -> b152
+  | 153n -> b153
+  | 154n -> b154
+  | 155n -> b155
+  | 156n -> b156
+  | 157n -> b157
+  | 158n -> b158
+  | 159n -> b159
+  | 160n -> b160
+  | 161n -> b161
+  | 162n -> b162
+  | 163n -> b163
+  | 164n -> b164
+  | 165n -> b165
+  | 166n -> b166
+  | 167n -> b167
+  | 168n -> b168
+  | 169n -> b169
+  | 170n -> b170
+  | 171n -> b171
+  | 172n -> b172
+  | 173n -> b173
+  | 174n -> b174
+  | 175n -> b175
+  | 176n -> b176
+  | 177n -> b177
+  | 178n -> b178
+  | 179n -> b179
+
+let mergeNodeFaults u (x : [M]attribute) (y : [M]attribute) =
+  merge u x y
+
+let transNodeFaults d e (x : [M]attribute) =
+  if (match e with | a~b -> isFailed b) then
+    {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+  else trans d e x
+
+let initNodeFaults d u = 
+  if isFailed u then
+    {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+  else init d u
+

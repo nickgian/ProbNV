@@ -1,0 +1,65 @@
+(*Bounded link faults for prefix: 70.0.24.0/24 *)
+
+include "fat6_3_linkFaults.nv"
+
+let d = (70.0.24.0/24)
+
+let linkFaults = solution(initLinkFaults d, transLinkFaults d, mergeLinkFaults)
+
+let reachable u =
+  match linkFaults[u].selected with | None -> false | _ -> true
+
+let ltf0_1 = f0 <e f1
+let eqf0_1 = f0 = f1
+let ltf1_2 = f1 <e f2
+let eqf1_2 = f1 = f2
+let ord1 = eqf0_1 && eqf1_2
+let ord2 = ltf0_1 && eqf1_2
+let ord3 = ltf0_1 && ltf1_2
+let ord = ord1 || ord2 || ord3
+
+assert("reachability_edge-26",reachable 0n | ord)
+assert("reachability_core-1",reachable 1n | ord)
+assert("reachability_core-0",reachable 2n | ord)
+assert("reachability_core-3",reachable 3n | ord)
+assert("reachability_edge-44",reachable 4n | ord)
+assert("reachability_aggregation-17",reachable 5n | ord)
+assert("reachability_aggregation-39",reachable 6n | ord)
+assert("reachability_core-2",reachable 7n | ord)
+assert("reachability_aggregation-16",reachable 8n | ord)
+assert("reachability_core-5",reachable 9n | ord)
+assert("reachability_edge-24",reachable 10n | ord)
+assert("reachability_core-4",reachable 11n | ord)
+assert("reachability_edge-25",reachable 12n | ord)
+assert("reachability_core-7",reachable 13n | ord)
+assert("reachability_core-6",reachable 14n | ord)
+assert("reachability_core-8",reachable 15n | ord)
+assert("reachability_aggregation-9",reachable 16n | ord)
+assert("reachability_aggregation-35",reachable 17n | ord)
+assert("reachability_aggregation-34",reachable 18n | ord)
+assert("reachability_edge-20",reachable 19n | ord)
+assert("reachability_edge-42",reachable 20n | ord)
+assert("reachability_aggregation-15",reachable 21n | ord)
+assert("reachability_edge-43",reachable 22n | ord)
+assert("reachability_aggregation-33",reachable 23n | ord)
+assert("reachability_aggregation-11",reachable 24n | ord)
+assert("reachability_aggregation-10",reachable 25n | ord)
+assert("reachability_edge-37",reachable 26n | ord)
+assert("reachability_edge-38",reachable 27n | ord)
+assert("reachability_edge-18",reachable 28n | ord)
+assert("reachability_aggregation-28",reachable 29n | ord)
+assert("reachability_edge-12",reachable 30n | ord)
+assert("reachability_aggregation-27",reachable 31n | ord)
+assert("reachability_edge-13",reachable 32n | ord)
+assert("reachability_edge-14",reachable 33n | ord)
+assert("reachability_edge-36",reachable 34n | ord)
+assert("reachability_aggregation-29",reachable 35n | ord)
+assert("reachability_edge-19",reachable 36n | ord)
+assert("reachability_aggregation-40",reachable 37n | ord)
+assert("reachability_edge-30",reachable 38n | ord)
+assert("reachability_aggregation-23",reachable 39n | ord)
+assert("reachability_edge-31",reachable 40n | ord)
+assert("reachability_edge-32",reachable 41n | ord)
+assert("reachability_aggregation-41",reachable 42n | ord)
+assert("reachability_aggregation-22",reachable 43n | ord)
+assert("reachability_aggregation-21",reachable 44n | ord)
