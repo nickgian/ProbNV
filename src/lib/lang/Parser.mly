@@ -54,17 +54,21 @@
   let make_dsolve ?ty:(ty=None) x init trans merge =
     DSolve ({aty = ty; var_names = evar x; init; trans; merge})
 
-  let make_dfwd x y init fwdOut fwdIn hinitV logV hinitE logE =
+  let make_dfwd x y init fwdOut fwdIn hinitV hinitE logV logE bot =
     DForward { 
       names_V = x; 
       names_E = y; 
+      pty = None;
+      hvty = None;
+      hety = None;
       fwdInit = init;
       fwdOut = fwdOut;
       fwdIn = fwdIn;
       hinitV = hinitV;
       hinitE = hinitE;
       logE = logE;
-      logV = logV; }
+      logV = logV;
+      bot = bot; }
 
   let ensure_node_pattern p =
     match p with
@@ -144,7 +148,9 @@
     build_map StringMap.empty sorted
 
   let make_to_edge n1 n2 = 
-    eapp (eapp (evar (Var.create "toEdge")) n1) n2
+    match (exp_to_value n1).v, (exp_to_value n2).v with
+    | VNode n1, VNode n2 -> vedgeRaw (n1, n2)
+    | _, _ -> failwith "Expected nodes"
 %}
 
 
@@ -324,17 +330,23 @@ assertion:
 
 component:
     /* | LET letvars EQ SOLUTION expr      { make_dsolve (fst $2) $5 } */
-    | LET ID EQ SOLUTION LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (snd $2) $6 $8 $10 }
-    | LET LPAREN ID COMMA ID RPAREN EQ FORWARD LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN     { make_dfwd (evar (snd $3)) (evar (snd $5)) $10 $12 $14 $16 $18 $20 $22 }
+    /* | LET ID EQ SOLUTION LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (snd $2) $6 $8 $10 }
+    | LET LPAREN ID COMMA ID RPAREN EQ FORWARD LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN     { make_dfwd (evar (snd $3)) (evar (snd $5)) $10 $12 $14 $16 $18 $20 $22 $24 } */
+    | SOLUTION ID EQ LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (snd $2) $5 $7 $9 }
+    | FORWARD LPAREN ID COMMA ID RPAREN EQ LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN     { make_dfwd (evar (snd $3)) (evar (snd $5)) $9 $11 $13 $15 $17 $19 $21 $23 }
     | LET letvars EQ expr                       { global_let $2 $4 $4.espan (Span.extend $1 $4.espan) }
     | SYMBOLIC ID COLON bty                    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, None) }
     | SYMBOLIC ID COLON bty EQ distBranches    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, Some $6) }
     | ASSERT LPAREN assertion RPAREN      { DInfer ("\"\"", fst $3 , snd $3) }
     | ASSERT LPAREN STRING COMMA assertion RPAREN      { DInfer (snd $3, fst $5, snd $5) }
-    | LET EDGES EQ LBRACE RBRACE        { DEdges [] }
+    | EDGES EQ LBRACE RBRACE        { DEdges [] }
+    | EDGES EQ LBRACE edges RBRACE  { DEdges $4 }
+    | NODES EQ NUM                  { DNodes (ProbNv_datastructures.Integer.to_int (snd $3), []) }
+    | NODES EQ LPAREN NUM COMMA LBRACE nodes RBRACE RPAREN  { DNodes (ProbNv_datastructures.Integer.to_int (snd $4), $7) }
+    /* | LET EDGES EQ LBRACE RBRACE        { DEdges [] }
     | LET EDGES EQ LBRACE edges RBRACE  { DEdges $5 }
     | LET NODES EQ NUM                  { DNodes (ProbNv_datastructures.Integer.to_int (snd $4), []) }
-    | LET NODES EQ LPAREN NUM COMMA LBRACE nodes RBRACE RPAREN  { DNodes (ProbNv_datastructures.Integer.to_int (snd $5), $8) }
+    | LET NODES EQ LPAREN NUM COMMA LBRACE nodes RBRACE RPAREN  { DNodes (ProbNv_datastructures.Integer.to_int (snd $5), $8) } */
     | TYPE ID EQ ty                     { (add_user_type (snd $2) $4; DUserTy (snd $2, $4)) }
 ;
 
@@ -424,7 +436,7 @@ expr3:
     | ipaddr                            { $1 }
     | prefixes                          { $1 }
     | NODE                              { to_value (vnode (snd $1)) (fst $1)}
-    | edge_arg TILDE edge_arg           { exp (make_to_edge (snd $1) (snd $3)) (Span.extend (fst $1) (fst $3))}
+    | edge_arg TILDE edge_arg           { to_value (make_to_edge (snd $1) (snd $3)) (Span.extend (fst $1) (fst $3))}
     | TRUE                              { to_value (vbool true) $1 }
     | FALSE                             { to_value (vbool false) $1 }
     | NONE                              { to_value (voption None) $1 }

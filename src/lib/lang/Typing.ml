@@ -156,7 +156,7 @@ let check_annot_decl (d : declaration) =
       check_annot init;
       check_annot trans;
       check_annot merge
-  | DUserTy _ | DNodes _ | DEdges _ | DSymbolic _ -> ()
+  | DUserTy _ | DNodes _ | DEdges _ | DSymbolic _ | DForward _ -> ()
 
 let rec check_annot_decls (ds : declarations) =
   match ds with
@@ -535,13 +535,43 @@ and infer_values info env record_types vs =
       (v :: vs, t :: ts)
 
 (** * Infering Types for Declarations *)
-let getSecondArgMode info e =
+
+let getFunctionModes info e =
+  match (OCamlUtils.oget e.ety).typ with
+  | TArrow (tyarg, tyres) -> (get_mode tyarg, get_mode tyres)
+  | _ -> Console.error_position info e.espan "must be of function type"
+
+let getFunctionModes2 info e =
   match (OCamlUtils.oget e.ety).typ with
   | TArrow (_, ty2) -> (
       match ty2.typ with
       | TArrow (tyarg, tyres) -> (get_mode tyarg, get_mode tyres)
-      | _ -> Console.error_position info e.espan "Must be of function type" )
-  | _ -> Console.error_position info e.espan "Must be of function type"
+      | _ ->
+          Console.error_position info e.espan
+            ( "Internal type must be of function type, instead: "
+            ^ Printing.base_ty_to_string ty2.typ ) )
+  | t ->
+      Console.error_position info e.espan
+        ("Must be of function type, instead: " ^ Printing.base_ty_to_string t)
+
+let getFunctionModes3 info e =
+  match (OCamlUtils.oget e.ety).typ with
+  | TArrow (_, ty2) -> (
+      match ty2.typ with
+      | TArrow (tyarg1, ty3) -> (
+          match ty3.typ with
+          | TArrow (tyarg2, tyres) ->
+              (get_mode tyarg1, get_mode tyarg2, get_mode tyres)
+          | _ ->
+              Console.error_position info e.espan
+                "Expected a function with three arguments" )
+      | _ ->
+          Console.error_position info e.espan
+            ( "Internal type must be of function type, instead: "
+            ^ Printing.base_ty_to_string ty2.typ ) )
+  | t ->
+      Console.error_position info e.espan
+        ("Must be of function type, instead: " ^ Printing.base_ty_to_string t)
 
 (** Inference for declarations is mostly the same between HLL and LLL. One
     difference is the solution rule, so we reuse most of the code between the
@@ -619,42 +649,10 @@ and infer_declaration isHLL infer_exp i info env record_types d :
       in
       let m =
         (* Computing the mode for the solutions according to Solution rule for HLL and LLL *)
-        let m1 =
-          match (oget init'.ety).typ with
-          | TArrow (_, ty2) -> get_mode ty2
-          | _ ->
-              Console.error_position info init.espan
-                "Init must be of function type"
-        in
-        let mtrans_arg, mtrans_res =
-          match (oget trans'.ety).typ with
-          | TArrow (_, ty2) -> (
-              match ty2.typ with
-              | TArrow (tyarg, tyres) -> (get_mode tyarg, get_mode tyres)
-              | _ ->
-                  Console.error_position info trans.espan
-                    "Trans must be of function type" )
-          | _ ->
-              Console.error_position info trans.espan
-                "Trans must be of function type"
-        in
+        let m1 = snd @@ getFunctionModes info init' in
+        let mtrans_arg, mtrans_res = getFunctionModes2 info trans' in
         let mmerge_arg1, mmerge_arg2, mmerge_res =
-          match (oget merge'.ety).typ with
-          | TArrow (_, ty2) -> (
-              match ty2.typ with
-              | TArrow (tyarg1, ty3) -> (
-                  match ty3.typ with
-                  | TArrow (tyarg2, tyres) ->
-                      (get_mode tyarg1, get_mode tyarg2, get_mode tyres)
-                  | _ ->
-                      Console.error_position info trans.espan
-                        "Merge must be of function type" )
-              | _ ->
-                  Console.error_position info trans.espan
-                    "Merge must be of function type" )
-          | _ ->
-              Console.error_position info trans.espan
-                "Merge must be of function type"
+          getFunctionModes3 info merge'
         in
         (*For HLL*)
         if isHLL then
@@ -697,8 +695,21 @@ and infer_declaration isHLL infer_exp i info env record_types d :
                 merge = merge';
               } ) )
   | DForward
-      { names_V; names_E; fwdInit; fwdOut; fwdIn; hinitV; hinitE; logE; logV }
-    ->
+      {
+        names_V;
+        names_E;
+        pty;
+        hvty;
+        hety;
+        fwdInit;
+        fwdOut;
+        fwdIn;
+        hinitV;
+        hinitE;
+        logE;
+        logV;
+        bot;
+      } ->
       let fwdInit' = infer_exp fwdInit in
       let fwdOut' = infer_exp fwdOut in
       let fwdIn' = infer_exp fwdIn in
@@ -706,6 +717,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
       let hinitE' = infer_exp hinitE in
       let logE' = infer_exp logE in
       let logV' = infer_exp logV in
+      let bot' = infer_exp bot in
       let varV, varE =
         match (names_V.e, names_E.e) with
         | EVar x, EVar y -> (x, y)
@@ -713,6 +725,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
             Console.error_position info fwdInit.espan
               "Bad Forwarding Declaration"
       in
+      let mBot = get_mode (oget bot'.ety) in
       let mFwd, mV, mE =
         (* Computing the mode for the solutions according to Forwarding rule for HLL and LLL *)
         let mfwdInit =
@@ -722,29 +735,18 @@ and infer_declaration isHLL infer_exp i info env record_types d :
               Console.error_position info fwdInit.espan
                 "FwdInit must be of function type"
         in
-        let mfwdOut_arg, mfwdOut_res = getSecondArgMode info fwdOut' in
-        let mfwdIn_arg, mfwdIn_res = getSecondArgMode info fwdIn' in
-        let mhInitV =
-          match (oget hinitV'.ety).typ with
-          | TArrow (_, ty2) -> get_mode ty2
-          | _ ->
-              Console.error_position info fwdInit.espan
-                "HInitV must be of function type"
-        in
-        let mhInitE =
-          match (oget hinitE'.ety).typ with
-          | TArrow (_, ty2) -> get_mode ty2
-          | _ ->
-              Console.error_position info fwdInit.espan
-                "HInitE must be of function type"
-        in
-        let mlogV_arg, mlogV_res = getSecondArgMode info logV' in
-        let mlogE_arg, mlogE_res = getSecondArgMode info logE' in
+        let mfwdOut_arg, mfwdOut_res = getFunctionModes2 info fwdOut' in
+        let mfwdIn_arg, mfwdIn_res = getFunctionModes2 info fwdIn' in
+        let mhInitV = snd @@ getFunctionModes info hinitV' in
+        let mhInitE = snd @@ getFunctionModes info hinitV' in
+        let mlogV_arg1, mlogV_arg2, mlogV_res = getFunctionModes3 info logV' in
+        let mlogE_arg1, mlogE_arg2, mlogE_res = getFunctionModes3 info logE' in
         (*For HLL*)
         if isHLL then
           let mFwd =
             joinAll
-              (List.map OCamlUtils.oget [ mfwdInit; mfwdOut_res; mfwdIn_res ])
+              (List.map OCamlUtils.oget
+                 [ mfwdInit; mfwdOut_res; mfwdIn_res; mBot ])
           in
           ( mFwd,
             joinAll [ mFwd; OCamlUtils.oget mhInitV; OCamlUtils.oget mlogV_res ],
@@ -759,8 +761,10 @@ and infer_declaration isHLL infer_exp i info env record_types d :
               mfwdIn_res;
               mfwdOut_arg;
               mfwdOut_res;
-              mlogV_arg;
-              mlogE_arg;
+              mlogV_arg1;
+              mlogV_arg2;
+              mlogE_arg1;
+              mlogE_arg2;
               mlogE_res;
               mlogV_res;
               mhInitE;
@@ -774,16 +778,30 @@ and infer_declaration isHLL infer_exp i info env record_types d :
           Console.error_position info fwdInit.espan
             "Modes of forwarding declarations do not match"
       in
-      let fwd_aty = { typ = fresh_tyvar (); mode = Some mFwd } in
-      let logV_aty = { typ = fresh_tyvar (); mode = Some mV } in
-      let logE_aty = { typ = fresh_tyvar (); mode = Some mE } in
+      let fwd_aty =
+        match pty with
+        | Some ty -> ty
+        | None -> { typ = fresh_tyvar (); mode = Some mFwd }
+      in
+      let logV_aty =
+        match hvty with
+        | Some ty -> ty
+        | None -> { typ = fresh_tyvar (); mode = Some mV }
+      in
+      let logE_aty =
+        match hety with
+        | Some ty -> ty
+        | None -> { typ = fresh_tyvar (); mode = Some mE }
+      in
 
       unify isHLL info fwdInit (oget fwdInit'.ety) (fwdInit_ty fwd_aty);
       unify isHLL info fwdOut (oget fwdOut'.ety) (fwdOut_ty fwd_aty);
       unify isHLL info fwdIn (oget fwdIn'.ety) (fwdIn_ty fwd_aty);
+      unify isHLL info bot (oget bot'.ety) fwd_aty;
 
       unify isHLL info hinitV (oget hinitV'.ety) (logVInit_ty logV_aty);
       unify isHLL info hinitE (oget hinitE'.ety) (logEInit_ty logE_aty);
+
       unify isHLL info logV (oget logV'.ety) (logV_ty fwd_aty logV_aty);
       unify isHLL info logE (oget logE'.ety) (logE_ty fwd_aty logE_aty);
 
@@ -797,11 +815,19 @@ and infer_declaration isHLL infer_exp i info env record_types d :
         let etyE =
           { typ = TMap (concrete TEdge, logE_aty); mode = Some Concrete }
         in
+        Printf.printf "%s, %s, %s\n"
+          (Printing.ty_to_string fwd_aty)
+          (Printing.ty_to_string logV_aty)
+          (Printing.ty_to_string logE_aty);
+
         ( Env.update (Env.update env varV etyV) varE etyE,
           DForward
             {
               names_V = aexp (evar varV, Some etyV, names_V.espan);
               names_E = aexp (evar varE, Some etyE, names_E.espan);
+              pty = Some fwd_aty;
+              hvty = Some logV_aty;
+              hety = Some logE_aty;
               fwdInit = fwdInit';
               fwdOut = fwdOut';
               fwdIn = fwdIn';
@@ -809,6 +835,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
               hinitE = hinitE';
               logE = logE';
               logV = logV';
+              bot = bot';
             } )
   | DUserTy _ | DNodes _ | DEdges _ -> (env, d)
 
@@ -856,7 +883,10 @@ module HLLTypeInf = struct
               let keyMode, retMode =
                 match (get_inner_type mapty).typ with
                 | TMap (kty, vty) -> (get_mode kty, get_mode vty)
-                | _ -> failwith "Expected a map type"
+                | t ->
+                    Console.error_position info e.espan
+                      (Printf.sprintf "Expected a map type, found %s instead"
+                         (Printing.base_ty_to_string t))
               in
               let valty = mty retMode valvar in
               unify info e1 mapty

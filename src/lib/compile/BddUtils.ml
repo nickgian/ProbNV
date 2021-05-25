@@ -216,20 +216,20 @@ let memoize2 =
   let tbl1 = Hashtbl.create 2000 in
   let tbl2 = Hashtbl.create 2000 in
   fun f1 f2 ->
-  let rec g1 x =
-    try Hashtbl.find tbl1 x
-    with Not_found ->
-      let res = f1 g1 g2 x in
-      Hashtbl.add tbl1 x res;
-      res
-  and g2 x =
-    try Hashtbl.find tbl2 x
-    with Not_found ->
-      let res = f2 g1 g2 x in
-      Hashtbl.add tbl2 x res;
-      res
-  in
-  g1
+    let rec g1 x =
+      try Hashtbl.find tbl1 x
+      with Not_found ->
+        let res = f1 g1 g2 x in
+        Hashtbl.add tbl1 x res;
+        res
+    and g2 x =
+      try Hashtbl.find tbl2 x
+      with Not_found ->
+        let res = f2 g1 g2 x in
+        Hashtbl.add tbl2 x res;
+        res
+    in
+    g1
 
 (* Algorithm currently used to compute probability of an assertion being true *)
 let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) distrs cond =

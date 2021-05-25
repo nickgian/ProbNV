@@ -325,7 +325,8 @@ let rec value_to_ocaml_string v =
   | VOption (Some v) -> Printf.sprintf "(Some %s)" (value_to_ocaml_string v)
   | VRecord _ -> failwith "Records should have been unrolled"
   | VNode n -> string_of_int n
-  | VEdge e -> Printf.sprintf "%d" e
+  | VEdge (EdgeId e) -> Printf.sprintf "%d" e
+  | VEdge (Raw _) -> failwith "Edges should have been converted to ids"
   | VClosure _ -> failwith "Closures shouldn't appear here."
   | VTotalMap _ ->
       failwith
@@ -446,22 +447,22 @@ and prefix_op_to_ocaml_string op es ty =
   | [ e1; e2 ] -> (
       match op with
       | BddAnd ->
-          Printf.sprintf "(BddFunc.band %s %s)" (exp_to_ocaml_string e1)
+          Printf.sprintf "(BddFunc.band (%s) (%s))" (exp_to_ocaml_string e1)
             (exp_to_ocaml_string e2)
       | BddOr ->
-          Printf.sprintf "(BddFunc.bor %s %s)" (exp_to_ocaml_string e1)
+          Printf.sprintf "(BddFunc.bor (%s) (%s))" (exp_to_ocaml_string e1)
             (exp_to_ocaml_string e2)
       | BddAdd _ ->
-          Printf.sprintf "(BddFunc.add %s %s)" (exp_to_ocaml_string e1)
+          Printf.sprintf "(BddFunc.add (%s) (%s))" (exp_to_ocaml_string e1)
             (exp_to_ocaml_string e2)
       | BddLess _ ->
-          Printf.sprintf "(BddFunc.lt %s %s)" (exp_to_ocaml_string e1)
+          Printf.sprintf "(BddFunc.lt (%s) (%s))" (exp_to_ocaml_string e1)
             (exp_to_ocaml_string e2)
       | BddLeq _ ->
-          Printf.sprintf "(BddFunc.leq %s %s)" (exp_to_ocaml_string e1)
+          Printf.sprintf "(BddFunc.leq (%s) (%s))" (exp_to_ocaml_string e1)
             (exp_to_ocaml_string e2)
       | BddEq ->
-          Printf.sprintf "(BddFunc.eq %s %s)" (exp_to_ocaml_string e1)
+          Printf.sprintf "(BddFunc.eq (%s) (%s))" (exp_to_ocaml_string e1)
             (exp_to_ocaml_string e2)
       | MGet ->
           Printf.sprintf
@@ -560,7 +561,48 @@ let compile_decl decl =
       | _ ->
           failwith "Not implemented" (* Only happens if we did map unrolling *)
       )
-  | DNodes _ | DEdges _ ->
+  | DForward
+      {
+        names_V;
+        names_E;
+        pty;
+        hvty;
+        hety;
+        fwdInit;
+        fwdOut;
+        fwdIn;
+        hinitV;
+        hinitE;
+        logE;
+        logV;
+        bot;
+      } -> (
+      match (names_V.e, names_E.e) with
+      | EVar v, EVar e -> (
+          match (pty, hvty, hety) with
+          | Some _, Some hvty, Some hety ->
+              (*NOTE: this is just the attribute type, not including the map from nodes to attributes *)
+              (*need to register node and edge types manually just to be safe *)
+              ignore (get_fresh_type_id type_store (concrete TNode));
+              ignore (get_fresh_type_id type_store (concrete TEdge));
+              let hvty_id = get_fresh_type_id type_store hvty in
+              let hety_id = get_fresh_type_id type_store hety in
+              Printf.sprintf
+                "let (%s, %s) = SIM.simulate_forwarding record_fns (\"%s\") \
+                 (\"%s\") (%d) (%d) (%s) (%s) (%s) (%s) (%s) (%s) (%s) (%s)"
+                (varname v) (varname e) (Var.name v) (Var.name e) hvty_id
+                hety_id
+                (magic @@ exp_to_ocaml_string fwdInit)
+                (magic @@ exp_to_ocaml_string fwdOut)
+                (magic @@ exp_to_ocaml_string fwdIn)
+                (magic @@ exp_to_ocaml_string hinitV)
+                (magic @@ exp_to_ocaml_string hinitE)
+                (magic @@ exp_to_ocaml_string logV)
+                (magic @@ exp_to_ocaml_string logE)
+                (magic @@ exp_to_ocaml_string bot)
+          | _, _, _ -> failwith "cannot simulate forwarding without types" )
+      | _, _ -> failwith "Expected variables" )
+  | DNodes (_, _) | DEdges _ ->
       (*nodes and edges are not emmited in the OCaml program *)
       ""
 

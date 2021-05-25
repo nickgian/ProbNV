@@ -36,33 +36,52 @@ module type SrpSimulationSig = sig
      variable storing the solutions, the init trans and merge functions and
      computes the solutions.*)
 
+  type packet
+
+  type hV
+
+  type hE
+
   val simulate_forwarding :
     (int * int -> 'a -> 'b) ->
     (* record_fns *)
+    string ->
+    (* node history name *)
+    string ->
+    (* edge history name *)
     int ->
     (* vertex history type id *)
     int ->
     (* edge history type id *)
-    (int -> 'packet) ->
+    (int -> packet) ->
     (* fwdInit function *)
-    (int -> 'packet -> 'packet) ->
+    (int -> packet -> packet) ->
     (*fwdOut function, int argument is the edge id *)
-    (int -> 'packet -> 'packet) ->
+    (int -> packet -> packet) ->
     (*fwdOut function, int argument is the edge id *)
-    (int -> 'historyV) ->
+    (int -> hV) ->
     (* hinitV function - int is the node id*)
-    (int -> 'historyE) ->
+    (int -> hE) ->
     (* hinitE function - int is the edge id *)
-    (int -> 'packet -> 'historyV -> 'historyV) ->
+    (int -> packet -> hV -> hV) ->
     (* logV function - int is the node id*)
-    (int -> 'packet -> 'historyE -> 'historyE) ->
+    (int -> packet -> hE -> hE) ->
     (* logE function - int is the edge id*)
-    'a CompileBDDs.t
+    packet ->
+    (* bot *)
+    hV CompileBDDs.t * hE CompileBDDs.t
 
   val graph : AdjGraph.t
 
   val solved : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list ref
   (** List of solutions, each entry is the name of the SRP, a map from nodes to solutions, and the type of routes *)
+
+  type forwardSolutions = unit Solution.forwardSolutions
+
+  val forwarding_solutions : forwardSolutions list ref
+  (** List of dataplane solutions, each entry is the name of the the history
+    variables, a map from nodes to node histories, a map from edges to edge
+    histories and the types of histories *)
 
   val assertions : (string * bool Mtbddc.t * BddFunc.t option) list ref
   (** List of assertions. We compute the probability they hold. *)
@@ -88,155 +107,250 @@ module type Topology = sig
   val graph : AdjGraph.t
 end
 
-module ForwardingSimulation (G: Topology) =
-struct
-
+module ForwardingSimulation (G : Topology) = struct
   type packet = unit Mtbddc.t (*placeholder *)
+
   type hV = unit
+
   type hE = unit
 
-  (** Keeping track of the history of each node *)
+  (* Keeping track of the history of each node *)
   type historyV = hV AdjGraph.VertexMap.t
-  (** Keeping track of the history of each link *)
+
+  (* Keeping track of the history of each link *)
   type historyE = hE AdjGraph.EdgeMap.t
 
-  (** Current state of each switch/node *)
-  type switchState = (packet list) AdjGraph.VertexMap.t
-  (** Current state of each interface/link *)
-  type interfaceState = (packet list) AdjGraph.EdgeMap.t 
+  (* Current state of each switch/node *)
+  type switchState = packet list AdjGraph.VertexMap.t
 
-  type forwardOutFunction = AdjGraph.EDFT.t-> packet -> packet
-  type forwardInFunction  = AdjGraph.EDFT.t-> packet -> packet 
-  type switchInitFunction = AdjGraph.Vertex.t -> packet 
-    type nodeHistoryInitFunction = AdjGraph.Vertex.t -> hV
+  (* Current state of each interface/link *)
+  type interfaceState = packet list AdjGraph.EdgeMap.t
+
+  type forwardOutFunction = AdjGraph.EDFT.t -> packet -> packet
+
+  type forwardInFunction = AdjGraph.EDFT.t -> packet -> packet
+
+  type switchInitFunction = AdjGraph.Vertex.t -> packet
+
+  type nodeHistoryInitFunction = AdjGraph.Vertex.t -> hV
+
   type edgeHistoryInitFunction = AdjGraph.Vertex.t -> hE
+
   type nodeHistoryLogFunction = AdjGraph.Vertex.t -> packet -> hV -> hV
+
   type edgeHistoryLogFunction = AdjGraph.EDFT.t -> packet -> hE -> hE
-  
 
-  type dataplane = 
-    { switches: switchState;
-      nodeHistory: historyV;
-      edgeHistory: historyE;
-      worklist: AdjGraph.Vertex.t list;  
-   }
-  
-   (* For profiling *)
-    let fwd_time = ref 0.0
-    let logging_time = ref 0.0
-  
-    (* [create_state n initSwitch hinitV hinitE] where n is the number of nodes,
-        initSwitch is the init function for switches and hinitV/hinitE the initial histories *)
-    let create_state (g: AdjGraph.t) initSwitch hinitV hinitE : dataplane =
-      let switches, nodeHistory, worklist = 
-        AdjGraph.fold_vertex (fun n (accSt, accH, wklist) -> 
-      (match initSwitch n with 
-       | None -> AdjGraph.VertexMap.add n ([]) accSt
-       | Some v -> AdjGraph.VertexMap.add n ([v]) accSt),
-        AdjGraph.VertexMap.add n (hinitV n) accH,
-        n :: wklist) g (AdjGraph.VertexMap.empty, AdjGraph.VertexMap.empty, [])
-       in
-       let edgeHistory = AdjGraph.fold_edges_e (fun e accH -> 
-        AdjGraph.EdgeMap.add e (hinitE (AdjGraph.Edge.label e)) accH) g AdjGraph.EdgeMap.empty
-        in
-        {switches; nodeHistory; edgeHistory; worklist}
+  type dataplane = {
+    switches : switchState;
+    nodeHistory : historyV;
+    edgeHistory : historyE;
+    worklist : AdjGraph.Vertex.t list;
+  }
 
-    let simulate_step (fwdIn: forwardInFunction) (fwdOut : forwardOutFunction) (logV : nodeHistoryLogFunction) 
-      (logE: edgeHistoryLogFunction) (bot: packet) (s: dataplane) =
-      let packetDropped packet = 
-        packet = bot
+  type forwardSolutions = unit Solution.forwardSolutions
+
+  (* For profiling *)
+  let fwd_time = ref 0.0
+
+  let logging_time = ref 0.0
+
+  (* For debugging purposes *)
+  let printEdgeHistory v e =
+    let leaves = Mtbddc.leaves (Obj.magic v) in
+    Printf.printf "History for edge : %s\n" (AdjGraph.Edge.to_string e);
+    Array.iter (fun v -> Printf.printf "%d, " v) leaves;
+    Printf.printf "\n\n"
+
+  (* For debugging purposes *)
+  let printState s =
+    Printf.printf "switch state:\n";
+    AdjGraph.VertexMap.iter
+      (fun i ps ->
+        Printf.printf "%d : %s\n" i
+          (Collections.printList (fun _ -> "p") ps "[" ";" "]"))
+      s.switches;
+    Printf.printf "worklist:\n%s"
+      (Collections.printList
+         (fun i -> string_of_int i)
+         s.worklist "[" ";" "]\n");
+    AdjGraph.EdgeMap.iter (fun e vs -> printEdgeHistory vs e) s.edgeHistory
+
+  (* [create_state n initSwitch hinitV hinitE] where n is the number of nodes,
+      initSwitch is the init function for switches and hinitV/hinitE the initial histories *)
+  let create_state (g : AdjGraph.t) initSwitch hinitV hinitE bot : dataplane =
+    let switches, nodeHistory, worklist =
+      AdjGraph.fold_vertex
+        (fun n (accSt, accH, wklist) ->
+          let p = initSwitch n in
+          let accSt, wklist =
+            if p = bot then (AdjGraph.VertexMap.add n [] accSt, wklist)
+            else (AdjGraph.VertexMap.add n [ p ] accSt, n :: wklist)
+          in
+          (accSt, AdjGraph.VertexMap.add n (hinitV n) accH, wklist))
+        g
+        (AdjGraph.VertexMap.empty, AdjGraph.VertexMap.empty, [])
+    in
+    let edgeHistory =
+      AdjGraph.fold_edges_e
+        (fun e accH ->
+          AdjGraph.EdgeMap.add e (hinitE (AdjGraph.Edge.label e)) accH)
+        g AdjGraph.EdgeMap.empty
+    in
+    let s = { switches; nodeHistory; edgeHistory; worklist } in
+    (* printState s; *)
+    s
+
+  let simulate_forward_step (fwdIn : forwardInFunction)
+      (fwdOut : forwardOutFunction) (logV : nodeHistoryLogFunction)
+      (logE : edgeHistoryLogFunction) (bot : packet) (s : dataplane) =
+    let packetDropped packet = packet = bot in
+    let process_packet packet origin neighbor s =
+      let edge = AdjGraph.find_edge G.graph origin neighbor in
+      let edge_id = AdjGraph.E.label edge in
+
+      (* printEdgeHistory (AdjGraph.EdgeMap.find edge s.edgeHistory) edge; *)
+      (* the packet after applying the outgoing policy/filters *)
+      let packetOut = fwdOut edge_id packet in
+      (* add the outgoing packet that traversed the edge to the history of the
+         edge (origin,neighbor) *)
+      let historyEdge' =
+        logE edge_id packetOut (AdjGraph.EdgeMap.find edge s.edgeHistory)
       in
-      let process_packet packet origin neighbor s =
-        let edge = AdjGraph.find_edge G.graph origin neighbor in
-        let edge_id = AdjGraph.E.label edge in
-        (* the packet after applying the outgoing policy/filters *)
-        let packetOut = fwdOut edge_id packet in
-        (* add the outgoing packet that traversed the edge to the history of the edge (origin,neighbor) *)
-        let historyEdge' = logE edge_id packetOut (AdjGraph.EdgeMap.find edge s.edgeHistory) in
-        if packetDropped packetOut then
+      (* Printf.printf "history after packetOut\n";
+         printEdgeHistory historyEdge' edge; *)
+      if packetDropped packetOut then
+        {
           (* If the packet was dropped, only the edge history changes *)
-          {s with edgeHistory = AdjGraph.EdgeMap.add edge historyEdge' s.edgeHistory }
-        else
-          let packetIn = fwdIn edge_id packetOut in
-          let historyNode' = logV neighbor packetIn (AdjGraph.VertexMap.find neighbor s.nodeHistory) in
-          if packetDropped packetIn then
-          {s with edgeHistory = AdjGraph.EdgeMap.add edge historyEdge' s.edgeHistory;
-                  nodeHistory = AdjGraph.VertexMap.add neighbor historyNode' s.nodeHistory }
-          else 
-          { switches = AdjGraph.VertexMap.update_stdlib neighbor (fun ls -> match ls with | None -> Some [packetIn] | Some ps -> Some (packetIn :: ps)) s.switches;
+          s with
+          edgeHistory = AdjGraph.EdgeMap.add edge historyEdge' s.edgeHistory;
+        }
+      else
+        let packetIn = fwdIn edge_id packetOut in
+        let historyNode' =
+          logV neighbor packetIn
+            (AdjGraph.VertexMap.find neighbor s.nodeHistory)
+        in
+        if packetDropped packetIn then
+          {
+            s with
             edgeHistory = AdjGraph.EdgeMap.add edge historyEdge' s.edgeHistory;
-            nodeHistory = AdjGraph.VertexMap.add neighbor historyNode' s.nodeHistory;
-            worklist = neighbor :: s.worklist}
-      in
-      let origin, worklist' = List.hd s.worklist, s.worklist in
-      let packets, switches' = AdjGraph.VertexMap.extract origin s.switches in
-      let s = {s with worklist = worklist'; switches = switches'} in
-      let neighbors = AdjGraph.succ G.graph origin in
-      BatList.fold_left (fun s v -> 
-          List.fold_left (fun s packet -> process_packet packet origin v s) s packets) s neighbors
-      
+            nodeHistory =
+              AdjGraph.VertexMap.add neighbor historyNode' s.nodeHistory;
+          }
+        else
+          let switchSt =
+            AdjGraph.VertexMap.find_default [] neighbor s.switches
+          in
+          let switches', worklist' =
+            if switchSt = [] then
+              ( AdjGraph.VertexMap.add neighbor [ packetIn ] s.switches,
+                neighbor :: s.worklist )
+            else
+              ( AdjGraph.VertexMap.add neighbor (packetIn :: switchSt) s.switches,
+                s.worklist )
+          in
+          {
+            switches = switches';
+            edgeHistory = AdjGraph.EdgeMap.add edge historyEdge' s.edgeHistory;
+            nodeHistory =
+              AdjGraph.VertexMap.add neighbor historyNode' s.nodeHistory;
+            worklist = worklist';
+          }
+    in
+    let origin, worklist' = (List.hd s.worklist, List.tl s.worklist) in
+    (* Printf.printf "working on switch: %d with state: \n" origin;
+       printState s; *)
+    let packets, switches' = AdjGraph.VertexMap.extract origin s.switches in
+    let s = { s with worklist = worklist'; switches = switches' } in
+    let neighbors = AdjGraph.succ G.graph origin in
+    let s' =
+      BatList.fold_left
+        (fun s v ->
+          List.fold_left
+            (fun s packet -> process_packet packet origin v s)
+            s packets)
+        s neighbors
+    in
+    (* Printf.printf "Resulted in state:\n";
+       printState s'; *)
+    s'
 
-    let rec simulate_forward_init fwdIn fwdOut logV logE bot (s: dataplane) =
-      match s.worklist with
-      | [] -> (s.nodeHistory, s.edgeHistory)
-      | _ ->
+  let rec simulate_forward_init fwdIn fwdOut logV logE bot (s : dataplane) =
+    match s.worklist with
+    | [] -> (s.nodeHistory, s.edgeHistory)
+    | _ ->
         let s' = simulate_forward_step fwdIn fwdOut logV logE bot s in
         simulate_forward_init fwdIn fwdOut logV logE bot s'
-        
-    
-    (* Start the forwarding process *)
-    let simulate_forwarding record_fns hv_ty_id he_ty_id 
-      (initSwitch: switchInitFunction) (fwdIn: forwardInFunction) (fwdOut: forwardOutFunction) 
-      hinitV hinitE logV logE bot =
-      let s = create_state G.graph initSwitch hinitV hinitE in
-      let fwdOut e x =
-        Profile.time_profile_total fwd_time (fun () -> fwdOut e x)
-      in
-      let fwdIn e x =
-        Profile.time_profile_total fwd_time (fun () -> fwdIn e x)
-      in
-      let logV u p hv =
-        Profile.time_profile_total logging_time (fun () -> logV u p hv)
-      in
-      let logE e p he =
-        Profile.time_profile_total logging_time (fun () -> logE e p he)
-      in
-      let (hv, he) = simulate_forward_init fwdIn fwdOut logV logE bot s in
 
-      Printf.printf "Forwarding time: %f\n" !fwd_time;
-      Printf.printf "Logging time: %f\n" !logging_time; 
-      let defaultV = AdjGraph.VertexMap.choose hv in
-      let defaultE = AdjGraph.EdgeMap.choose he in
-      (* Constructing a function from the solutions *)
-      let bdd_base_V =
-        BddMap.create
-          ~key_ty_id:
-            (Collections.TypeIds.get_id CompileBDDs.type_store
-               Syntax.(concrete TNode))
-          ~val_ty_id:hv_ty_id defaultV
-      in
-      let bdd_base_E =
-        BddMap.create
-          ~key_ty_id:
-            (Collections.TypeIds.get_id CompileBDDs.type_store
-               Syntax.(concrete TEdge))
-          ~val_ty_id:he_ty_id defaultE
-      in
-      let bdd_full_V =
-        AdjGraph.VertexMap.fold
-          (fun n v acc ->
-            BddMap.update (Obj.magic record_fns) acc (Obj.magic n) (Obj.magic v))
-          hv bdd_base_V
-      in
-      let bdd_full_E =
-        AdjGraph.VertexMap.fold
-          (fun n v acc ->
-            BddMap.update (Obj.magic record_fns) acc (Obj.magic n) (Obj.magic v))
-          he bdd_base_E
-      in
-  
-      (bdd_full_V, bdd_full_E)
-  
+  let forwarding_solutions = ref []
+
+  (* Start the forwarding process *)
+  let simulate_forwarding record_fns hvName heName hv_ty_id he_ty_id
+      (initSwitch : switchInitFunction) (fwdOut : forwardOutFunction)
+      (fwdIn : forwardInFunction) hinitV hinitE logV logE bot =
+    let s = create_state G.graph initSwitch hinitV hinitE bot in
+    let fwdOut e x =
+      Profile.time_profile_total fwd_time (fun () -> fwdOut e x)
+    in
+    let fwdIn e x = Profile.time_profile_total fwd_time (fun () -> fwdIn e x) in
+    let logV u p hv =
+      Profile.time_profile_total logging_time (fun () -> logV u p hv)
+    in
+    let logE e p he =
+      Profile.time_profile_total logging_time (fun () -> logE e p he)
+    in
+    let hv, he = simulate_forward_init fwdIn fwdOut logV logE bot s in
+
+    Printf.printf "Forwarding time: %f\n" !fwd_time;
+    Printf.printf "Logging time: %f\n" !logging_time;
+    let _, defaultV = AdjGraph.VertexMap.choose hv in
+    let _, defaultE = AdjGraph.EdgeMap.choose he in
+    (* Constructing a function from the solutions *)
+    let bdd_base_V =
+      BddMap.create
+        ~key_ty_id:
+          (Collections.TypeIds.get_id CompileBDDs.type_store
+             Syntax.(concrete TNode))
+        ~val_ty_id:hv_ty_id defaultV
+    in
+    let bdd_base_E =
+      BddMap.create
+        ~key_ty_id:
+          (Collections.TypeIds.get_id CompileBDDs.type_store
+             Syntax.(concrete TEdge))
+        ~val_ty_id:he_ty_id defaultE
+    in
+    let bdd_full_V =
+      AdjGraph.VertexMap.fold
+        (fun n v acc ->
+          BddMap.update (Obj.magic record_fns) acc (Obj.magic n) (Obj.magic v))
+        hv bdd_base_V
+    in
+    let bdd_full_E =
+      AdjGraph.EdgeMap.fold
+        (fun e v acc ->
+          BddMap.update (Obj.magic record_fns) acc
+            (Obj.magic (AdjGraph.Edge.label e))
+            (Obj.magic v))
+        he bdd_base_E
+    in
+
+    (* storing the histories for printing *)
+    (let open Solution in
+    forwarding_solutions :=
+      {
+        hvName;
+        heName;
+        historyV_ty =
+          Collections.TypeIds.get_elt CompileBDDs.type_store hv_ty_id;
+        historyE_ty =
+          Collections.TypeIds.get_elt CompileBDDs.type_store he_ty_id;
+        historyV = hv;
+        historyE = he;
+      }
+      :: !forwarding_solutions);
+
+    (bdd_full_V, bdd_full_E)
 end
 
 module SrpSimulation (G : Topology) : SrpSimulationSig = struct
@@ -459,6 +573,11 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
     bdd_full
 
   let assertions : (string * bool Mtbddc.t * BddFunc.t option) list ref = ref []
+
+  module Forwarding = ForwardingSimulation (G)
+  include Forwarding
+
+  let simulate_forwarding = Forwarding.simulate_forwarding
 end
 
 module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
@@ -485,11 +604,20 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     let qMap =
       BatArray.fold_lefti
         (fun acc i route ->
-            BatMap.update_stdlib route (fun is -> match is with | None -> Some [i] | Some is -> Some (i :: is)) acc)
+          BatMap.update_stdlib route
+            (fun is ->
+              match is with None -> Some [ i ] | Some is -> Some (i :: is))
+            acc)
         BatMap.empty initArr
     in
-    let (_, maxElts) = BatMap.max_binding qMap in
-    let qSet = List.fold_left (fun acc i -> BatQueue.add i q; AdjGraph.VertexSet.add i acc) AdjGraph.VertexSet.empty maxElts in
+    let _, maxElts = BatMap.max_binding qMap in
+    let qSet =
+      List.fold_left
+        (fun acc i ->
+          BatQueue.add i q;
+          AdjGraph.VertexSet.add i acc)
+        AdjGraph.VertexSet.empty maxElts
+    in
 
     let initGlobal =
       {
@@ -790,9 +918,14 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     bdd_full
 
   let assertions : (string * bool Mtbddc.t * BddFunc.t option) list ref = ref []
+
+  module Forwarding = ForwardingSimulation (G)
+  include Forwarding
+
+  let simulate_forwarding = Forwarding.simulate_forwarding
 end
 
-(** Given the attribute type of the network constructs an OCaml function
+(* Given the attribute type of the network constructs an OCaml function
       that takes as input an OCaml value and creates a similar NV value.*)
 let ocaml_to_nv_value record_fns (attr_ty : Syntax.ty) v : Syntax.value =
   match Syntax.get_mode attr_ty with
@@ -805,6 +938,27 @@ let build_solution record_fns (vals, ty) =
   if (Cmdline.get_cfg ()).verbose then
     AdjGraph.VertexMap.map (fun v -> ocaml_to_nv_value record_fns ty v) vals
   else AdjGraph.VertexMap.empty
+
+let build_forwarding record_fns fwd =
+  let open Solution in
+  if (Cmdline.get_cfg ()).verbose then
+    {
+      fwd with
+      historyV =
+        AdjGraph.VertexMap.map
+          (fun v -> ocaml_to_nv_value record_fns fwd.historyV_ty v)
+          fwd.historyV;
+      historyE =
+        AdjGraph.EdgeMap.map
+          (fun e -> ocaml_to_nv_value record_fns fwd.historyE_ty e)
+          fwd.historyE;
+    }
+  else
+    {
+      fwd with
+      historyV = AdjGraph.VertexMap.empty;
+      historyE = AdjGraph.EdgeMap.empty;
+    }
 
 (* Two modes of computation until we implement fast prob for all type of symbolics *)
 let check_assertion
@@ -819,7 +973,7 @@ let check_assertion
   let prob = BddUtils.computeTrueProbability a distrs cond in
   (name, prob)
 
-let build_solutions nodes record_fns
+let build_solutions nodes record_fns (fwd : unit Solution.forwardSolutions list)
     (sols : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list)
     (assertions : (string * bool Cudd.Mtbddc.t * BddFunc.t option) list) =
   let open Solution in
@@ -843,5 +997,6 @@ let build_solutions nodes record_fns
           ( Var.create name,
             { sol_val = build_solution record_fns sol; attr_ty = snd sol } ))
         sols;
+    forwarding = List.map (fun f -> build_forwarding record_fns f) fwd;
     nodes;
   }

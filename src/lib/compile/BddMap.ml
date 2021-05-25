@@ -112,9 +112,10 @@ let value_to_bdd (record_fns : int * int -> 'a -> 'b) (ty : Syntax.ty) (v : 'v)
         let i = Integer.create ~value:(Obj.magic v) ~size:sz in
         (mk_int i idx, idx + sz)
     | TEdge ->
-        let bdd1, i = aux (concrete TNode) (fst (Obj.magic v)) idx in
-        let bdd2, i = aux (concrete TNode) (snd (Obj.magic v)) i in
-        (Bdd.dand bdd1 bdd2, i)
+        (* based on edge id *)
+        let sz = !tedge_sz in
+        let i = Integer.create ~value:(Obj.magic v) ~size:sz in
+        (mk_int i idx, idx + sz)
     | TOption typ -> (
         match Obj.magic v with
         | None ->

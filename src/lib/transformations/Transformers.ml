@@ -198,6 +198,38 @@ let transform_decl ~(name : string) (transformers : transformers)
           transform_exp merge )
       in
       DSolve { aty = omap transform_ty aty; var_names; init; trans; merge }
+  | DForward
+      {
+        names_V;
+        names_E;
+        pty;
+        hvty;
+        hety;
+        fwdInit;
+        fwdOut;
+        fwdIn;
+        hinitV;
+        hinitE;
+        logE;
+        logV;
+        bot;
+      } ->
+      DForward
+        {
+          pty = omap transform_ty pty;
+          hvty = omap transform_ty hvty;
+          hety = omap transform_ty hety;
+          names_V = transform_exp names_V;
+          names_E = transform_exp names_E;
+          fwdInit = transform_exp fwdInit;
+          fwdOut = transform_exp fwdOut;
+          fwdIn = transform_exp fwdIn;
+          hinitV = transform_exp hinitV;
+          hinitE = transform_exp hinitE;
+          logE = transform_exp logE;
+          logV = transform_exp logV;
+          bot = transform_exp bot;
+        }
   | DSymbolic (x, ty, p) ->
       let x, ty, p = transform_symbolic (x, ty, p) in
       DSymbolic (x, ty, p)
@@ -222,7 +254,7 @@ let rec map_back_value ~(name : string) (sol : Solution.t)
                (fun l v -> map_back_value v (StringMap.find l tmap))
                vmap
       | VTotalMap bdd, TMap (_, vty) ->
-          let op_key = (e_val v, BatSet.PSet.empty) in
+          (* let op_key = (e_val v, BatSet.PSet.empty) in *)
           vmap
             ( Cudd.Mapleaf.mapleaf1
                 (fun v ->
@@ -235,12 +267,14 @@ let rec map_back_value ~(name : string) (sol : Solution.t)
       | VClosure _, _ ->
           failwith @@ name ^ ": Can't have closures in attributes"
       | VTotalMap (bdd, kty), _ ->
-        let g x =
-          map_back_value (Cudd.Mtbddc.get x) orig_ty |> Cudd.Mtbddc.unique BddUtils.tbl_nv
-        in
-        let bdd' = Cudd.Mapleaf.mapleaf1 g bdd in
-        vmap (bdd', kty) None
-      | (VOption _ | VTuple _ | VRecord _ | VTotalMap _), _ ->
+          (* Handling multivalues *)
+          let g x =
+            map_back_value (Cudd.Mtbddc.get x) orig_ty
+            |> Cudd.Mtbddc.unique BddUtils.tbl_nv
+          in
+          let bdd' = Cudd.Mapleaf.mapleaf1 g bdd in
+          vmap (bdd', kty) None
+      | (VOption _ | VTuple _ | VRecord _), _ ->
           failwith
           @@ Printf.sprintf
                "%s: map_back_value: value %s does not match type %s" name
@@ -249,6 +283,7 @@ let rec map_back_value ~(name : string) (sol : Solution.t)
 
 (* NOTE: I don't think solve_tys is necessary or the right way to go here. We
    should store the original type at each transformation pass *)
+(* TODO: apply map back to forwarding *)
 let map_back_sol ~(name : string) (map_back_transformer : map_back_transformer)
     (solve_tys : ty VarMap.t) (sol : Solution.t) : Solution.t =
   let map_back_value = map_back_value ~name sol map_back_transformer in
@@ -268,6 +303,7 @@ let map_back_sol ~(name : string) (map_back_transformer : map_back_transformer)
     assertions = sol.assertions;
     (* These transformations shouldn't change the truth value of the assertion *)
     solves;
+    forwarding = sol.forwarding;
     nodes = sol.nodes;
   }
 

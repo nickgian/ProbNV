@@ -176,36 +176,48 @@ and inline_branch cond env (p, e) =
 
 (* Inlines a declaration if predicate [cond] returns true *)
 let inline_declaration (cond : ty -> bool) (env : exp Env.t) (d : declaration) =
-  let inline_exp = inline_exp cond in
+  let inline_exp' = inline_exp cond in
   match d with
   | DLet (x, e) ->
-      let e = inline_exp env e in
+      let e = inline_exp' env e in
       if cond (OCamlUtils.oget e.ety) then (Env.update env x e, None)
       else (env, Some (DLet (x, e)))
   | DSymbolic (x, ty, p) -> (env, Some (DSymbolic (x, ty, p)))
   | DInfer (name, e, None) ->
-      (env, Some (DInfer (name, inline_exp env e, None)))
+      (env, Some (DInfer (name, inline_exp' env e, None)))
   | DInfer (name, e, Some c) ->
-      ( env,
-        Some (DInfer (name, inline_exp env e, Some (inline_exp env c)))
-      )
+      (env, Some (DInfer (name, inline_exp' env e, Some (inline_exp' env c))))
   | DSolve { aty; var_names; init; trans; merge } ->
       (* Inline within the functions but don't inline e in future expressions *)
       let init, trans, merge =
-        (inline_exp env init, inline_exp env trans, inline_exp env merge)
+        (inline_exp' env init, inline_exp' env trans, inline_exp' env merge)
       in
       (env, Some (DSolve { aty; var_names; init; trans; merge }))
   | DForward
-      { names_V; names_E; fwdInit; fwdOut; fwdIn; hinitV; hinitE; logE; logV }
-    ->
-      let fwdInit, fwdOut, fwdIn, hinitV, hinitE, logE, logV =
-        ( inline_exp env fwdInit,
-          inline_exp env fwdOut,
-          inline_exp env fwdIn,
-          inline_exp env hinitV,
-          inline_exp env hinitE,
-          inline_exp env logE,
-          inline_exp env logV )
+      {
+        names_V;
+        names_E;
+        pty;
+        hvty;
+        hety;
+        fwdInit;
+        fwdOut;
+        fwdIn;
+        hinitV;
+        hinitE;
+        logE;
+        logV;
+        bot;
+      } ->
+      let fwdInit, fwdOut, fwdIn, hinitV, hinitE, logE, logV, bot =
+        ( inline_exp' env fwdInit,
+          inline_exp' env fwdOut,
+          inline_exp' env fwdIn,
+          inline_exp' env hinitV,
+          inline_exp' env hinitE,
+          inline_exp' env logE,
+          inline_exp' env logV,
+          inline_exp' env bot )
       in
       ( env,
         Some
@@ -213,6 +225,9 @@ let inline_declaration (cond : ty -> bool) (env : exp Env.t) (d : declaration) =
              {
                names_V;
                names_E;
+               pty;
+               hvty;
+               hety;
                fwdInit;
                fwdOut;
                fwdIn;
@@ -220,6 +235,7 @@ let inline_declaration (cond : ty -> bool) (env : exp Env.t) (d : declaration) =
                hinitE;
                logE;
                logV;
+               bot;
              }) )
   | DUserTy _ | DNodes _ | DEdges _ -> (env, Some d)
 

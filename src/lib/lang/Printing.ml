@@ -7,6 +7,110 @@ open Cudd
 open ProbNv_utils
 open ProbNv_utils.RecordUtils
 
+(* For printing maps, temporary *)
+let rec ty_to_size ty =
+  match (get_inner_type ty).typ with
+  | TBool -> 1
+  | TInt n -> n
+  | TTuple ts -> List.fold_left (fun acc t -> acc + ty_to_size t) 0 ts
+  | TOption tyo -> 1 + ty_to_size tyo
+  | TNode -> ty_to_size (concrete (TInt !tnode_sz)) (* Encode as int *)
+  | TEdge -> ty_to_size (concrete (TInt !tedge_sz)) (*Encode as edge id *)
+  | TArrow _ | TVar _ | QVar _ | TMap _ | TRecord _ ->
+      failwith "internal error (ty_to_size):"
+
+let tbool_to_bool tb =
+  match tb with Man.False | Man.Top -> false | Man.True -> true
+
+let vars_to_value_old vars ty =
+  let open RecordUtils in
+  let rec aux idx ty =
+    match (get_inner_type ty).typ with
+    | TBool -> (vbool (tbool_to_bool vars.(idx)), idx + 1)
+    | TInt size ->
+        let acc = ref (Integer.create ~value:0 ~size) in
+        for i = 0 to size - 1 do
+          let bit = tbool_to_bool vars.(idx + i) in
+          if bit then
+            let add = Integer.shift_left (Integer.create ~value:1 ~size) i in
+            acc := Integer.add !acc add
+        done;
+        (vint !acc, idx + size)
+    | TTuple ts ->
+        let vs, i =
+          List.fold_left
+            (fun (vs, idx) ty ->
+              let v, i = aux idx ty in
+              (v :: vs, i))
+            ([], idx) ts
+        in
+        (vtuple (List.rev vs), i)
+    | TNode -> (
+        (* Was encoded as int, so decode same way *)
+        match aux idx (concrete (TInt !tnode_sz)) with
+        | { v = VInt n; _ }, i -> (vnode (Integer.to_int n), i)
+        | _ -> failwith "impossible" )
+    | TEdge -> (
+        match aux idx (concrete (TInt !tedge_sz)) with
+        | { v = VInt n; _ }, i ->
+            let u, v =
+              PrimitiveCollections.IntMap.find (Integer.to_int n) !edge_mapping
+            in
+
+            (vedgeRaw (u, v), i)
+        | _ -> failwith "impossible" )
+    | TOption tyo ->
+        let tag = tbool_to_bool vars.(idx) in
+        let v, i = aux (idx + 1) tyo in
+        let v = if tag then voption (Some v) else voption None in
+        (v, i)
+    | TArrow _ | TMap _ | TVar _ | QVar _ | TRecord _ ->
+        failwith "internal error (bdd_to_value)"
+  in
+  fst (aux 0 ty)
+
+let count_tops cube i sz =
+  let count = ref 0 in
+  for k = i to sz do
+    if cube.(k) = Man.Top then incr count
+  done;
+  !count
+
+let rec expand (vars : Man.tbool list) sz : Man.tbool list list =
+  if sz = 0 then [ vars ]
+  else
+    match vars with
+    | [] -> [ [] ]
+    | Man.Top :: xs ->
+        let vars = expand xs (sz - 1) in
+        let trus = List.map (fun v -> Man.False :: v) vars in
+        let fals = List.map (fun v -> Man.True :: v) vars in
+        fals @ trus
+    | x :: xs ->
+        let vars = expand xs sz in
+        List.map (fun v -> x :: v) vars
+
+let bindingsOld (map, ty) : (value * value) list =
+  let bs = ref [] in
+  let seen = Hashtbl.create 50 in
+  Mtbddc.iter_cube
+    (fun vars v ->
+      let lst = Array.to_list vars in
+      let sz = ty_to_size ty in
+      let expanded =
+        if count_tops vars 0 sz <= 8 then expand lst sz else [ lst ]
+      in
+      List.iter
+        (fun vars ->
+          let k = vars_to_value_old (Array.of_list vars) ty in
+          if Hashtbl.mem seen k then ()
+          else (
+            Hashtbl.add seen k true;
+            bs := (k, v) :: !bs ))
+        expanded)
+    map;
+  !bs
+
 let is_keyword_op _ = false
 
 (* set to true if you want to print universal quanifiers explicitly *)
@@ -325,9 +429,10 @@ and value_to_string_p ~show_types prec v =
       if max_prec > prec then "(" ^ s ^ ")" else s
   | VRecord map -> print_record "=" (value_to_string_p prec) map
   | VNode n -> Printf.sprintf "%dn" n
-  | VEdge e ->
+  | VEdge (EdgeId e) ->
       let u, v = PrimitiveCollections.IntMap.find e !edge_mapping in
       Printf.sprintf "%d~%d" u v
+  | VEdge (Raw (u, v)) -> Printf.sprintf "%d~%d" u v
   | VClosure cl -> closure_to_string_p ~show_types prec cl
 
 and map_to_string ~show_types term_s m kty range =
@@ -341,18 +446,27 @@ and map_to_string ~show_types term_s m kty range =
              | Man.Top -> Printf.sprintf "*%s" acc)
            k ""
        in *)
-    Printf.sprintf "((%f,%f), %s)" (Bdd.nbpaths k) (Bdd.nbtruepaths k)
-      (value_to_string_p ~show_types max_prec v)
+    Printf.sprintf "%s" (value_to_string_p ~show_types max_prec v)
   in
   let bs = Array.to_list @@ Mtbddc.guardleafs m in
   Printf.sprintf "{ %s }" (term term_s binding_to_string bs)
 
-and multivalue_to_string ~show_types term_s m =
+(* and multivalue_to_string ~show_types term_s m =
   let bs = Array.to_list @@ Mtbddc.leaves m in
-    (term term_s
-       (fun v ->
-         Printf.sprintf "  %s" (value_to_string_p ~show_types max_prec v))
-       bs)
+  term term_s
+    (fun v -> Printf.sprintf "  %s" (value_to_string_p ~show_types max_prec v))
+    bs *)
+and multivalue_to_string ~show_types term_s m =
+  let binding_to_string (k, v) =
+    (* BddMap.multiValue_to_string k *)
+    value_to_string_p ~show_types max_prec k
+    ^ " ~> "
+    ^ value_to_string_p ~show_types max_prec v
+  in
+  let bs = bindingsOld (m, concrete TEdge) in
+  match bs with
+  | [] -> Printf.sprintf "{ _ |-> _ }"
+  | _ -> Printf.sprintf "{ %s }" (term term_s binding_to_string bs)
 
 and exp_to_string_p ~show_types prec e =
   let exp_to_string_p = exp_to_string_p ~show_types in
@@ -477,8 +591,7 @@ let rec declaration_to_string ?(show_types = false) d =
         | None -> ""
         | Some cond -> Printf.sprintf " | %s" (exp_to_string cond)
       in
-      Printf.sprintf "assert(%s, %s%s)" name (exp_to_string e)
-        condString
+      Printf.sprintf "assert(%s, %s%s)" name (exp_to_string e) condString
   | DSolve { aty; var_names; init; trans; merge } ->
       Printf.sprintf "let %s = solution<%s> {init = %s; trans = %s; merge = %s}"
         (exp_to_string var_names)

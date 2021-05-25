@@ -54,79 +54,8 @@ let rec embed_value (record_fns : int * int -> 'a -> 'b) (typ : Syntax.ty) :
   | TVar _ | QVar _ -> failwith "TVars and QVars should not show up here"
 
 (** Takes an NV value of type typ and returns an OCaml value.*)
-let rec unembed_value (record_cnstrs : int -> 'c)
-    (record_proj : int * int -> 'a -> 'b) (typ : Syntax.ty) : Syntax.value -> 'v
-    =
-  match typ.typ with
-  | TBool -> (
-      fun v ->
-        match v.v with
-        | VBool b -> Obj.magic b
-        | _ ->
-            failwith
-              (Printf.sprintf "mistyped value %s at type %s\n"
-                 (Printing.value_to_string v)
-                 (Printing.ty_to_string typ)) )
-  | TInt _ -> (
-      fun v ->
-        match v.v with
-        | VInt i ->
-            Obj.magic (Integer.to_int i)
-            (*NOTE: We translate UInts to ints but we need to change that *)
-        | _ ->
-            failwith
-              (Printf.sprintf "mistyped value %s at type %s\n"
-                 (Printing.value_to_string v)
-                 (Printing.ty_to_string typ)) )
-  | TTuple ts -> (
-      let n = BatList.length ts in
-      let f_cnstr = record_cnstrs n in
-      (*function that constructs the record*)
-      let fs =
-        (*functions that unembed each value of a tuple *)
-        BatList.map (fun ty -> unembed_value record_cnstrs record_proj ty) ts
-      in
-      fun v ->
-        match v.v with
-        | VTuple vs ->
-            BatList.fold_left2
-              (fun acc f v -> Obj.magic (acc (f v)))
-              f_cnstr fs vs
-            |> Obj.magic
-        | _ ->
-            failwith
-              (Printf.sprintf "mistyped value %s at type %s\n"
-                 (Printing.value_to_string v)
-                 (Printing.ty_to_string typ)) )
-  | TOption ty -> (
-      let f = unembed_value record_cnstrs record_proj ty in
-      fun v ->
-        match v.v with
-        | VOption None -> Obj.magic None
-        | VOption (Some v') -> Obj.magic (Some (f v'))
-        | _ ->
-            failwith
-              (Printf.sprintf "mistyped value %s at type %s\n"
-                 (Printing.value_to_string v)
-                 (Printing.ty_to_string typ)) )
-  (* | TMap (kty, vty) ->
-      (* this is trivial as OCaml maps are NV maps plus a value type*)
-      fun v -> failwith "Not doing this for now, only useful for symbolics."
-      (* (match v.v with
-           | VMap vdd ->
-             (* Printf.printf "kty: %s, vty:%s" (Printing.ty_to_string kty) (Printing.ty_to_string vty); *)
-             Obj.magic ({bdd = vdd; key_ty_id = Collections.TypeIds.get_id type_store kty; val_ty_id = Collections.TypeIds.get_id type_store vty})
-           | _ -> failwith "mistyped value") *) *)
-  | TArrow _ -> failwith "Function computed as value"
-  (* | TRecord _ -> failwith "Trecord" *)
-  | TNode -> (
-      fun v ->
-        match v.v with VNode n -> Obj.magic n | _ -> failwith "mistyped value" )
-  | TEdge -> (
-      fun v ->
-        match v.v with VEdge e -> Obj.magic e | _ -> failwith "mistyped value" )
-  | TVar { contents = Link ty } -> unembed_value record_cnstrs record_proj ty
-  | TVar _ | QVar _ -> failwith "TVars and QVars should not show up here"
+let rec unembed_value _ _ _ : Syntax.value -> 'v =
+  failwith "this function is no longer necessary, remove it"
 
 (* Lifts embed_value to a multivalue - We don't assign a key type here. *)
 let embed_multivalue (record_fns : int * int -> 'a -> 'b) (typ : Syntax.ty) v =

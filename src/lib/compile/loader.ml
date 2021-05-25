@@ -46,5 +46,8 @@ let simulate nodeNames topology name decls =
   Printf.printf "Native simulation took: %f\n%!" (finish_time -. start_time);
   BddUtils.get_statistics ();
   (* Get the computed solutions *)
-  build_solutions (AdjGraph.nb_vertex topology, nodeNames)
-    Srp.record_fns !SrpSimulator.solved !SrpSimulator.assertions
+  build_solutions
+    (AdjGraph.nb_vertex topology, nodeNames)
+    Srp.record_fns
+    !SrpSimulator.forwarding_solutions
+    !SrpSimulator.solved !SrpSimulator.assertions

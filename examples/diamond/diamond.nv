@@ -52,14 +52,14 @@ let reachable u =
   match rib[u] with | None -> false | _ -> true
 
 (* assert(reachable 0n, 0.8p, if failures = 2u2 then true else if failures = 3u2 then true else true) *)
-assert(reachable 0n, 0.8p, (failures = 2u2 && (f1 <e f2)) || (failures = 3u2 && (f1 <e f2) && (f2 <e f3)) || failures <u2 2u2)
+(* assert(reachable 0n, 0.8p, (failures = 2u2 && (f1 <e f2)) || (failures = 3u2 && (f1 <e f2) && (f2 <e f3)) || failures <u2 2u2)
 assert(reachable 0n, 0.8p, (failures = 2u2 && (f1 <e f2)))
 assert(if (failures = 2u2) then reachable 0n else false, 0.8p, (f1 <e f2))
 assert(if (failures = 0u2) then reachable 0n else false, 0.8p)
 assert(if (failures = 1u2) then reachable 0n else false, 0.8p)
 assert(if (failures = 2u2) then reachable 0n else false, 0.8p, f1 <e f2)
 assert(if (failures = 3u2) then reachable 0n else false, 0.8p, (f1 <e f2) && (f2 <e f3))
-assert(if (failures = 0u2) then reachable 0n else if (failures = 1u2) then reachable 0n else false, 0.8p)
+assert(if (failures = 0u2) then reachable 0n else if (failures = 1u2) then reachable 0n else false, 0.8p) *)
 
 
 

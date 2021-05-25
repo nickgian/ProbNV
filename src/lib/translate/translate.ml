@@ -360,10 +360,11 @@ let rec translate (e : exp) : exp * BddBinds.t =
             },
             r1 )
       | Some Symbolic ->
+          let new_ty = fty (OCamlUtils.oget e.ety) in
           ( {
               e with
-              e = (liftBdd (esome el1)).e;
-              ety = Some (fty (OCamlUtils.oget e.ety));
+              e = (liftBdd (aexp (esome el1, Some new_ty, e.espan))).e;
+              ety = Some new_ty;
             },
             BddBinds.empty () )
       | None -> failwith "No mode found in option" )
@@ -405,6 +406,7 @@ let rec translate (e : exp) : exp * BddBinds.t =
       let el1, r1 = translate e1 in
       let ty1 = OCamlUtils.oget e1.ety in
       let ty = OCamlUtils.oget e.ety in
+      (* Match on mode of guard and mode of full expression *)
       match (get_mode ty1, get_mode ty) with
       | Some Concrete, Some Concrete ->
           (* C-Match-C*)
@@ -524,9 +526,6 @@ let rec free (seen : VarSet.t) (e : exp) : BddBinds.t =
         "This function is intented to be used with HLL expressions. This is a \
          logic error."
 
-(* | EProject (e, _) -> free seen e
- *)
-
 let free e = free VarSet.empty e
 
 (* Give an expression, and a map of bindings, "closes" the expression using an ApplyN operation *)
@@ -563,16 +562,16 @@ let buildApply e r =
       Some { (OCamlUtils.oget e.ety) with mode = Some Multivalue },
       e.espan )
 
-let liftInit init_body aty =
+let liftOne func_body arg_ty aty =
   (* Concrete node argument *)
   let node_arg = Var.fresh "u" in
-  let node_ty = concrete TNode in
+  let node_ty = concrete arg_ty in
   (* application:  init_body u*)
   let init_apply =
     aexp
-      ( eapp init_body (aexp (evar node_arg, Some node_ty, init_body.espan)),
+      ( eapp func_body (aexp (evar node_arg, Some node_ty, func_body.espan)),
         Some (fty aty),
-        init_body.espan )
+        func_body.espan )
   in
 
   let e1' = etoMap init_apply in
@@ -590,21 +589,21 @@ let liftInit init_body aty =
   aexp
     ( efun f1,
       Some (concrete (TArrow (concrete (OCamlUtils.oget f1.argty).typ, resTy))),
-      init_body.espan )
+      func_body.espan )
 
-(** translates the [init] function, given the mode [m] of the computed routes.
-  [m] can be affected by the other functions, such as trans and merge. *)
-let translateInit init aty =
-  (* Printf.printf "init aty: %s" (Printing.ty_to_string aty); *)
-  let init', r = translate init in
-  match init'.e with
+(** translates functions that take one argument (e.g., the init function), given
+    the mode [m] of the computed routes. [m] can be affected by the other
+    functions, such as trans and merge. *)
+let translateOne info func aty =
+  let func', r = translate func in
+  match func'.e with
   | EFun f ->
-      let fv = free init in
+      let fv = free func in
       let rho = BddBinds.union r fv in
       if BddBinds.isEmpty rho then
         if (* Printf.printf "bdd binds is empty\n"; *)
            aty.mode = Some Concrete
-        then init'
+        then func'
         else
           let e1' = etoMap f.body in
           let resTy = liftMultiTy (OCamlUtils.oget f.resty) in
@@ -613,7 +612,7 @@ let translateInit init aty =
               Some
                 (concrete
                    (TArrow (concrete (OCamlUtils.oget f.argty).typ, resTy))),
-              init.espan )
+              func.espan )
       else
         let e1' = buildApply f.body rho in
         let resTy = liftMultiTy (OCamlUtils.oget f.resty) in
@@ -622,41 +621,47 @@ let translateInit init aty =
             Some
               (concrete
                  (TArrow (concrete (OCamlUtils.oget f.argty).typ, resTy))),
-            init.espan )
+            func.espan )
   | _ -> (
-      let init_ty = OCamlUtils.oget init.ety in
-      match (get_mode init_ty, get_mode aty) with
-      | Some Concrete, Some Concrete -> init'
-      | Some Concrete, Some Multivalue -> liftInit init' aty
+      let func_ty = OCamlUtils.oget func.ety in
+      match (get_mode func_ty, get_mode aty) with
+      | Some Concrete, Some Concrete -> func'
+      | Some Concrete, Some Multivalue -> (
+          match func_ty.typ with
+          | TArrow (farg, _) -> liftOne func' farg.typ aty
+          | _ ->
+              Console.error_position info func.espan
+                (Printf.sprintf "Expected a function type, found %s instead"
+                   (Printing.ty_to_string func_ty)) )
       | _ ->
-          failwith "init should have been inlined if it's not of concrete mode"
-      )
+          Console.error_position info func.espan
+            "function should have been inlined if it's not of concrete mode" )
 
-(* Lifting a transfer function to a multivalue expression *)
-let liftTrans trans_body aty =
-  (* Concrete edge argument *)
+(* Lifting a function with two arguments to a multivalue expression *)
+let liftTwo func_body arg1_ty aty =
+  (* Concrete edge/node argument *)
   let edge_arg = Var.fresh "e" in
-  let edge_ty = concrete TEdge in
-  (* Concrete route argument *)
+  let edge_ty = concrete arg1_ty.typ in
+  (* Concrete route/history/packet argument *)
   let route_arg = Var.fresh "x" in
   let route_concrete_ty = concrete aty.typ in
-  (* application:  trans_body edge*)
-  let trans_apply =
+  (* application:  body e*)
+  let func_body_apply =
     aexp
-      ( eapp trans_body (aexp (evar edge_arg, Some edge_ty, trans_body.espan)),
+      ( eapp func_body (aexp (evar edge_arg, Some edge_ty, func_body.espan)),
         Some (concrete (TArrow (route_concrete_ty, route_concrete_ty))),
-        trans_body.espan )
+        func_body.espan )
   in
   (* application: trans_body edge x*)
   let trans_apply_2 =
     aexp
-      ( eapp trans_apply
-          (aexp (evar route_arg, Some route_concrete_ty, trans_body.espan)),
+      ( eapp func_body_apply
+          (aexp (evar route_arg, Some route_concrete_ty, func_body.espan)),
         Some route_concrete_ty,
-        trans_body.espan )
+        func_body.espan )
   in
 
-  (* abstraction in applyN: fun x -> trans_body edge x *)
+  (* abstraction in applyN: fun x -> func_body e x *)
   let f1 =
     {
       body = trans_apply_2;
@@ -670,15 +675,15 @@ let liftTrans trans_body aty =
     aexp
       ( efun f1,
         Some (concrete (TArrow (route_concrete_ty, route_concrete_ty))),
-        trans_body.espan )
+        func_body.espan )
   in
 
   (* arguments in applyN: x *)
   (* aty should be multivalue mode *)
   let route_ty = Some aty in
-  let applyN_args = [ aexp (evar route_arg, route_ty, trans_body.espan) ] in
+  let applyN_args = [ aexp (evar route_arg, route_ty, func_body.espan) ] in
   let applyN_exp =
-    aexp (eApplyN applyN_fun applyN_args, route_ty, trans_body.espan)
+    aexp (eApplyN applyN_fun applyN_args, route_ty, func_body.espan)
   in
 
   (* abstraction over multivalue route: fun x -> applyN ...*)
@@ -692,7 +697,7 @@ let liftTrans trans_body aty =
     }
   in
   let trans_x =
-    aexp (efun fx, Some (concrete (TArrow (aty, aty))), trans_body.espan)
+    aexp (efun fx, Some (concrete (TArrow (aty, aty))), func_body.espan)
   in
 
   (* abstraction over edge: fun e -> fun x -> applyN *)
@@ -708,11 +713,11 @@ let liftTrans trans_body aty =
   aexp
     ( efun fe,
       Some (concrete (TArrow (edge_ty, OCamlUtils.oget trans_x.ety))),
-      trans_body.espan )
+      func_body.espan )
 
-(** translates the [trans] function, given the mode [m] of the computed routes. *)
-let translateTrans trans aty =
-  match trans.e with
+(** translates functions with two arguments (e.g., transfer function). *)
+let translateTwo info func aty =
+  match func.e with
   | EFun f1 -> (
       match f1.body.e with
       (* fun edge -> trans_expr*)
@@ -731,8 +736,8 @@ let translateTrans trans aty =
               let f2' = { f2 with body = el2 } in
               let e2' = aexp (efun f2', f1.body.ety, f1.body.espan) in
               (*fun edge -> trans_expr_lll *)
-              aexp (efun { f1 with body = e2' }, trans.ety, trans.espan)
-            else liftTrans trans aty
+              aexp (efun { f1 with body = e2' }, func.ety, func.espan)
+            else liftTwo func (OCamlUtils.oget f1.argty) aty
           else
             (*TODO: this code is largely similar with the code above, factor it out? *)
             let el2' = buildApply el2 rho in
@@ -755,77 +760,85 @@ let translateTrans trans aty =
                      (TArrow
                         ( concrete (OCamlUtils.oget f1.argty).typ,
                           OCamlUtils.oget e2'.ety ))),
-                trans.espan )
-      | _ -> failwith "Trans must be a function" )
+                func.espan )
+      | _ -> failwith "Func must be a function" )
   | _ -> (
-      let trans_ty = OCamlUtils.oget trans.ety in
-      match (get_mode trans_ty, get_mode aty) with
-      | Some Concrete, Some Concrete -> trans
-      | Some Concrete, Some Multivalue -> liftTrans trans aty
+      let func_ty = OCamlUtils.oget func.ety in
+      match (get_mode func_ty, get_mode aty) with
+      | Some Concrete, Some Concrete -> func
+      | Some Concrete, Some Multivalue -> (
+          match func_ty.typ with
+          | TArrow (farg, _) -> liftTwo func farg aty
+          | _ ->
+              Console.error_position info func.espan
+                (Printf.sprintf "Expected a function type, found %s instead"
+                   (Printing.ty_to_string func_ty)) )
       | _ ->
-          failwith "trans should have been inlined if it's not of concrete mode"
+          failwith "func should have been inlined if it's not of concrete mode"
       )
 
-let liftMerge merge_body aty =
-  (* Concrete node argument *)
-  let node_arg = Var.fresh "u" in
-  let node_ty = concrete TNode in
+let liftThree func_body arg1 pty hty =
+  (* Concrete node/edge argument *)
+  let nodeEdge_arg = Var.fresh "u" in
+  let nodeEdge_ty = concrete arg1 in
   (* Concrete route arguments *)
-  let route_arg_x = Var.fresh "x" in
-  let route_arg_y = Var.fresh "y" in
-  let route_concrete_ty = concrete aty.typ in
+  let arg_x = Var.fresh "x" in
+  let arg_y = Var.fresh "y" in
+  let pty_concrete_ty = concrete pty.typ in
+  let hty_concrete_ty = concrete hty.typ in
   (* application:  merge_body u*)
   let merge_apply =
     aexp
-      ( eapp merge_body (aexp (evar node_arg, Some node_ty, merge_body.espan)),
+      ( eapp func_body
+          (aexp (evar nodeEdge_arg, Some nodeEdge_ty, func_body.espan)),
         Some
           (concrete
              (TArrow
-                ( route_concrete_ty,
-                  concrete (TArrow (route_concrete_ty, route_concrete_ty)) ))),
-        merge_body.espan )
+                ( pty_concrete_ty,
+                  concrete (TArrow (hty_concrete_ty, hty_concrete_ty)) ))),
+        func_body.espan )
   in
   (* application: merge_body u x*)
   let merge_apply_2 =
     aexp
       ( eapp merge_apply
-          (aexp (evar route_arg_x, Some route_concrete_ty, merge_body.espan)),
-        Some (concrete (TArrow (route_concrete_ty, route_concrete_ty))),
-        merge_body.espan )
+          (aexp (evar arg_x, Some hty_concrete_ty, func_body.espan)),
+        Some (concrete (TArrow (hty_concrete_ty, hty_concrete_ty))),
+        func_body.espan )
   in
 
   (* application: merge_body u x y*)
   let merge_apply_3 =
     aexp
       ( eapp merge_apply_2
-          (aexp (evar route_arg_y, Some route_concrete_ty, merge_body.espan)),
-        Some route_concrete_ty,
-        merge_body.espan )
+          (aexp (evar arg_y, Some hty_concrete_ty, func_body.espan)),
+        Some hty_concrete_ty,
+        func_body.espan )
   in
 
   (* abstraction in applyN: fun y -> merge_body edge x y *)
   let f1 =
     {
       body = merge_apply_3;
-      arg = route_arg_y;
-      argty = Some route_concrete_ty;
-      resty = Some route_concrete_ty;
+      arg = arg_y;
+      argty = Some hty_concrete_ty;
+      resty = Some hty_concrete_ty;
       fmode = Some Concrete;
     }
   in
   let applyN_fun_1 =
     aexp
       ( efun f1,
-        Some (concrete (TArrow (route_concrete_ty, route_concrete_ty))),
-        merge_body.espan )
+        Some (concrete (TArrow (hty_concrete_ty, hty_concrete_ty))),
+        func_body.espan )
   in
 
   (* abstraction in applyN: fun x fun y -> merge_body edge x y *)
   let f2 =
     {
       body = applyN_fun_1;
-      arg = route_arg_x;
-      argty = Some route_concrete_ty;
+      arg = arg_x;
+      argty = Some pty_concrete_ty;
       resty = applyN_fun_1.ety;
       fmode = Some Concrete;
     }
@@ -836,44 +849,42 @@ let liftMerge merge_body aty =
       ( efun f2,
         Some
           (concrete
-             (TArrow (route_concrete_ty, OCamlUtils.oget applyN_fun_1.ety))),
-        merge_body.espan )
+             (TArrow (hty_concrete_ty, OCamlUtils.oget applyN_fun_1.ety))),
+        func_body.espan )
   in
 
   (* arguments in applyN: x *)
-  let route_ty = aty in
   let applyN_args =
     [
-      aexp (evar route_arg_x, Some route_ty, merge_body.espan);
-      aexp (evar route_arg_y, Some route_ty, merge_body.espan);
+      aexp (evar arg_x, Some pty, func_body.espan);
+      aexp (evar arg_y, Some hty, func_body.espan);
     ]
   in
   let applyN_exp =
-    aexp (eApplyN applyN_fun_2 applyN_args, Some route_ty, merge_body.espan)
+    aexp (eApplyN applyN_fun_2 applyN_args, Some hty, func_body.espan)
   in
 
   (* abstraction over multivalue route: fun y -> applyN ...*)
   let fy =
     {
       body = applyN_exp;
-      arg = route_arg_y;
-      argty = Some route_ty;
-      resty = Some route_ty;
+      arg = arg_y;
+      argty = Some hty;
+      resty = Some hty;
       fmode = Some Concrete;
     }
   in
 
   let merge_y =
-    aexp
-      (efun fy, Some (concrete (TArrow (route_ty, route_ty))), merge_body.espan)
+    aexp (efun fy, Some (concrete (TArrow (hty, hty))), func_body.espan)
   in
 
   (* abstraction over multivalue route: fun x -> fun y -> applyN ...*)
   let fx =
     {
       body = merge_y;
-      arg = route_arg_x;
-      argty = Some route_ty;
+      arg = arg_x;
+      argty = Some pty;
       resty = merge_y.ety;
       fmode = Some Concrete;
     }
@@ -882,28 +893,28 @@ let liftMerge merge_body aty =
   let merge_x =
     aexp
       ( efun fx,
-        Some (concrete (TArrow (route_ty, OCamlUtils.oget merge_y.ety))),
-        merge_body.espan )
+        Some (concrete (TArrow (pty, OCamlUtils.oget merge_y.ety))),
+        func_body.espan )
   in
 
   (* abstraction over node: fun u -> fun x -> fun y -> applyN *)
   let fu =
     {
       body = merge_x;
-      arg = node_arg;
-      argty = Some node_ty;
+      arg = nodeEdge_arg;
+      argty = Some nodeEdge_ty;
       resty = merge_x.ety;
       fmode = Some Concrete;
     }
   in
   aexp
     ( efun fu,
-      Some (concrete (TArrow (node_ty, OCamlUtils.oget merge_x.ety))),
-      merge_body.espan )
+      Some (concrete (TArrow (nodeEdge_ty, OCamlUtils.oget merge_x.ety))),
+      func_body.espan )
 
-(** translates the [merge] function, given the mode [m] of the computed routes. *)
-let translateMerge merge aty =
-  match merge.e with
+(** translates function with three arguments (e.g., merge), given the type of the result. *)
+let translateThree info func pty hty =
+  match func.e with
   | EFun f1 -> (
       match f1.body.e with
       (* fun u -> f2 *)
@@ -919,7 +930,8 @@ let translateMerge merge aty =
               let fv = free eh3 in
               let rho = BddBinds.union r fv in
               if BddBinds.isEmpty rho then
-                if aty.mode = Some Concrete then
+                (* If the history argument is concrete *)
+                if hty.mode = Some Concrete then
                   (* We do not need to change the expressions or modes *)
                   let f3' = { f3 with body = el3 } in
                   let e3' = aexp (efun f3', f2.body.ety, f2.body.espan) in
@@ -927,12 +939,32 @@ let translateMerge merge aty =
                     aexp
                       (efun { f2 with body = e3' }, f1.body.ety, f1.body.espan)
                   in
-                  aexp (efun { f1 with body = e2' }, merge.ety, merge.espan)
-                else (* Need to lift to a multivalue *)
-                  liftMerge merge aty
+                  aexp (efun { f1 with body = e2' }, func.ety, func.espan)
+                else
+                  (* Need to lift to a multivalue *)
+                  liftThree func (OCamlUtils.oget f1.argty).typ pty hty
               else
+                let () =
+                  BddBinds.fold
+                    (fun var _ () -> Printf.printf "Var: %s\n" (Var.name var))
+                    rho ()
+                in
+                let rho' =
+                  if pty.mode = Some Multivalue then
+                    BddBinds.union rho
+                      (BddBinds.singleton f2.arg
+                         (aexp (evar f2.arg, Some pty, f1.body.espan)))
+                  else rho
+                in
+                let rho'' =
+                  if hty.mode = Some Multivalue then
+                    BddBinds.union rho'
+                      (BddBinds.singleton f3.arg
+                         (aexp (evar f3.arg, Some hty, f2.body.espan)))
+                  else rho'
+                in
                 (*TODO: this code is largely similar with the code above, factor it out? *)
-                let el3' = buildApply el3 rho in
+                let el3' = buildApply el3 rho'' in
                 (* return type will be the one returned from translation lifted to multi-value *)
                 let resTy = liftMultiTy (OCamlUtils.oget el3'.ety) in
                 (* also need to lift the input routes type*)
@@ -968,18 +1000,26 @@ let translateMerge merge aty =
                          (TArrow
                             ( concrete (OCamlUtils.oget f1.argty).typ,
                               OCamlUtils.oget e2'.ety ))),
-                    merge.espan )
-          | _ -> failwith "Merge must be a function" )
-      | _ -> failwith "Merge must be a function" )
+                    func.espan )
+          | _ -> failwith "Must be a function" )
+      | _ -> failwith "Must be a function" )
   | _ -> (
-      match (get_mode (OCamlUtils.oget merge.ety), get_mode aty) with
-      | Some Concrete, Some Concrete -> merge
-      | Some Concrete, Some Multivalue -> liftMerge merge aty
+      let fty = OCamlUtils.oget func.ety in
+      match (get_mode fty, get_mode pty, get_mode hty) with
+      | Some Concrete, Some Concrete, Some Concrete -> func
+      | Some Concrete, Some mpty, Some mhty
+        when mpty = Multivalue || mhty = Multivalue -> (
+          match fty.typ with
+          | TArrow (farg1, _) -> liftThree func farg1.typ pty hty
+          | _ ->
+              Console.error_position info func.espan
+                (Printf.sprintf "Expected a function type, found %s instead"
+                   (Printing.ty_to_string fty)) )
       | _ ->
           failwith "merge should have been inlined if it's not of concrete mode"
       )
 
-let translateDecl d =
+let translateDecl info d =
   match d with
   | DLet (x, e) ->
       BddBinds.clearStore ();
@@ -990,12 +1030,70 @@ let translateDecl d =
   | DSolve { aty; var_names; init; trans; merge } ->
       let route_ty = OCamlUtils.oget aty in
       BddBinds.clearStore ();
-      let init' = translateInit init route_ty in
+      let init' = translateOne info init route_ty in
       BddBinds.clearStore ();
-      let trans' = translateTrans trans route_ty in
+      let trans' = translateTwo info trans route_ty in
       BddBinds.clearStore ();
-      let merge' = translateMerge merge route_ty in
+      let merge' = translateThree info merge route_ty route_ty in
       DSolve { aty; var_names; init = init'; trans = trans'; merge = merge' }
+  | DForward
+      {
+        names_V;
+        names_E;
+        pty;
+        hvty;
+        hety;
+        fwdInit;
+        fwdOut;
+        fwdIn;
+        hinitV;
+        hinitE;
+        logE;
+        logV;
+        bot;
+      } ->
+      let pty = OCamlUtils.oget pty in
+      let hvty = OCamlUtils.oget hvty in
+      let hety = OCamlUtils.oget hety in
+      BddBinds.clearStore ();
+      let fwdInit' = translateOne info fwdInit pty in
+      BddBinds.clearStore ();
+      let fwdOut' = translateTwo info fwdOut pty in
+      BddBinds.clearStore ();
+      let fwdIn' = translateTwo info fwdIn pty in
+      BddBinds.clearStore ();
+      let hinitV' = translateOne info hinitV hvty in
+      BddBinds.clearStore ();
+      let hinitE' = translateOne info hinitE hety in
+      BddBinds.clearStore ();
+      let hlogE' = translateThree info logE pty hety in
+      BddBinds.clearStore ();
+      let hlogV' = translateThree info logV pty hvty in
+
+      let bot' =
+        match get_mode pty with
+        | Some Concrete -> bot
+        | Some Multivalue -> etoMap bot
+        | Some Symbolic | None ->
+            Console.error_position info bot.espan
+              "Bot value must be concrete or multivalue"
+      in
+      DForward
+        {
+          names_V;
+          names_E;
+          pty = Some pty;
+          hvty = Some hvty;
+          hety = Some hety;
+          fwdInit = fwdInit';
+          fwdOut = fwdOut';
+          fwdIn = fwdIn';
+          hinitV = hinitV';
+          hinitE = hinitE';
+          logE = hlogE';
+          logV = hlogV';
+          bot = bot';
+        }
   | DInfer (name, e, cond) ->
       BddBinds.clearStore ();
       let e', r = translate e in
@@ -1010,7 +1108,7 @@ let translateDecl d =
       else DInfer (name, buildApply e' rho, cond')
   | DNodes _ | DEdges _ | DSymbolic _ | DUserTy _ -> d
 
-let translate_declarations ds = List.map translateDecl ds
+let translate_declarations info ds = List.map (translateDecl info) ds
 
 (* List.fold_right (fun (_,rho) acc -> BddBinds.merge rho acc) esl *)
 

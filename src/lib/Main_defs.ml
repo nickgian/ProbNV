@@ -65,13 +65,13 @@ let parse_input (args : string array) =
   (* Printf.printf "Printing inlined program\n\n%s\n\n"
      (ProbNv_lang.Printing.declarations_to_string ~show_types:true decls); *)
   (* Translate the program to LLL *)
-  let decls = Translate.translate_declarations decls in
-  (* Printf.printf "Printing compiled program\n\n%s"
-     (ProbNv_lang.Printing.declarations_to_string ~show_types:false decls); *)
+  let decls = Translate.translate_declarations info decls in
+  (* Printf.printf "Printing translated program\n\n%s"
+     (ProbNv_lang.Printing.declarations_to_string ~show_types:true decls); *)
   (* Type check the LLL program *)
   (* Printf.printf "LLL type checking after translation \n"; *)
   let decls = Typing.LLLTypeInf.infer_declarations info decls in
-  let decls, _ = EdgeTransformer.edge_transformer decls in
+  let decls, _ = EdgeTransformer.edge_transformer topology decls in
   let decls = ToEdge.fromEdge_decl topology :: decls in
   (* Printf.printf "done type checking and translating \n"; *)
   (cfg, info, file, decls, topology, fs)

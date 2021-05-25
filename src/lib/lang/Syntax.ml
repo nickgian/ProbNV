@@ -155,12 +155,14 @@ type op =
   | BddLeq of bitwidth
 [@@deriving ord, eq, show]
 
+type edgeValues = | Raw of (node * node) | EdgeId of int
+[@@deriving ord, eq]
 (** HLL values *)
 type v =
   | VBool of bool
   | VInt of Integer.t
   | VNode of node
-  | VEdge of edge
+  | VEdge of edgeValues
   | VTuple of value list
   | VClosure of closure
   | VTotalMap of mtbdd
@@ -249,7 +251,9 @@ type solve = {
 }
 
 type forward = {
-  (* aty : ty option; *)
+  pty : ty option;
+  hvty : ty option;
+  hety : ty option;
   names_V : exp;
   names_E : exp;
   fwdInit : exp;
@@ -259,6 +263,7 @@ type forward = {
   hinitE : exp;
   logE : exp;
   logV : exp;
+  bot : exp;
 }
 
 type declaration =
@@ -586,7 +591,8 @@ and hash_v ~hash_meta v =
   | VBool b -> if b then 1 else 0
   | VInt i -> (19 * Integer.to_int i) + 1
   | VNode n -> (19 * n) + 9
-  | VEdge e -> (19 * e) + 10
+  | VEdge (Raw (u,v)) -> (19 * (u * v)) + 10
+  | VEdge (EdgeId e) -> (19 * e) + 10
   | VTuple vs ->
       let acc =
         List.fold_left (fun acc v -> acc + hash_value ~hash_meta v) 0 vs
@@ -613,109 +619,6 @@ and hash_v ~hash_meta v =
           map 0
       in
       (19 * acc) + 7
-
-and hash_exp ~hash_meta e =
-  let m =
-    if hash_meta then (19 * hash_opt hash_ty e.ety) + hash_span e.espan else 0
-  in
-  (19 * hash_e ~hash_meta e.e) + m
-
-and hash_e ~hash_meta e =
-  match e with
-  | EVar x -> hash_var x
-  | EVal v -> (19 * hash_value ~hash_meta v) + 1
-  | EOp (op, es) -> (19 * ((19 * hash_op op) + hash_es ~hash_meta es)) + 2
-  | EFun f ->
-      let i =
-        if hash_meta then hash_opt hash_ty f.argty + hash_opt hash_ty f.resty
-        else 0
-      in
-      (19 * ((19 * ((19 * hash_var f.arg) + hash_exp ~hash_meta f.body)) + i))
-      + 3
-  | EApp (e1, e2) ->
-      (19 * ((19 * hash_exp ~hash_meta e1) + hash_exp ~hash_meta e2)) + 4
-  | EIf (e1, e2, e3) ->
-      19
-      * ( (19 * ((19 * hash_exp ~hash_meta e1) + hash_exp ~hash_meta e2))
-        + hash_exp ~hash_meta e3 )
-      + 5
-  | ELet (x, e1, e2) ->
-      19
-      * ( (19 * ((19 * hash_var x) + hash_exp ~hash_meta e1))
-        + hash_exp ~hash_meta e2 )
-      + 6
-  | ETuple es -> (19 * hash_es ~hash_meta es) + 7
-  | ESome e -> (19 * hash_exp ~hash_meta e) + 8
-  | EMatch (e, bs) ->
-      (19 * ((19 * hash_exp ~hash_meta e) + hash_branches ~hash_meta bs)) + 9
-  | ERecord map ->
-      19
-      * StringMap.fold
-          (fun l e acc -> acc + +hash_string l + hash_exp ~hash_meta e)
-          map 0
-      + 11
-  | EProject (e, label) -> (19 * hash_exp ~hash_meta e) + hash_string label + 12
-
-and hash_var x = hash_string (Var.to_string x)
-
-and hash_es ~hash_meta es =
-  List.fold_left (fun acc e -> acc + hash_exp ~hash_meta e) 0 es
-
-and hash_op op =
-  match op with
-  | And -> 1
-  | Or -> 2
-  | Not -> 3
-  | Eq -> 4
-  | MCreate -> 5
-  | MGet -> 6
-  | MSet -> 7
-  | UAdd n -> 11 + n + 256
-  | ULess n -> 11 + n + (256 * 3)
-  | ULeq n -> 11 + n + (256 * 4)
-  | BddAnd -> 8
-  | BddOr -> 9
-  | BddAdd n -> 11 + n + (256 * 5)
-  | BddEq -> 10
-  | BddLess n -> 11 + n + (256 * 7)
-  | BddLeq n -> 11 + n + (256 * 9)
-  | BddNot -> 12
-  | NLess -> 14
-  | NLeq -> 15
-  | ELess -> 16
-  | ELeq -> 17
-  | TGet (idx, sz) -> 18 + idx + sz + (256 * 6)
-
-and hash_branches ~hash_meta bs =
-  let acc1 =
-    BatList.fold_left
-      (fun acc (p, e) -> acc + hash_pattern p + hash_exp ~hash_meta e)
-      0 bs.plist
-  in
-  PatMap.fold
-    (fun p e acc -> acc + hash_pattern p + hash_exp ~hash_meta e)
-    bs.pmap acc1
-
-and hash_pattern p =
-  match p with
-  | PWild -> 1
-  | PVar x -> (19 * hash_var x) + 2
-  | PBool b -> (19 * if b then 1 else 0) + 3
-  | PInt i -> (19 * Integer.to_int i) + 4
-  | PTuple ps -> (19 * hash_patterns ps) + 5
-  | POption None -> 6
-  | POption (Some p) -> (19 * hash_pattern p) + 7
-  | PRecord map ->
-      19
-      * StringMap.fold
-          (fun l p acc -> acc + hash_string l + hash_pattern p)
-          map 0
-      + 8
-  | PNode n -> (19 * n) + 9
-  | PEdge (p1, p2) -> (19 * (hash_pattern p1 + (19 * hash_pattern p2))) + 10
-  | PEdgeId n -> (19 * n) + 11
-
-and hash_patterns ps = List.fold_left (fun acc p -> acc + hash_pattern p) 0 ps
 
 (* Utilities *)
 
@@ -763,7 +666,9 @@ let vbool b = value (VBool b)
 
 let vnode n = value (VNode n)
 
-let vedge e = value (VEdge e)
+let vedge e = value (VEdge (EdgeId e))
+
+let vedgeRaw e = value (VEdge (Raw e))
 
 let vint i = value (VInt i)
 
