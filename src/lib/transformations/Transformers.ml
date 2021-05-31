@@ -56,7 +56,7 @@ and transform_ty ~(name : string) (transformers : transformers) (ty : ty) : ty =
   | Some ty -> ty
   | None -> (
       match ty.typ with
-      | TBool | TInt _ | TNode | TEdge -> ty
+      | TBool | TInt _ | TNode | TEdge | TFloat -> ty
       | TOption ty1 -> { ty with typ = TOption (transform_ty ty1) }
       | TTuple tys -> { ty with typ = TTuple (List.map transform_ty tys) }
       | TRecord map ->
@@ -114,7 +114,7 @@ and transform_value ~(name : string) (transformers : transformers) (v : value) :
     | Some v -> v
     | None -> (
         match v.v with
-        | VInt _ | VBool _ | VNode _ | VEdge _ | VOption None -> v
+        | VInt _ | VBool _ | VNode _ | VEdge _ | VOption None | VFloat _ -> v
         | VOption (Some v1) -> voption (Some (transform_value v1))
         | VTuple vs -> vtuple (List.map transform_value vs)
         | VRecord map -> vrecord (StringMap.map transform_value map)
@@ -245,7 +245,7 @@ let rec map_back_value ~(name : string) (sol : Solution.t)
   | Some v -> v
   | None -> (
       match (v.v, orig_ty.typ) with
-      | (VBool _ | VInt _ | VNode _ | VEdge _ | VOption None), _ -> v
+      | (VBool _ | VInt _ | VNode _ | VEdge _ | VOption None | VFloat _), _ -> v
       | VOption (Some v'), TOption ty' -> voption (Some (map_back_value v' ty'))
       | VTuple vs, TTuple tys -> vtuple (List.map2 map_back_value vs tys)
       | VRecord vmap, TRecord tmap ->

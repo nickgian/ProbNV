@@ -38,7 +38,7 @@ let rec ty_to_size ty =
   | TOption tyo -> 1 + ty_to_size tyo
   | TNode -> ty_to_size (concrete (TInt !tnode_sz)) (* Encode as int *)
   | TEdge -> ty_to_size (concrete (TInt !tedge_sz)) (*Encode as edge id *)
-  | TArrow _ | TVar _ | QVar _ | TMap _ | TRecord _ ->
+  | TArrow _ | TVar _ | QVar _ | TMap _ | TRecord _ | TFloat ->
       failwith ("internal error (ty_to_size): " ^ Printing.ty_to_string ty)
 
 (* A list of the range of BDD variables, the type and the distribution, of every symbolic *)
@@ -435,7 +435,8 @@ let vars_to_value (vars, ty) =
                    (u, v))
                  vars_expanded)) *)
       else SEdge None
-  | TOption _ | TTuple _ | TRecord _ | TArrow _ | TMap _ | TVar _ | QVar _ ->
+  | TOption _ | TTuple _ | TRecord _ | TArrow _ | TMap _ | TVar _ | QVar _
+  | TFloat ->
       failwith "internal error (unsupported types for symbolics)"
 
 let vars_to_value =

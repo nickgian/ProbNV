@@ -19,7 +19,7 @@ let fty_mode m =
 let rec fty (ty : ty) : ty =
   match ty.typ with
   | TVar { contents = Link ty } -> fty ty
-  | TVar _ | QVar _ | TBool | TInt _ | TNode | TEdge ->
+  | TVar _ | QVar _ | TBool | TInt _ | TNode | TEdge | TFloat ->
       { ty with mode = fty_mode (get_mode ty) }
   | TOption ty -> { typ = TOption (fty ty); mode = fty_mode (get_mode ty) }
   | TTuple ts ->
@@ -43,7 +43,7 @@ let rec fty (ty : ty) : ty =
 let rec set_concrete_mode ty =
   match ty.typ with
   | TVar { contents = Link ty } -> set_concrete_mode ty
-  | TVar _ | QVar _ | TBool | TInt _ | TNode | TEdge ->
+  | TVar _ | QVar _ | TBool | TInt _ | TNode | TEdge | TFloat ->
       { ty with mode = Some Concrete }
   | TOption ty -> { typ = TOption (set_concrete_mode ty); mode = Some Concrete }
   | TTuple ts ->
@@ -73,7 +73,7 @@ let opToBddOp op =
   | ELess -> BddLess !tedge_sz
   | ELeq -> BddLeq !tedge_sz
   | BddAnd | BddAdd _ | BddOr | BddNot | BddEq | BddLess _ | BddLeq _ -> op
-  | MCreate | MGet | MSet | TGet _ ->
+  | MCreate | MGet | MSet | MMerge | TGet _ | FAdd | FDiv | FLess | FLeq ->
       failwith "Can't convert operation to symbolic operation"
 
 let liftBdd e1 =
@@ -135,6 +135,17 @@ let rec translate (e : exp) : exp * BddBinds.t =
             },
             BddBinds.union r1 (BddBinds.union r2 r3) )
       | MSet, _ -> failwith "invalid number of arguments to MSet"
+      | MMerge, [ eh1; eh2; eh3 ] ->
+          let el1, r1 = translate eh1 in
+          let el2, r2 = translate eh2 in
+          let el3, r3 = translate eh3 in
+          ( {
+              e with
+              e = (eop MMerge [ el1; el2; el3 ]).e;
+              ety = Some (fty (OCamlUtils.oget e.ety));
+            },
+            BddBinds.union r1 (BddBinds.union r2 r3) )
+      | MMerge, _ -> failwith "invalid number of arguments to MMerge"
       | MCreate, [ eh1 ] ->
           let el1, r1 = translate eh1 in
           ( {
@@ -160,8 +171,12 @@ let rec translate (e : exp) : exp * BddBinds.t =
       | UAdd _, _
       | ULess _, _
       | ULeq _, _
+      | FAdd, _
+      | FDiv, _
       | ELess, _
       | ELeq, _
+      | FLess, _
+      | FLeq, _
       | NLess, _
       | NLeq, _ -> (
           let esl, rs =
@@ -246,7 +261,14 @@ let rec translate (e : exp) : exp * BddBinds.t =
               ety = Some (fty (OCamlUtils.oget e.ety));
             },
             BddBinds.empty () )
-      | _ -> failwith "This case cannot occur per the type system" )
+      | _ ->
+          failwith
+            (Printf.sprintf
+               "This case cannot occur per the type system: %s, %s, %s, %s"
+               (Printing.mode_to_string @@ OCamlUtils.oget @@ get_mode ty1)
+               (Printing.mode_to_string @@ OCamlUtils.oget @@ get_mode ty2)
+               (Printing.mode_to_string @@ OCamlUtils.oget @@ get_mode ty3)
+               (Printing.mode_to_string @@ OCamlUtils.oget @@ get_mode ty)) )
   | EFun { arg = x; body = e1; argty; resty; _ } ->
       (* C-Lambda *)
       let el1, r = translate e1 in
@@ -283,7 +305,7 @@ let rec translate (e : exp) : exp * BddBinds.t =
               e = (eapp el1 el2).e;
               ety = Some (fty (OCamlUtils.oget e.ety));
             },
-            BddBinds.empty () )
+            BddBinds.union r1 r2 )
       | Some Concrete, Some Concrete, Some Symbolic ->
           (* C-App-S1*)
           ( {
@@ -291,7 +313,7 @@ let rec translate (e : exp) : exp * BddBinds.t =
               e = (eapp el1 el2).e;
               ety = Some (fty (OCamlUtils.oget e.ety));
             },
-            BddBinds.empty () )
+            BddBinds.union r1 r2 )
       | Some Symbolic, Some Symbolic, Some Symbolic ->
           (* C-App-S2 *)
           ( {
@@ -315,7 +337,7 @@ let rec translate (e : exp) : exp * BddBinds.t =
               e = (eapp el1 el2).e;
               ety = Some (fty (OCamlUtils.oget e.ety));
             },
-            r2 )
+            BddBinds.union r1 r2 )
       | Some Symbolic, Some Symbolic, Some Multivalue ->
           (* C-App-M2 *)
           ( {
@@ -461,7 +483,7 @@ and translate_branches bs mode =
 
 let rec pattern_vars p =
   match p with
-  | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ -> VarSet.empty
+  | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ | PFloat _ -> VarSet.empty
   | PVar v -> VarSet.singleton v
   | PEdge (p1, p2) -> pattern_vars (PTuple [ p1; p2 ])
   | POption None -> VarSet.empty
@@ -944,11 +966,6 @@ let translateThree info func pty hty =
                   (* Need to lift to a multivalue *)
                   liftThree func (OCamlUtils.oget f1.argty).typ pty hty
               else
-                let () =
-                  BddBinds.fold
-                    (fun var _ () -> Printf.printf "Var: %s\n" (Var.name var))
-                    rho ()
-                in
                 let rho' =
                   if pty.mode = Some Multivalue then
                     BddBinds.union rho
@@ -1025,8 +1042,9 @@ let translateDecl info d =
       BddBinds.clearStore ();
       let e', r = translate e in
       let fv = free e in
+
       let rho = BddBinds.union r fv in
-      if BddBinds.isEmpty r then DLet (x, e') else DLet (x, buildApply e' rho)
+      if BddBinds.isEmpty rho then DLet (x, e') else DLet (x, buildApply e' rho)
   | DSolve { aty; var_names; init; trans; merge } ->
       let route_ty = OCamlUtils.oget aty in
       BddBinds.clearStore ();

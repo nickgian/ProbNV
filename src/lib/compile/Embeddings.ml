@@ -15,6 +15,7 @@ let rec embed_value (record_fns : int * int -> 'a -> 'b) (typ : Syntax.ty) :
   match typ.typ with
   | TBool -> fun v -> Syntax.vbool (Obj.magic v)
   | TInt n -> fun v -> Syntax.vint (Integer.create ~value:(Obj.magic v) ~size:n)
+  | TFloat -> fun v -> Syntax.vfloat (Obj.magic v)
   | TTuple ts ->
       let n = BatList.length ts in
       let fs =

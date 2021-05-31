@@ -65,7 +65,7 @@ let rec default_value ty =
   | TNode -> BInt (mk_int 0 !tnode_sz)
   | TEdge -> BInt (mk_int 0 !tedge_sz)
   | TVar { contents = Link t } -> default_value t
-  | TVar _ | QVar _ | TArrow _ | TMap _ | TRecord _ ->
+  | TVar _ | QVar _ | TArrow _ | TMap _ | TRecord _ | TFloat ->
       failwith "internal error (default_value)"
 
 (** Lifts a value to a BDD*)
@@ -298,7 +298,7 @@ let apply3 ~op_key ~f ~arg1 ~arg2 ~arg3 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
     match HashClosureMap.Exceptionless.find (Obj.magic op_key) !map_cache with
     | None ->
         let o =
-          User.make_op3
+          User.make_op3 (* ~memo:Cudd.(Hash (Hash.create ~size:16777216 3)) *)
             ~memo:Cudd.(Cache (Cache.create3 ~size:1398101 ~maxsize:5592404 ()))
             g
         in
@@ -330,8 +330,8 @@ let space_ty ty (g : AdjGraph.t) =
   | TOption _ ->
       failwith "No support for declaration of symbolic options for now"
   | TRecord _ -> failwith "Records should be unrolled"
-  | TArrow _ | QVar _ | TVar _ | TMap _ ->
-      failwith "No probabilities over arrow types or type variables"
+  | TArrow _ | QVar _ | TVar _ | TMap _ | TFloat ->
+      failwith "No probabilities over arrow types, type variables or floats"
 
 (* Returns a uniform probability based on the given type *)
 let uniform_probability_ty ty (g : AdjGraph.t) = 1. /. space_ty ty g
@@ -390,7 +390,7 @@ let uniform_distribution (res : t) ty (g : AdjGraph.t) :
           Mtbddc.cst B.mgr B.tbl_probabilities (uniform_probability_ty ty g)
         in
         (* If it's a node type, assign 0 probability to invalid nodes *)
-        match leq res (BInt (mk_int ((AdjGraph.nb_vertex g)-1) !tnode_sz)) with
+        match leq res (BInt (mk_int (AdjGraph.nb_vertex g - 1) !tnode_sz)) with
         | BBool isValidNode ->
             Mtbddc.ite isValidNode prob
               (Mtbddc.cst B.mgr B.tbl_probabilities 0.0)
@@ -399,7 +399,7 @@ let uniform_distribution (res : t) ty (g : AdjGraph.t) :
         let prob =
           Mtbddc.cst B.mgr B.tbl_probabilities (uniform_probability_ty ty g)
         in
-      match leq res (BInt (mk_int ((AdjGraph.nb_edges g)-1) !tedge_sz))  with
+        match leq res (BInt (mk_int (AdjGraph.nb_edges g - 1) !tedge_sz)) with
         | BBool isValidEdge ->
             Mtbddc.ite isValidEdge prob
               (Mtbddc.cst B.mgr B.tbl_probabilities 0.0)
@@ -422,6 +422,7 @@ let uniform_distribution (res : t) ty (g : AdjGraph.t) :
     | QVar _, _
     | TArrow _, _
     | TMap _, _
+    | TFloat, _
     | TRecord _, _ ->
         failwith "Impossible cases"
   in
@@ -435,8 +436,7 @@ let create_value (name : string) (dist : distrExpr option) (ty : ty)
     | TBool -> BBool (B.freshvar ())
     | TInt sz -> BInt (Array.init sz (fun _ -> B.freshvar ()))
     | TNode -> aux (concrete @@ TInt !tnode_sz)
-    | TEdge -> 
-      aux (concrete @@ TInt !tedge_sz)
+    | TEdge -> aux (concrete @@ TInt !tedge_sz)
     | TTuple ts ->
         let bs =
           List.fold_left
@@ -449,7 +449,7 @@ let create_value (name : string) (dist : distrExpr option) (ty : ty)
     | TOption ty ->
         let tag = B.freshvar () in
         BOption (tag, aux ty)
-    | TArrow _ | QVar _ | TVar _ | TMap _ | TRecord _ ->
+    | TArrow _ | QVar _ | TVar _ | TMap _ | TRecord _ | TFloat ->
         failwith
           (Printf.sprintf "internal error (create_value) type:%s\n"
              (Printing.ty_to_string (get_inner_type ty)))

@@ -22,7 +22,7 @@ let rec rename_solve_vars bmap env e =
 let rec update_pattern (env : Var.t Env.t) (p : pattern) : pattern * Var.t Env.t
     =
   match p with
-  | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ -> (p, env)
+  | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ | PFloat _ -> (p, env)
   | PVar x ->
       let y = fresh x in
       (PVar y, Env.update env x y)

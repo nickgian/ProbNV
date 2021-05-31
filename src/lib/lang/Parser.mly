@@ -155,6 +155,7 @@
 
 
 %token <ProbNv_datastructures.Span.t * ProbNv_datastructures.Var.t> ID
+%token <ProbNv_datastructures.Span.t * ProbNv_datastructures.Integer.t> INT
 %token <ProbNv_datastructures.Span.t * ProbNv_datastructures.Integer.t> NUM
 %token <ProbNv_datastructures.Span.t * float> PROB
 %token <ProbNv_datastructures.Span.t * int> NODE
@@ -165,6 +166,8 @@
 %token <ProbNv_datastructures.Span.t> TRUE
 %token <ProbNv_datastructures.Span.t> FALSE
 %token <ProbNv_datastructures.Span.t * int> PLUS
+%token <ProbNv_datastructures.Span.t> FPLUS
+%token <ProbNv_datastructures.Span.t> FDIV
 %token <ProbNv_datastructures.Span.t * int> UAND
 %token <ProbNv_datastructures.Span.t> EQ
 %token <ProbNv_datastructures.Span.t * int> SUB
@@ -180,6 +183,10 @@
 %token <ProbNv_datastructures.Span.t> EGREATER
 %token <ProbNv_datastructures.Span.t> ELESS
 %token <ProbNv_datastructures.Span.t> ELEQ
+%token <ProbNv_datastructures.Span.t> FGREATER
+%token <ProbNv_datastructures.Span.t> FLESS
+%token <ProbNv_datastructures.Span.t> FGEQ
+%token <ProbNv_datastructures.Span.t> FLEQ
 %token <ProbNv_datastructures.Span.t> LET
 %token <ProbNv_datastructures.Span.t> IN
 %token <ProbNv_datastructures.Span.t> IF
@@ -204,7 +211,6 @@
 %token <ProbNv_datastructures.Span.t> COMMA
 %token <ProbNv_datastructures.Span.t> TILDE
 %token <ProbNv_datastructures.Span.t> UNDERSCORE
-%token <ProbNv_datastructures.Span.t> CREATEMAP
 %token <ProbNv_datastructures.Span.t> TOPTION
 %token <ProbNv_datastructures.Span.t> SOLUTION
 %token <ProbNv_datastructures.Span.t> FORWARD
@@ -215,6 +221,7 @@
 %token <ProbNv_datastructures.Span.t> TNODE
 %token <ProbNv_datastructures.Span.t> TEDGE
 %token <ProbNv_datastructures.Span.t * int> TINT
+%token <ProbNv_datastructures.Span.t> TFLOAT
 %token <ProbNv_datastructures.Span.t> TDICT
 %token <ProbNv_datastructures.Span.t> TSET
 %token <ProbNv_datastructures.Span.t> EDGES
@@ -224,6 +231,9 @@
 %token <ProbNv_datastructures.Span.t> SYMB
 %token <ProbNv_datastructures.Span.t> MULTI
 %token <ProbNv_datastructures.Span.t> CONCRETE
+%token <ProbNv_datastructures.Span.t> CREATEMAP
+%token <ProbNv_datastructures.Span.t> COMBINE
+
 
 
 
@@ -239,7 +249,7 @@
 %right ARROW
 %left AND OR
 %nonassoc GEQ GREATER LEQ LESS EQ NLEQ NGEQ NLESS NGREATER
-%left PLUS SUB UAND UNION INTER MINUS
+%left PLUS UAND
 %right NOT
 %right SOME
 %nonassoc DOT
@@ -257,6 +267,7 @@ bty:
    | TNODE                              { TNode }
    | TEDGE                              { TEdge }
    | TINT                               { Syntax.TInt (snd $1) }
+   | TFLOAT                             { TFloat }
    | LPAREN bty RPAREN                  { $2 }
    | LPAREN tys RPAREN                  { if List.length $2 = 1 then failwith "impossible" else TTuple $2 }
    | TOPTION LBRACKET ty RBRACKET       { TOption $3 }
@@ -341,8 +352,8 @@ component:
     | ASSERT LPAREN STRING COMMA assertion RPAREN      { DInfer (snd $3, fst $5, snd $5) }
     | EDGES EQ LBRACE RBRACE        { DEdges [] }
     | EDGES EQ LBRACE edges RBRACE  { DEdges $4 }
-    | NODES EQ NUM                  { DNodes (ProbNv_datastructures.Integer.to_int (snd $3), []) }
-    | NODES EQ LPAREN NUM COMMA LBRACE nodes RBRACE RPAREN  { DNodes (ProbNv_datastructures.Integer.to_int (snd $4), $7) }
+    | NODES EQ INT                  { DNodes (ProbNv_datastructures.Integer.to_int (snd $3), []) }
+    | NODES EQ LPAREN INT COMMA LBRACE nodes RBRACE RPAREN  { DNodes (ProbNv_datastructures.Integer.to_int (snd $4), $7) }
     /* | LET EDGES EQ LBRACE RBRACE        { DEdges [] }
     | LET EDGES EQ LBRACE edges RBRACE  { DEdges $5 }
     | LET NODES EQ NUM                  { DNodes (ProbNv_datastructures.Integer.to_int (snd $4), []) }
@@ -386,8 +397,8 @@ expr:
     | FOLDEDGE exprsspace               { exp (eop MFoldEdge $2) $1 } */
     /* | MAP exprsspace                    { exp (eop MMap $2) $1 }
     | MAPIF exprsspace                  { exp (eop MMapFilter $2) $1 }
-    | MAPITE exprsspace                 { exp (eop MMapIte $2) $1 }
-    | COMBINE exprsspace                { exp (eop MMerge $2) $1 } */
+    | MAPITE exprsspace                 { exp (eop MMapIte $2) $1 } */
+    | COMBINE expr3 expr3 expr3         { exp (eop MMerge [$2;$3;$4]) $1 } 
     | CREATEMAP expr                    { exp (eop MCreate [$2]) $1 }
     | expr LBRACKET expr RBRACKET       { exp (eop MGet [$1;$3]) (Span.extend $1.espan $4) }
     | expr LBRACKET expr COLON EQ expr RBRACKET { exp (eop MSet [$1;$3;$6]) (Span.extend $1.espan $7) }
@@ -396,6 +407,8 @@ expr:
     | expr AND expr                     { exp (eop And [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr OR expr                      { exp (eop Or [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr PLUS expr                    { exp (eop (UAdd (snd $2)) [$1;$3]) (Span.extend $1.espan $3.espan) }
+    | expr FPLUS expr                   { exp (eop FAdd [$1;$3]) (Span.extend $1.espan $3.espan) }
+    | expr FDIV expr                    { exp (eop FDiv [$1;$3]) (Span.extend $1.espan $3.espan) }
     /* | expr UAND expr                    { exp (eop (UAnd (snd $2)) [$1;$3]) (Span.extend $1.espan $3.espan) } */
     | expr EQ expr                      { exp (eop Eq [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr LESS expr                    { exp (eop (ULess (snd $2)) [$1;$3]) (Span.extend $1.espan $3.espan) }
@@ -406,6 +419,10 @@ expr:
     | expr NLESS expr                   { exp (eop NLess [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr NGREATER expr                { exp (eop NLess [$3;$1]) (Span.extend $1.espan $3.espan) }
     | expr EGREATER expr                { exp (eop ELess [$3;$1]) (Span.extend $1.espan $3.espan) }
+    | expr FLESS expr                   { exp (eop FLess [$1;$3]) (Span.extend $1.espan $3.espan) }
+    | expr FGREATER expr                { exp (eop FLess [$3;$1]) (Span.extend $1.espan $3.espan) }
+    | expr FLEQ expr                    { exp (eop FLeq [$1;$3]) (Span.extend $1.espan $3.espan) }
+    | expr FGEQ expr                    { exp (eop FLeq [$3;$1]) (Span.extend $1.espan $3.espan) }
     | expr NLEQ expr                    { exp (eop NLeq [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr NGEQ expr                    { exp (eop NLeq [$3;$1]) (Span.extend $1.espan $3.espan) }
     | expr ELEQ expr                    { exp (eop ELeq [$1;$3]) (Span.extend $1.espan $3.espan) }
@@ -433,6 +450,8 @@ expr3:
     | ID                                { exp (evar (snd $1)) (fst $1) }
     | ID DOT ID                         { exp (eproject (evar (snd $1)) (Var.name (snd $3))) (Span.extend (fst $1) (fst $3)) }
     | NUM                               { to_value (vint (snd $1)) (fst $1) }
+    | INT                               { to_value (vint (snd $1)) (fst $1) }
+    | float                             { $1 }
     | ipaddr                            { $1 }
     | prefixes                          { $1 }
     | NODE                              { to_value (vnode (snd $1)) (fst $1)}
@@ -443,16 +462,19 @@ expr3:
     | LPAREN exprs RPAREN               { tuple_it $2 (Span.extend $1 $3) }
 ;
 
+float:
+  | INT DOT INT                            { to_value (vfloat (float_of_string (Printf.sprintf "%d.%d" (Integer.to_int @@ snd $1) (Integer.to_int @@ snd $3)))) (Span.extend (fst $1) (fst $3))}
+
 ipaddr:
-  | NUM DOT NUM DOT NUM DOT NUM         { to_value (vint (ip_to_dec (snd $1) (snd $3) (snd $5) (snd $7))) (fst $1) }
+  | INT DOT INT DOT INT DOT INT         { to_value (vint (ip_to_dec (snd $1) (snd $3) (snd $5) (snd $7))) (fst $1) }
 
 prefixes:
-  | ipaddr SLASH NUM                    { let pre = to_value (vint (ProbNv_datastructures.Integer.create ~value:(ProbNv_datastructures.Integer.to_int (snd $3)) ~size:6)) (fst $3) in
+  | ipaddr SLASH INT                    { let pre = to_value (vint (ProbNv_datastructures.Integer.create ~value:(ProbNv_datastructures.Integer.to_int (snd $3)) ~size:6)) (fst $3) in
                                           etuple [$1; pre]}
 
 
 edge_arg:
-  | NUM                                 { (fst $1), to_value (vnode (ProbNv_datastructures.Integer.to_int (snd $1))) (fst $1) }
+  | INT                                 { (fst $1), to_value (vnode (ProbNv_datastructures.Integer.to_int (snd $1))) (fst $1) }
   | NODE                                { (fst $1), to_value (vnode (snd $1)) (fst $1)}
 
 exprs:
@@ -461,7 +483,7 @@ exprs:
 ;
 
 edgenode:
-    | NUM                               { ProbNv_datastructures.Integer.to_int (snd $1) }
+    | INT                               { ProbNv_datastructures.Integer.to_int (snd $1) }
     | NODE                              { snd $1 }
 ;
 
@@ -489,6 +511,8 @@ nodes:
     | TRUE                              { PBool true }
     | FALSE                             { PBool false }
     | NUM                               { PInt (snd $1) }
+    | INT                               { PInt (snd $1) }
+    | INT DOT INT                       { PFloat (float_of_string @@ Printf.sprintf "%d.%d" (Integer.to_int @@ snd $1) (Integer.to_int @@ snd $3)) }
     | NODE                              { PNode (snd $1) }
     | pattern TILDE pattern             { PEdge (ensure_node_pattern $1, ensure_node_pattern $3)}
     | LPAREN patterns RPAREN            { tuple_pattern $2 }

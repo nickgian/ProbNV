@@ -98,7 +98,7 @@ let bindingsOld (map, ty) : (value * value) list =
       let lst = Array.to_list vars in
       let sz = ty_to_size ty in
       let expanded =
-        if count_tops vars 0 sz <= 8 then expand lst sz else [ lst ]
+        if count_tops vars 0 sz <= 1 then expand lst sz else [ lst ]
       in
       List.iter
         (fun vars ->
@@ -111,7 +111,7 @@ let bindingsOld (map, ty) : (value * value) list =
     map;
   !bs
 
-let is_keyword_op _ = false
+let is_keyword_op op = match op with MMerge -> true | _ -> false
 
 (* set to true if you want to print universal quanifiers explicitly *)
 let quantifiers = true
@@ -123,7 +123,8 @@ let prec_op op =
   | And | BddAnd -> 7
   | Or | BddOr -> 7
   | Not | BddNot -> 6
-  | UAdd _ | BddAdd _ -> 4
+  | FDiv -> 4
+  | UAdd _ | BddAdd _ | FAdd -> 4
   (* | USub _ -> 4 *)
   | Eq | BddEq -> 5
   | MCreate -> 5
@@ -131,6 +132,7 @@ let prec_op op =
   | MSet -> 3
   | ULess _ | BddLess _ | NLess | ULeq _ | NLeq | BddLeq _ | ELess | ELeq -> 5
   | TGet _ -> 5
+  | MMerge -> 3
 
 let prec_exp e =
   match e.e with
@@ -178,7 +180,7 @@ module VarMap = BetterMap.Make (Var)
 let canonicalize_type (ty : ty) : ty =
   let rec aux ty map count =
     match ty.typ with
-    | TBool | TInt _ | TNode | TEdge -> (ty, map, count)
+    | TBool | TInt _ | TNode | TEdge | TFloat -> (ty, map, count)
     | TArrow (t1, t2) ->
         let t1', map, count = aux t1 map count in
         let t2', map, count = aux t2 map count in
@@ -228,7 +230,7 @@ let canonicalize_type (ty : ty) : ty =
 
 (* The way we print our types means that we don't really need precedence rules.
    The only type which isn't totally self-contained is TArrow *)
-let rec base_ty_to_string t =
+let rec base_ty_to_string ?(show_modes = true) t =
   match t with
   | TVar { contents = tv } -> tyvar_to_string tv
   | QVar name -> "{" ^ Var.to_string name ^ "}"
@@ -237,26 +239,35 @@ let rec base_ty_to_string t =
   | TInt i -> Printf.sprintf "int%d" i
   | TNode -> Printf.sprintf "tnode"
   | TEdge -> Printf.sprintf "tedge"
+  | TFloat -> "float"
   | TTuple ts ->
       if List.is_empty ts then "TEmptyTuple"
-      else "(" ^ sep "," ty_to_string ts ^ ")"
-  | TOption t -> "option[" ^ ty_to_string t ^ "]"
-  | TMap (t1, t2) -> "dict[" ^ ty_to_string t1 ^ "," ^ ty_to_string t2 ^ "]"
+      else "(" ^ sep "," (ty_to_string ~show_modes) ts ^ ")"
+  | TOption t -> "option[" ^ ty_to_string ~show_modes t ^ "]"
+  | TMap (t1, t2) ->
+      "dict["
+      ^ ty_to_string ~show_modes t1
+      ^ ","
+      ^ ty_to_string ~show_modes t2
+      ^ "]"
   | TRecord map -> print_record ":" ty_to_string map
   | TArrow (t1, t2) ->
       let leftside =
         match t1.typ with
-        | TArrow _ -> Printf.sprintf "(%s)" (ty_to_string t1)
-        | _ -> ty_to_string t1
+        | TArrow _ -> Printf.sprintf "(%s)" (ty_to_string ~show_modes t1)
+        | _ -> ty_to_string ~show_modes t1
       in
-      Printf.sprintf "(%s -> %s)" leftside (ty_to_string t2)
+      Printf.sprintf "(%s -> %s)" leftside (ty_to_string ~show_modes t2)
 
-and ty_to_string ty =
+and ty_to_string ?(show_modes = true) ty =
   (* let ty = canonicalize_type ty in *)
-  match ty.mode with
-  | None -> Printf.sprintf "[None]%s" (base_ty_to_string ty.typ)
-  | Some m ->
-      Printf.sprintf "[%s]%s" (mode_to_string m) (base_ty_to_string ty.typ)
+  if show_modes then
+    match ty.mode with
+    | None -> Printf.sprintf "[None]%s" (base_ty_to_string ~show_modes ty.typ)
+    | Some m ->
+        Printf.sprintf "[%s]%s" (mode_to_string m)
+          (base_ty_to_string ~show_modes ty.typ)
+  else Printf.sprintf "%s" (base_ty_to_string ~show_modes ty.typ)
 
 and tyvar_to_string tv =
   match tv with
@@ -269,6 +280,8 @@ let op_to_string op =
   | Or -> "||"
   | Not -> "!"
   | UAdd n -> "+" ^ "u" ^ string_of_int n
+  | FAdd -> "+."
+  | FDiv -> "/."
   (* | USub n -> "-" ^ "u" ^ (string_of_int n)
      | UAnd n -> "&" ^ "u" ^ (string_of_int n) *)
   | Eq -> "="
@@ -288,6 +301,7 @@ let op_to_string op =
   | MCreate -> "createMap"
   | MGet -> "at"
   | MSet -> "set"
+  | MMerge -> failwith "prefix op"
   | TGet (i, _) -> "get-" ^ string_of_int i
 
 let rec pattern_to_string pattern =
@@ -297,6 +311,7 @@ let rec pattern_to_string pattern =
   | PBool true -> "true"
   | PBool false -> "false"
   | PInt i -> Integer.to_string i
+  | PFloat f -> string_of_float f
   | PTuple ps ->
       if List.is_empty ps then "PEmptyTuple"
       else "(" ^ comma_sep pattern_to_string ps ^ ")"
@@ -416,6 +431,7 @@ and value_to_string_p ~show_types prec v =
   | VBool true -> "true"
   | VBool false -> "false"
   | VInt i -> Integer.to_string i
+  | VFloat f -> string_of_float f
   | VTotalMap (m, meta) -> (
       match meta with
       | None -> multivalue_to_string ~show_types "\n" m
@@ -463,7 +479,9 @@ and multivalue_to_string ~show_types term_s m =
     ^ " ~> "
     ^ value_to_string_p ~show_types max_prec v
   in
-  let bs = bindingsOld (m, concrete TEdge) in
+  let bs =
+    bindingsOld (m, concrete (TTuple [ concrete TEdge; concrete TEdge ]))
+  in
   match bs with
   | [] -> Printf.sprintf "{ _ |-> _ }"
   | _ -> Printf.sprintf "{ %s }" (term term_s binding_to_string bs)

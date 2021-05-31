@@ -211,6 +211,7 @@ module ForwardingSimulation (G : Topology) = struct
       (* printEdgeHistory (AdjGraph.EdgeMap.find edge s.edgeHistory) edge; *)
       (* the packet after applying the outgoing policy/filters *)
       let packetOut = fwdOut edge_id packet in
+
       (* add the outgoing packet that traversed the edge to the history of the
          edge (origin,neighbor) *)
       let historyEdge' =

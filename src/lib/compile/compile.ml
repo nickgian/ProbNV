@@ -103,10 +103,10 @@ let build_constructors () =
 let is_prefix_op op =
   match op with
   | BddAnd | BddOr | BddAdd _ | BddNot | BddLess _ | BddLeq _ | BddEq | MGet
-  | MCreate | MSet | TGet _ ->
+  | MCreate | MSet | TGet _ | MMerge ->
       true
   | And | Or | Not | UAdd _ | Eq | ULess _ | ULeq _ | NLess | NLeq | ELess
-  | ELeq ->
+  | FLess | FLeq | ELeq | FAdd | FDiv ->
       false
 
 (** Translating LLL operators to OCaml operators*)
@@ -116,6 +116,10 @@ let op_to_ocaml_string op =
   | Or -> "||"
   | Not -> "not"
   | UAdd _ -> "+"
+  | FAdd -> "+."
+  | FDiv -> "/."
+  | FLess -> "<"
+  | FLeq -> "<="
   (* | USub _ -> "-" *)
   (* | UAnd _ -> "land" *)
   | Eq -> "="
@@ -124,7 +128,7 @@ let op_to_ocaml_string op =
   | NLess | ELess -> "<"
   | NLeq | ELeq -> "<="
   | BddAnd | BddOr | BddNot | BddEq | BddAdd _ | BddLess _ | BddLeq _ | MGet
-  | MSet | MCreate | TGet _ ->
+  | MSet | MCreate | TGet _ | MMerge ->
       failwith
         ( "Operation: " ^ Printing.op_to_string op
         ^ ", prefix operations are handled elsewhere" )
@@ -138,6 +142,7 @@ let rec pattern_to_ocaml_string pattern =
   | PBool true -> "true"
   | PBool false -> "false"
   | PInt i -> string_of_int (Integer.to_int i)
+  | PFloat i -> string_of_float i
   | PTuple ps ->
       let n = BatList.length ps in
       Collections.printListi
@@ -163,6 +168,7 @@ let rec ty_to_ocaml_string t =
   | QVar name -> Printf.sprintf "'%s" (varname name)
   | TBool -> "bool"
   | TInt _ -> "int"
+  | TFloat -> "float"
   | TNode -> "int"
   | TEdge -> "(int * int)"
   | TArrow (t1, t2) ->
@@ -189,7 +195,7 @@ let rec ty_to_ocaml_string t =
 
 let rec pattern_vars p =
   match p with
-  | PWild | PBool _ | PInt _ | POption None | PNode _ | PEdgeId _ ->
+  | PWild | PBool _ | PInt _ | POption None | PNode _ | PEdgeId _ | PFloat _ ->
       BatSet.PSet.create Var.compare
   | PVar v -> BatSet.PSet.singleton ~cmp:Var.compare v
   | PEdge (p1, p2) -> pattern_vars (PTuple [ p1; p2 ])
@@ -315,6 +321,7 @@ let rec value_to_ocaml_string v =
   | VBool true -> "true"
   | VBool false -> "false"
   | VInt i -> string_of_int (Integer.to_int i)
+  | VFloat f -> string_of_float f
   | VTuple vs ->
       let n = BatList.length vs in
       Collections.printListi
@@ -468,10 +475,10 @@ and prefix_op_to_ocaml_string op es ty =
           Printf.sprintf
             "(Obj.magic (BddMap.find record_fns (%s) (Obj.magic (%s))))"
             (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
-      | MSet | MCreate ->
-          failwith "Wrong number of arguments to MSet/MCreate operation"
+      | MSet | MCreate | MMerge ->
+          failwith "Wrong number of arguments to MSet/MCreate/MMerge operation"
       | Eq | UAdd _ | ULess _ | NLess | ULeq _ | NLeq | ELess | ELeq | And | Or
-      | Not | BddNot | TGet _ ->
+      | Not | BddNot | TGet _ | FAdd | FDiv | FLess | FLeq ->
           failwith "not applicable" )
   | [ e1; e2; e3 ] -> (
       match op with
@@ -481,9 +488,18 @@ and prefix_op_to_ocaml_string op es ty =
              (Obj.magic (%s))))"
             (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
             (exp_to_ocaml_string e3)
+      | MMerge ->
+          let op_key = getFuncCache e1 in
+          let op_key_var = "op_key" in
+          Printf.sprintf
+            "(Obj.magic (let %s = %s in \n\
+             BddMap.merge %s (Obj.magic (%s)) (Obj.magic (%s)) (Obj.magic \
+             (%s))))"
+            op_key_var op_key op_key_var (exp_to_ocaml_string e1)
+            (exp_to_ocaml_string e2) (exp_to_ocaml_string e3)
       | And | Or | Not | Eq | NLess | NLeq | ELess | ELeq | MGet | MCreate
       | BddAnd | BddOr | BddNot | BddEq | UAdd _ | ULess _ | ULeq _ | BddAdd _
-      | BddLess _ | BddLeq _ | TGet _ ->
+      | BddLess _ | BddLeq _ | TGet _ | FAdd | FDiv | FLess | FLeq ->
           failwith "Wrong number of arguments to operation." )
   | _ -> failwith "too many arguments to operation"
 
@@ -498,7 +514,7 @@ and branch_to_ocaml_string (p, e) =
 let rec attr_ty_to_equality ty x y =
   match ty.typ with
   | TVar _ | QVar _ -> failwith "Expected attribute type to be a resolved type"
-  | TBool | TInt _ | TNode | TEdge -> Printf.sprintf "%s = %s" x y
+  | TBool | TInt _ | TNode | TEdge | TFloat -> Printf.sprintf "%s = %s" x y
   | TMap _ -> Printf.sprintf "Cudd.Mtbddc.is_equal (%s) (%s)" x y
   | TTuple ts ->
       let n = List.length ts in

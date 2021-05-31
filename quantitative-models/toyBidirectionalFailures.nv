@@ -1,0 +1,127 @@
+(* A diamond network with bounded link failures *)
+
+type bgpType = {aslen: int; comms:set[int]; bgpNextHop: option[tedge];}
+type route = option[bgpType]
+
+(* Per TC model *)
+type flowAttr = {srcIp: int; dstIp: int; size: int;} (*flowSize should be float probably *)
+type flow = option[flowAttr]
+
+nodes = (4, {0n:"A"; 1n:"B"; 2n:"C"; 3n:"D";})
+
+edges = {
+    3=2;
+    3=1;
+    1=0;
+    2=0;
+}
+
+let init d u =
+  match u with
+  | 0n -> if (d = 0n) then Some ({aslen = 0; comms = {}; bgpNextHop = None;}) else None
+  | 3n -> if (d = 3n) then Some ({aslen = 0; comms = {}; bgpNextHop = None;}) else None
+  | _ -> None
+
+let trans e x = 
+  match x with
+  | None -> None
+  | Some x ->    
+    Some ({x with aslen = x.aslen+1; bgpNextHop = match e with | a~b -> toEdge b a;})
+
+let merge u x y =
+  match (x,y) with
+  | (None, _) -> y
+  | (_, None) -> x
+  | (Some a, Some b) -> if a.aslen < b.aslen then x else y
+
+
+symbolic f0 : tedge (*indicates the first failed link - uniform distribution assumed*)
+(* symbolic f1 : tedge (*indicates the second failed link*)  *)
+
+let linkFailed e =
+  (f0 = e) || 
+    (let (u~v) = e in 
+      match toEdge v u with 
+      | None -> false 
+      | Some erev -> f0 = erev)
+
+let transLinkFaults e (x : [M]route) =
+  if linkFailed e then
+      None
+  else trans e x
+
+let initLinkFaults d u = init d u 
+
+(* Control plane solutions for destination 0 and 3 *)
+(* let rib0 = solution(initLinkFaults 0n, transLinkFaults, merge) *)
+solution rib3 = (initLinkFaults 3n, transLinkFaults, merge)
+
+
+(* Tc1: src 0 to dst 3*)
+let initTc1 u = 
+  if (u = 0n) then
+    Some {srcIp = 0; dstIp = 3; size = 10;}
+  else None
+
+(* Tc1: src 1 to dst 3*)
+let initTc2 u = 
+  if (u = 1n) then
+    Some {srcIp = 1; dstIp = 3; size = 10;}
+  else None
+
+(* Tc1: src 2 to dst 3*)
+let initTc3 u = 
+  if (u = 2n) then
+    Some {srcIp = 2; dstIp = 3; size = 20;}
+  else None
+
+let fwdOutTc (rib:[C]dict[[C]tnode,[M]route]) e (fs : [M]flow) =
+  if (linkFailed e) then
+      None
+  else
+  match fs with
+  | None -> None
+  | Some fs ->
+  (match rib[let (u~v) = e in u] with
+  | None -> None
+  | Some r ->
+      if (r.bgpNextHop = Some e) then
+        Some fs
+      else None )
+
+(* Normally used for ACLs on the receiving switch *)
+let fwdInTc e flow = flow
+
+let hinitV u = 0 (*could use unit *)
+let hinitE e = 0
+
+let logV u flow history =
+  match flow with
+  | None -> history
+  | Some f -> f.size + history 
+
+let logE e flow history =
+    match flow with
+    | None -> history
+    | Some f -> f.size + history
+
+(* Compute the histories over nodes and edges *)
+forward (hVTc1, hETc1) = (initTc1, fwdOutTc rib3, fwdInTc, hinitV, hinitE, logV, logE, None)
+
+forward (hVTc2, hETc2) = (initTc2, fwdOutTc rib3, fwdInTc, hinitV, hinitE, logV, logE, None)
+
+forward (hVTc3, hETc3) = (initTc3, fwdOutTc rib3, fwdInTc, hinitV, hinitE, logV, logE, None)
+
+let linkCapacity e = 30
+
+let linkUtilization e = hETc1[e] + hETc2[e] + hETc3[e] 
+
+
+assert ("Link(01)", (linkUtilization 0~1) < linkCapacity 0~1)
+assert ("Link(02)", (linkUtilization 0~2) < linkCapacity 0~2)
+assert ("Link(13)", (linkUtilization 1~3) < linkCapacity 1~3)
+assert ("Link(23)", (linkUtilization 2~3) < linkCapacity 2~3)
+assert ("Link(10)", (linkUtilization 1~0) < linkCapacity 1~0)
+assert ("Link(20)", (linkUtilization 2~0) < linkCapacity 2~0)
+assert ("Link(31)", (linkUtilization 3~1) < linkCapacity 3~1)
+assert ("Link(32)", (linkUtilization 3~2) < linkCapacity 3~2)

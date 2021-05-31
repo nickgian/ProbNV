@@ -59,6 +59,7 @@ let rec default_value ty =
   | TBool -> avalue (vbool false, Some ty, Span.default)
   | TInt size ->
       avalue (vint (Integer.create ~value:0 ~size), Some ty, Span.default)
+  | TFloat -> avalue (vfloat 0.0, Some ty, Span.default)
   | TTuple ts ->
       avalue (vtuple (BatList.map default_value ts), Some ty, Span.default)
   | TOption _ -> avalue (voption None, Some ty, Span.default)
@@ -129,7 +130,7 @@ let value_to_bdd (record_fns : int * int -> 'a -> 'b) (ty : Syntax.ty) (v : 'v)
             let tag = Bdd.eq var (Bdd.dtrue mgr) in
             let value, idx = aux typ v (idx + 1) in
             (Bdd.dand tag value, idx) )
-    | TMap _ | TVar _ | QVar _ | TArrow _ | TRecord _ ->
+    | TMap _ | TVar _ | QVar _ | TArrow _ | TRecord _ | TFloat ->
         failwith "internal error (value_to_bdd)"
   in
   let bdd, _ = aux ty v 0 in
@@ -151,13 +152,42 @@ let update record_fns (vmap : 'v t) (k : 'key) (v : 'v) : 'v t =
   let leaf = Mtbddc.cst mgr tbl v in
   { vmap with bdd = Mtbddc.ite key leaf vmap.bdd }
 
-module HashClosureMap = BatMap.Make (struct
+(** ** Map merge operation, operates on top of OCaml values*)
+
+(* Merge cache, int represents the function/operation and unit is is the closure
+(not type safe) *)
+module HashMergeMap = BatMap.Make (struct
   type t = int * unit
 
   (*NOTE: unit here is a placeholder for the closure type which is a tuple of OCaml variables*)
 
   let compare = Pervasives.compare
 end)
+
+let merge_op_cache = Obj.magic @@ ref HashMergeMap.empty
+
+(* NOTE: Currently vty1=vty2 and the type of the result is also vty1*)
+
+(** [op_key] is a tuple of the id of the function used to perform the
+   merge and a tuple that contains the values of the closure.*)
+let merge (op_key : int * 'f) f (vmap1 : 'a t) (vmap2 : 'a t) =
+  let g x y = f (Mtbddc.get x) (Mtbddc.get y) |> Mtbddc.unique tbl in
+  (* if cfg.no_caching then
+   *   {vmap1 with bdd = (Mapleaf.mapleaf2 g (fst vmap1.bdd) (fst vmap2.bdd), (snd vmap1.bdd))}
+   *   else *)
+  let op_key = Obj.magic op_key in
+  let op =
+    match HashMergeMap.Exceptionless.find op_key !merge_op_cache with
+    | None ->
+        let o =
+          User.make_op2 ~memo:Cudd.Memo.Global ~commutative:false
+            ~idempotent:false g
+        in
+        merge_op_cache := HashMergeMap.add op_key o !merge_op_cache;
+        o
+    | Some op -> op
+  in
+  { vmap1 with bdd = User.apply_op2 op vmap1.bdd vmap2.bdd }
 
 (** * Used for inversing transformations only*)
 

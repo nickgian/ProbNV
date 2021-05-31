@@ -46,7 +46,6 @@ let print_fun_node nodes sol_val =
     !solString "" "\n\n" "\n"
 
 let print_fun_edge nodes vals =
-  let solString = ref [] in
   let f x = Printing.value_to_string ~show_types:false x in
   let nodeNames = snd nodes in
   let buf = Buffer.create 500 in

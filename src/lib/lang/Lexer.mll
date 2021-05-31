@@ -17,16 +17,17 @@
 
 }
 
-let id = ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '_' '0'-'9']*
+let id = ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '_' '0'-'9' '\'']*
 let symbol = ['~' '`' '!' '@' '#' '$' '%' '^' '&' '|' ':' '?' '>' '<' '[' ']' '=' '-' '.' '_' '(' ')']+
 let num = ['0'-'9']+
+let float = ['0'-'9']+['.']+['0'-'9']+
 let prob_literal = (['0']['.']['0'-'9']+)"p" | ("1.0p")
 let width = "u"num
 let tid = ['\'']['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '_' '0'-'9']*
 let node = num"n"
 let wspace = [' ' '\t']
 let filename = "\""(['a'-'z' 'A'-'Z' '0'-'9' '_' '\\' '/' '.' '-'])+"\""
-let string = "\""(['a'-'z' 'A'-'Z' '0'-'9'] | symbol | wspace)*"\""
+let string = "\""([^'\"'])*"\""
 
 rule token = parse
   | "include" wspace* filename {token lexbuf} (* Include directives are processed separately *)
@@ -47,6 +48,9 @@ rule token = parse
   | "match"           { MATCH (position lexbuf) }
   | "with"            { WITH (position lexbuf) }
   | "createDict"      { CREATEMAP (position lexbuf) }
+  | "combine"         { COMBINE (position lexbuf) }
+  (* | "union"           { UNION (position lexbuf) }
+  | "inter"           { INTER (position lexbuf) } *)
   | "set"             { TSET (position lexbuf) }
   | "dict"            { TDICT (position lexbuf) }
   | "option"          { TOPTION (position lexbuf) } 
@@ -55,6 +59,7 @@ rule token = parse
   | "bool"            { TBOOL (position lexbuf) }
   | "tnode"           { TNODE (position lexbuf) }
   | "tedge"           { TEDGE (position lexbuf) }
+  | "float"           { TFLOAT (position lexbuf) }
   | "type"            { TYPE (position lexbuf) }
   | "solution"        { SOLUTION (position lexbuf) }
   | "forward"         { FORWARD (position lexbuf) }
@@ -65,7 +70,7 @@ rule token = parse
   | id as s           { ID (position lexbuf, ProbNv_datastructures.Var.create s) }
   | node as s         { NODE (position lexbuf, int_of_string (String.rchop ~n:1 s)) }
   | num width as n    { NUM (position lexbuf, ProbNv_datastructures.Integer.of_string n) }
-  | num as n          { NUM (position lexbuf, ProbNv_datastructures.Integer.of_string n) }
+  | num as n          { INT (position lexbuf, ProbNv_datastructures.Integer.of_string n) }
   | prob_literal as n { PROB (position lexbuf, float_of_string (String.rchop ~n:1 n))}
   | string as s       { STRING (position lexbuf, s)}
   | "&&"              { AND (position lexbuf) }
@@ -77,6 +82,8 @@ rule token = parse
   | "~"               { TILDE (position lexbuf) }
   | "+" width as s    { PLUS (position lexbuf, int_of_string @@ String.lchop ~n:2 s) }
   | "+"               { PLUS (position lexbuf, 32) }
+  | "+."              { FPLUS (position lexbuf) }
+  | "/."              { FDIV (position lexbuf) }
   | "-" width as s    { SUB (position lexbuf, int_of_string @@ String.lchop ~n:2 s) }
   | "-"               { SUB (position lexbuf, 32) }
   | "&" width as s    { UAND (position lexbuf, int_of_string @@ String.lchop ~n:2 s) }
@@ -94,6 +101,10 @@ rule token = parse
   | "<e"              { ELESS (position lexbuf) }
   | "<" width as s    { LESS (position lexbuf, int_of_string @@ String.lchop ~n:2 s) }
   | "<"               { LESS (position lexbuf, 32) }
+  | "<."              { FLESS (position lexbuf) }
+  | ">."              { FGREATER (position lexbuf) }
+  | "<=."              { FLEQ (position lexbuf) }
+  | ">=."              { FGEQ (position lexbuf) }
   | ">n"              { NGREATER (position lexbuf) }
   | ">e"              { EGREATER (position lexbuf) }
   | ">" width as s    { GREATER (position lexbuf, int_of_string @@ String.lchop ~n:2 s) }

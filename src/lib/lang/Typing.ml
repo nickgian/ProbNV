@@ -165,6 +165,17 @@ let rec check_annot_decls (ds : declarations) =
       check_annot_decl d;
       check_annot_decls ds
 
+let rec canBeSymbolic (ty : Syntax.ty) =
+  match ty.typ with
+  | TVar r -> ( match !r with Unbound _ -> false | Link t -> canBeSymbolic t )
+  | QVar _ | TFloat -> false
+  | TArrow _ -> false
+  | TTuple tys -> List.for_all (fun ty -> canBeSymbolic ty) tys
+  | TOption ty -> canBeSymbolic ty
+  | TMap _ -> false
+  | TRecord _ -> false
+  | TBool | TInt _ | TNode | TEdge -> true
+
 (** ** Occur Checks, Unification, Generalization*)
 
 (** This code should be shared between HLL and LLL*)
@@ -191,7 +202,7 @@ let occurs tvr (ty : baseTy) : unit =
     | TArrow (t1, t2) ->
         occ tvr t1.typ;
         occ tvr t2.typ
-    | TBool | TInt _ | TNode | TEdge -> ()
+    | TBool | TInt _ | TNode | TEdge | TFloat -> ()
     | TTuple ts -> BatList.iter (fun ty -> occ tvr ty.typ) ts
     | TOption t -> occ tvr t.typ
     | TMap (t1, t2) ->
@@ -254,6 +265,7 @@ let rec unify isHLL info e t1 t2 : unit =
       | TInt i, TInt j when i = j -> true
       | TNode, TNode -> true
       | TEdge, TEdge -> true
+      | TFloat, TFloat -> true
       | TTuple ts1, TTuple ts2 -> try_unifies ts1 ts2
       | TOption t1, TOption t2 -> try_unify t1 t2 m1 m2
       | TMap (t1, t2), TMap (t3, t4) ->
@@ -298,7 +310,7 @@ let generalize ty =
     | TVar { contents = Unbound (name, l) } when l > !current_level ->
         { ty with typ = QVar name }
     | TVar { contents = Link ty } -> gen ty
-    | TVar _ | TBool | TInt _ | TNode | TEdge -> ty
+    | TVar _ | TBool | TInt _ | TNode | TEdge | TFloat -> ty
     | QVar q ->
         if_debug ("qvar " ^ Var.to_string q ^ " appears in generalization check");
         ty
@@ -331,7 +343,7 @@ let inst subst ty =
         if_debug ("found unbound tyvar " ^ Var.to_string name);
         try Env.lookup subst name
         with Env.Unbound_var x -> Console.error ("bad instantiation: " ^ x) )
-    | TBool | TInt _ | TNode | TEdge -> ty
+    | TBool | TInt _ | TNode | TEdge | TFloat -> ty
     | TArrow (ty1, ty2) ->
         let ty1 = loop subst ty1 in
         let ty2 = loop subst ty2 in
@@ -368,7 +380,7 @@ let substitute (ty : ty) : ty =
             map := Env.update !map name fty;
             fty
         | Some ty -> ty )
-    | TVar _ | TBool | TInt _ | TNode | TEdge -> ty
+    | TVar _ | TBool | TInt _ | TNode | TEdge | TFloat -> ty
     | TArrow (ty1, ty2) ->
         { ty with typ = TArrow (substitute_aux ty1, substitute_aux ty2) }
     | TTuple ts ->
@@ -400,13 +412,17 @@ let op_typ op =
   | ULeq size ->
       ( [ concrete @@ tint_of_size size; concrete @@ tint_of_size size ],
         concrete TBool )
+  | FAdd -> ([ concrete TFloat; concrete TFloat ], concrete TFloat)
+  | FDiv -> ([ concrete TFloat; concrete TFloat ], concrete TFloat)
   | NLess -> ([ concrete TNode; concrete TNode ], concrete TBool)
   | NLeq -> ([ concrete TNode; concrete TNode ], concrete TBool)
   | ELess -> ([ concrete TEdge; concrete TEdge ], concrete TBool)
   | ELeq -> ([ concrete TEdge; concrete TEdge ], concrete TBool)
+  | FLess -> ([ concrete TFloat; concrete TFloat ], concrete TBool)
+  | FLeq -> ([ concrete TFloat; concrete TFloat ], concrete TBool)
   | TGet _ -> failwith "internal error (op_typ): tuple op"
   (* Map operations *)
-  | MCreate | MGet | MSet | Eq ->
+  | MCreate | MGet | MSet | Eq | MMerge ->
       failwith
         (Printf.sprintf "(op_typ): %s should be handled elsewhere"
            (Printing.op_to_string op))
@@ -435,7 +451,7 @@ let tvalue (v, ty, span) = avalue (v, Some ty, span)
 let canonicalize_type (ty : ty) : ty =
   let rec aux ty map count =
     match ty.typ with
-    | TBool | TInt _ | TNode | TEdge -> (ty, map, count)
+    | TBool | TInt _ | TNode | TEdge | TFloat -> (ty, map, count)
     | TArrow (t1, t2) ->
         let t1', map, count = aux t1 map count in
         let t2', map, count = aux t2 map count in
@@ -501,6 +517,7 @@ let rec infer_value info env record_types (v : Syntax.value) : Syntax.value =
     match v.v with
     | VBool _ -> tvalue (v, concrete TBool, v.vspan)
     | VInt i -> tvalue (v, concrete (tint_of_value i), v.vspan)
+    | VFloat _ -> tvalue (v, concrete TFloat, v.vspan)
     | VNode _ -> tvalue (v, concrete TNode, v.vspan)
     | VEdge _ -> tvalue (v, concrete TEdge, v.vspan)
     | VTuple vs ->
@@ -815,10 +832,6 @@ and infer_declaration isHLL infer_exp i info env record_types d :
         let etyE =
           { typ = TMap (concrete TEdge, logE_aty); mode = Some Concrete }
         in
-        Printf.printf "%s, %s, %s\n"
-          (Printing.ty_to_string fwd_aty)
-          (Printing.ty_to_string logV_aty)
-          (Printing.ty_to_string logE_aty);
 
         ( Env.update (Env.update env varV etyV) varE etyE,
           DForward
@@ -880,6 +893,7 @@ module HLLTypeInf = struct
               let e1, mapty = infer_exp e1 |> textract in
               let e2, keyty = infer_exp e2 |> textract in
               let valvar = fresh_tyvar () in
+
               let keyMode, retMode =
                 match (get_inner_type mapty).typ with
                 | TMap (kty, vty) -> (get_mode kty, get_mode vty)
@@ -888,9 +902,11 @@ module HLLTypeInf = struct
                       (Printf.sprintf "Expected a map type, found %s instead"
                          (Printing.base_ty_to_string t))
               in
+
               let valty = mty retMode valvar in
               unify info e1 mapty
                 { typ = TMap (keyty, valty); mode = get_mode mapty };
+
               let argMode = get_mode keyty in
 
               (* check that key mode is concrete *)
@@ -953,6 +969,62 @@ module HLLTypeInf = struct
                       "map and map set arguments (key/val) have incompatible \
                        modes" )
               else failwith "Incompatible mode types for map set"
+          | MMerge, [ e1; e2; e3 ] ->
+              let e1, functy = infer_exp e1 |> textract in
+              let e2, mapty1 = infer_exp e2 |> textract in
+              let e3, mapty2 = infer_exp e3 |> textract in
+
+              let keyMode1, valueMode1 =
+                match (get_inner_type mapty1).typ with
+                | TMap (kty, vty) -> (get_mode kty, get_mode vty)
+                | _ -> failwith "Expected map type"
+              in
+
+              let keyMode2, valueMode2 =
+                match (get_inner_type mapty2).typ with
+                | TMap (kty, vty) -> (get_mode kty, get_mode vty)
+                | _ -> failwith "Expected map type"
+              in
+
+              let fargMode1, fargMode2, fresMode =
+                match (get_inner_type functy).typ with
+                | TArrow (targ1, ty2) -> (
+                    match (get_inner_type ty2).typ with
+                    | TArrow (targ2, tres) ->
+                        (get_mode targ1, get_mode targ2, get_mode tres)
+                    | _ -> failwith "Expected a function type" )
+                | _ -> failwith "Expected a function type"
+              in
+
+              (* Check that the map key and value are in concrete mode *)
+              if
+                keyMode1 = Some Concrete && valueMode1 = Some Concrete
+                && keyMode2 = Some Concrete && valueMode2 = Some Concrete
+                && fargMode1 = Some Concrete && fargMode2 = Some Concrete
+                && fresMode = Some Concrete
+              then (
+                let keyty = concrete @@ fresh_tyvar () in
+                let valty = concrete @@ fresh_tyvar () in
+                unify info e1 mapty1
+                  (mty (get_mode mapty1) (TMap (keyty, valty)));
+                unify info e2 mapty2
+                  (mty (get_mode mapty2) (TMap (keyty, valty)));
+                unify info e3 functy
+                  (concrete @@ TArrow (valty, concrete (TArrow (valty, valty))));
+
+                let resMode = join_opts (get_mode mapty1) (get_mode mapty2) in
+                match resMode with
+                | Some Concrete | Some Multivalue ->
+                    texp
+                      ( eop o [ e1; e2; e3 ],
+                        { mapty1 with mode = resMode },
+                        e.espan )
+                | _ ->
+                    Console.error_position info e.espan
+                      (Printf.sprintf "Missing or wrong mode for map combine") )
+              else
+                Console.error_position info e.espan
+                  (Printf.sprintf "Incompatible modes in map combine operation")
           | MCreate, [ e1 ] ->
               let e1, valty = infer_exp e1 |> textract in
               let keyty = concrete @@ fresh_tyvar () in
@@ -1054,10 +1126,10 @@ module HLLTypeInf = struct
 
           (* check that m1 = Concrete *)
           (* Printf.printf "ty_fun: %s\n\n" (Printing.ty_to_string ty_fun);
-             Printf.printf "for expr: %s\n" (Printing.exp_to_string e1); *)
-          (* Printf.printf "ty_fun: %s\n\n" (Printing.ty_to_string ty_fun);
+             Printf.printf "for expr: %s\n" (Printing.exp_to_string e1);
              Printf.printf "mode: %s\n\n"
                (Printing.mode_to_string (OCamlUtils.oget @@ get_mode fun_arg));
+             Printf.printf "ty_arg: %s\n\n" (Printing.ty_to_string fun_arg);
              Printf.printf "modeActual: %s\n\n"
                (Printing.mode_to_string (OCamlUtils.oget @@ fun_arg.mode)); *)
           assert (get_mode fun_arg = Some Concrete);
@@ -1294,6 +1366,9 @@ module HLLTypeInf = struct
     | PInt i ->
         unify info e tmatch (concrete (tint_of_value i));
         env
+    | PFloat _ ->
+        unify info e tmatch (concrete TFloat);
+        env
     | PNode _ ->
         unify info e tmatch (concrete TNode);
         env
@@ -1341,7 +1416,7 @@ module HLLTypeInf = struct
 
   and valid_pattern env p =
     match p with
-    | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ -> env
+    | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ | PFloat _ -> env
     | PVar x -> (
         match Env.lookup_opt env x with
         | None -> Env.update env x ()
@@ -1459,15 +1534,12 @@ module LLLTypeInf = struct
               | Some Concrete ->
                   (* Map-Get-C case *)
                   let valMode = get_mode mapty in
-                  (* check that the map is in Concrete mode, i.e. m is C *)
-                  if valMode = Some Concrete then
-                    texp
-                      ( eop o [ e1; e2 ],
-                        { vty with mode = Some Concrete },
-                        e.espan )
-                  else
-                    failwith
-                      "LLL: map-get-c cannot return a symbolic or multivalue"
+                  (* check that the map is in Concrete mode, i.e. m is C
+                     if valMode = Some Concrete then *)
+                  texp (eop o [ e1; e2 ], { vty with mode = valMode }, e.espan)
+                  (* else
+                     failwith
+                       "LLL: map-get-c cannot return a symbolic or multivalue" *)
               | Some Multivalue ->
                   (* Map-Get-M case *)
                   (* check that the map mode is Concrete *)
@@ -1505,6 +1577,62 @@ module LLLTypeInf = struct
                       e.espan )
                 else failwith "LLL: Map key and value set must be concrete." )
               else failwith "LLL: Map set, map must be concrete."
+          | MMerge, [ e1; e2; e3 ] ->
+              let _, functy = infer_exp e1 |> textract in
+              let _, mapty1 = infer_exp e2 |> textract in
+              let _, mapty2 = infer_exp e3 |> textract in
+
+              let keyMode1, valueMode1 =
+                match (get_inner_type mapty1).typ with
+                | TMap (kty, vty) -> (get_mode kty, get_mode vty)
+                | _ ->
+                    Console.error_position info e.espan
+                      (Printf.sprintf "Expected a map type")
+              in
+
+              let keyMode2, valueMode2 =
+                match (get_inner_type mapty2).typ with
+                | TMap (kty, vty) -> (get_mode kty, get_mode vty)
+                | _ ->
+                    Console.error_position info e.espan
+                      (Printf.sprintf "Expected a map type")
+              in
+
+              let fargMode1, fargMode2, fresMode =
+                match (get_inner_type functy).typ with
+                | TArrow (targ1, ty2) -> (
+                    match (get_inner_type ty2).typ with
+                    | TArrow (targ2, tres) ->
+                        (get_mode targ1, get_mode targ2, get_mode tres)
+                    | _ ->
+                        Console.error_position info e.espan
+                          (Printf.sprintf "Expected a function type") )
+                | _ ->
+                    Console.error_position info e.espan
+                      (Printf.sprintf "Expected a function type")
+              in
+
+              (* Check that the map key and value are in concrete mode *)
+              if
+                keyMode1 = Some Concrete && valueMode1 = Some Concrete
+                && keyMode2 = Some Concrete && valueMode2 = Some Concrete
+                && fargMode1 = Some Concrete && fargMode2 = Some Concrete
+                && fresMode = Some Concrete
+                && get_mode mapty1 = get_mode mapty2
+              then (
+                let keyty = concrete @@ fresh_tyvar () in
+                let valty = concrete @@ fresh_tyvar () in
+                unify info e1 mapty1
+                  (mty (get_mode mapty1) (TMap (keyty, valty)));
+                unify info e2 mapty2
+                  (mty (get_mode mapty2) (TMap (keyty, valty)));
+                unify info e3 functy
+                  (concrete @@ TArrow (valty, concrete (TArrow (valty, valty))));
+
+                texp (eop o [ e1; e2; e3 ], mapty1, e.espan) )
+              else
+                Console.error_position info e.espan
+                  (Printf.sprintf "Incompatible modes in map combine operation")
           | MCreate, [ e1 ] -> (
               let _, valty = e1 |> textract in
               match OCamlUtils.oget e.ety with
@@ -1724,7 +1852,12 @@ module LLLTypeInf = struct
           (* Printf.printf "toBdd: %s\n"
              (Printing.exp_to_string ~show_types:true e1); *)
           match get_mode ty1 with
-          | Some Concrete -> etoBdd e1
+          | Some Concrete ->
+              if canBeSymbolic ty1 then etoBdd e1
+              else
+                Console.error_position info e.espan
+                  (Printf.sprintf "Type %s is not compatible with Symbolic mode"
+                     (Printing.ty_to_string ty1))
           | _ ->
               Console.error_position info e.espan
                 "ToBdd applied to non concrete expression" )
@@ -1816,6 +1949,9 @@ module LLLTypeInf = struct
     | PInt i ->
         unify info e tmatch (concrete (tint_of_value i));
         env
+    | PFloat _ ->
+        unify info e tmatch (concrete TFloat);
+        env
     | PNode _ ->
         unify info e tmatch (concrete TNode);
         env
@@ -1863,7 +1999,7 @@ module LLLTypeInf = struct
 
   and valid_pattern env p =
     match p with
-    | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ -> env
+    | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ | PFloat _ -> env
     | PVar x -> (
         match Env.lookup_opt env x with
         | None -> Env.update env x ()

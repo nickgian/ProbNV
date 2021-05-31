@@ -51,7 +51,7 @@ let parse_input (args : string array) =
   (* Note! Must rename before inling otherwise inling is unsound *)
   let decls, f = Renaming.alpha_convert_declarations decls in
   (* Printf.printf "Printing type checked program\n\n%s\n\n"
-     (ProbNv_lang.Printing.declarations_to_string ~show_types:true decls); *)
+     (ProbNv_lang.Printing.declarations_to_string ~show_types:false decls); *)
   let fs = f :: fs in
   (* inlining definitions *)
   let decls =
@@ -67,7 +67,7 @@ let parse_input (args : string array) =
   (* Translate the program to LLL *)
   let decls = Translate.translate_declarations info decls in
   (* Printf.printf "Printing translated program\n\n%s"
-     (ProbNv_lang.Printing.declarations_to_string ~show_types:true decls); *)
+     (ProbNv_lang.Printing.declarations_to_string ~show_types:false decls); *)
   (* Type check the LLL program *)
   (* Printf.printf "LLL type checking after translation \n"; *)
   let decls = Typing.LLLTypeInf.infer_declarations info decls in

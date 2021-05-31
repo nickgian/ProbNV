@@ -11,7 +11,7 @@ module TypeMap = BetterMap.Make (struct
 
   let compare = compare
 
-  let to_string = Printing.ty_to_string
+  let to_string = Printing.ty_to_string ~show_modes:false
 end)
 
 module ValueSet = BetterSet.Make (struct
@@ -69,7 +69,7 @@ module BaseTypeMap = BetterMap.Make (struct
 
   let compare = compareBase
 
-  let to_string = Printing.ty_to_string
+  let to_string = Printing.ty_to_string ~show_modes:false
 end)
 
 module TypeIds = ArrayIdMake (TypeMap)

@@ -6,11 +6,11 @@ val op_to_string : Syntax.op -> string
 
 val tyvar_to_string : Syntax.tyvar -> string
 
-val ty_to_string : Syntax.ty -> string
+val ty_to_string : ?show_modes:bool -> Syntax.ty -> string
 
 val mode_to_string : Syntax.mode -> string
 
-val base_ty_to_string : Syntax.baseTy -> string
+val base_ty_to_string : ?show_modes:bool -> Syntax.baseTy -> string
 
 val value_to_string : ?show_types:bool -> Syntax.value -> string
 

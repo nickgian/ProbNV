@@ -15,7 +15,7 @@ let is_function_ty e =
 
 let rec has_var p x =
   match p with
-  | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ -> false
+  | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ | PFloat _ -> false
   | PVar y -> Var.equals x y
   | PEdge (p1, p2) -> has_var p1 x || has_var p2 x
   | PTuple ps -> BatList.exists (fun p -> has_var p x) ps
@@ -29,7 +29,7 @@ let rec has_var p x =
 
 let rec remove_all env p =
   match p with
-  | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ -> env
+  | PWild | PBool _ | PInt _ | PNode _ | PEdgeId _ | PFloat _ -> env
   | PVar x -> Env.remove env x
   | PEdge (p1, p2) -> remove_all env (PTuple [ p1; p2 ])
   | PTuple ps -> BatList.fold_left (fun acc p -> remove_all acc p) env ps
@@ -259,7 +259,7 @@ let rec getReturnType ty =
 let inline_multivalue_declarations (ds : declarations) =
   let rec cond ty =
     match ty.typ with
-    | TInt _ | TBool | TEdge | TNode -> false
+    | TInt _ | TBool | TEdge | TNode | TFloat -> false
     | TTuple ts ->
         (* If one of the tuple elements needs to be inlined *)
         List.exists (fun t -> cond t) ts

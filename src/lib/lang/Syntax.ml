@@ -58,6 +58,7 @@ type baseTy =
   | QVar of tyname
   | TBool
   | TInt of bitwidth
+  | TFloat
   | TNode
   | TEdge
   | TArrow of ty * ty
@@ -83,6 +84,7 @@ type pattern =
   | PVar of var
   | PBool of bool
   | PInt of Integer.t
+  | PFloat of float
   | PTuple of pattern list
   | POption of pattern option
   | PRecord of pattern StringMap.t
@@ -96,7 +98,7 @@ module Pat = struct
 
   let rec isConcretePat p =
     match p with
-    | PInt _ | PBool _ | PNode _ -> true
+    | PInt _ | PBool _ | PNode _ | PFloat _ -> true
     | POption None -> true
     | PEdge (p1, p2) -> isConcretePat p1 && isConcretePat p2
     | POption (Some p) -> isConcretePat p
@@ -109,6 +111,7 @@ module Pat = struct
     | PInt n1, PInt n2 -> Pervasives.compare n1 n2
     | PBool b1, PBool b2 -> Pervasives.compare b1 b2
     | PNode n1, PNode n2 -> Pervasives.compare n1 n2
+    | PFloat f1, PFloat f2 -> Float.compare f1 f2
     | PEdge (p1, p2), PEdge (p1', p2') -> Pervasives.compare (p1, p2) (p1', p2')
     | POption (Some p1), POption (Some p2) -> compare p1 p2
     | POption None, POption None -> 0
@@ -137,13 +140,18 @@ type op =
   | UAdd of bitwidth
   | ULess of bitwidth
   | ULeq of bitwidth
+  | FAdd
+  | FDiv
   | NLess
   | NLeq
+  | FLess
+  | FLeq
   | ELess
   | ELeq
   | MGet
   | MSet
   | MCreate
+  | MMerge
   | TGet of int (* index *) * int (* size *)
   (* Low-Level Language BDD operations *)
   | BddAnd
@@ -161,6 +169,7 @@ type edgeValues = | Raw of (node * node) | EdgeId of int
 type v =
   | VBool of bool
   | VInt of Integer.t
+  | VFloat of float
   | VNode of node
   | VEdge of edgeValues
   | VTuple of value list
@@ -285,7 +294,7 @@ type declarations = declaration list
 let rec is_irrefutable pat =
   match pat with
   | PWild | PVar _ -> true
-  | PBool _ | PInt _ | PNode _ | PEdge _ | POption _ | PEdgeId _ -> false
+  | PBool _ | PInt _ | PNode _ | PEdge _ | POption _ | PEdgeId _ | PFloat _ -> false
   | PTuple pats -> List.for_all is_irrefutable pats
   | PRecord map -> StringMap.for_all (fun _ p -> is_irrefutable p) map
 
@@ -367,7 +376,7 @@ let rec equal_lists eq_elts lst1 lst2 =
 
 let rec equal_base_tys ty1 ty2 =
   match (ty1, ty2) with
-  | TBool, TBool | TNode, TNode | TEdge, TEdge -> true
+  | TBool, TBool | TNode, TNode | TEdge, TEdge | TFloat, TFloat -> true
   | TInt n1, TInt n2 -> n1 = n2
   | TArrow (t1, t2), TArrow (s1, s2) -> equal_tys t1 s1 && equal_tys t2 s2
   | TOption ty1, TOption ty2 -> equal_tys ty1 ty2
@@ -381,7 +390,7 @@ let rec equal_base_tys ty1 ty2 =
   | TRecord map1, TRecord map2 -> StringMap.equal equal_tys map1 map2
   | TMap (t1, t2), TMap (s1, s2) -> equal_tys t1 s1 && equal_tys t2 s2
   | ( ( TBool | TNode | TEdge | TInt _ | TArrow _ | TVar _ | QVar _ | TTuple _
-      | TMap _ | TOption _ | TRecord _ ),
+      | TMap _ | TOption _ | TRecord _ | TFloat ),
       _ ) ->
       false
 
@@ -399,6 +408,7 @@ and equal_vs ~cmp_meta v1 v2 =
   | VNode n1, VNode n2 -> n1 = n2
   | VEdge e1, VEdge e2 -> e1 = e2
   | VInt i1, VInt i2 -> Integer.equal i1 i2
+  | VFloat f1, VFloat f2 -> Float.equal f1 f2
   | VTuple vs1, VTuple vs2 -> equal_lists ~cmp_meta vs1 vs2
   | VClosure (e1, f1), VClosure (e2, f2) ->
       let { ty = ty1; value = value1 } = e1 in
@@ -416,7 +426,7 @@ and equal_vs ~cmp_meta v1 v2 =
   | VRecord map1, VRecord map2 ->
       StringMap.equal (equal_values ~cmp_meta) map1 map2
   | ( ( VBool _ | VNode _ | VEdge _ | VInt _ | VClosure _ | VTotalMap _
-      | VTuple _ | VOption _ | VRecord _ ),
+      | VTuple _ | VOption _ | VRecord _ | VFloat _ ),
       _ ) ->
       false
 
@@ -524,6 +534,7 @@ and equal_patterns p1 p2 =
   | PVar x1, PVar x2 -> Var.equals x1 x2
   | PBool b1, PBool b2 -> b1 = b2
   | PInt i, PInt j -> Integer.equal i j
+  | PFloat f1, PFloat f2 -> Float.equal f1 f2
   | PTuple ps1, PTuple ps2 -> equal_patterns_list ps1 ps2
   | POption None, POption None -> true
   | POption (Some p1), POption (Some p2) -> equal_patterns p1 p2
@@ -540,86 +551,6 @@ and equal_patterns_list ps1 ps2 =
   | _ :: _, [] | [], _ :: _ -> false
   | p1 :: ps1, p2 :: ps2 -> equal_patterns p1 p2 && equal_patterns_list ps1 ps2
 
-let hash_string str =
-  let acc = ref 7 in
-  for i = 0 to String.length str - 1 do
-    let c : char = str.[i] in
-    acc := (31 * !acc) + int_of_char c
-  done;
-  !acc
-
-let rec hash_ty ty =
-  match ty.typ with
-  | TVar tyvar -> (
-      match !tyvar with
-      | Unbound (name, x) -> hash_string (Var.to_string name) + x
-      | Link t -> hash_ty t )
-  | QVar name -> 3 + hash_string (Var.to_string name)
-  | TBool -> 4
-  | TInt _ -> 5
-  | TArrow (ty1, ty2) -> 6 + hash_ty ty1 + hash_ty ty2
-  | TTuple ts -> List.fold_left (fun acc t -> acc + hash_ty t) 0 ts + 7
-  | TOption t -> 8 + hash_ty t
-  | TMap (ty1, ty2) -> 9 + hash_ty ty1 + hash_ty ty2
-  | TNode -> 12
-  | TEdge -> 13
-  | TRecord map ->
-      StringMap.fold (fun l t acc -> acc + hash_string l + hash_ty t) map 0 + 10
-
-let hash_span (span : Span.t) = (19 * span.start) + span.finish
-
-let hash_opt h o = match o with None -> 1 | Some x -> (19 * h x) + 2
-
-let hash_string str =
-  let acc = ref 7 in
-  for i = 0 to String.length str - 1 do
-    let c : char = str.[i] in
-    acc := (31 * !acc) + int_of_char c
-  done;
-  !acc
-
-let hash_map vdd = Mtbddc.size vdd
-
-let rec hash_value ~hash_meta v : int =
-  let m =
-    if hash_meta then (19 * hash_opt hash_ty v.vty) + hash_span v.vspan else 0
-  in
-  (19 * hash_v ~hash_meta v.v) + m
-
-and hash_v ~hash_meta v =
-  match v with
-  | VBool b -> if b then 1 else 0
-  | VInt i -> (19 * Integer.to_int i) + 1
-  | VNode n -> (19 * n) + 9
-  | VEdge (Raw (u,v)) -> (19 * (u * v)) + 10
-  | VEdge (EdgeId e) -> (19 * e) + 10
-  | VTuple vs ->
-      let acc =
-        List.fold_left (fun acc v -> acc + hash_value ~hash_meta v) 0 vs
-      in
-      (19 * acc) + 3
-  | VOption vo -> (
-      match vo with None -> 4 | Some x -> (19 * hash_value ~hash_meta x) + 4 )
-  | VClosure (e1, _) ->
-      let { ty = _; value = v } = e1 in
-      let vs = Env.to_list v in
-      let acc =
-        List.fold_left
-          (fun acc (x, v) ->
-            let x = hash_string (Var.to_string x) in
-            acc + x + hash_value ~hash_meta v)
-          0 vs
-      in
-      (19 * acc) + 5
-  | VTotalMap (m, _) -> (19 * hash_map m) + 2
-  | VRecord map ->
-      let acc =
-        StringMap.fold
-          (fun l v acc -> acc + hash_string l + hash_value ~hash_meta v)
-          map 0
-      in
-      (19 * acc) + 7
-
 (* Utilities *)
 
 let arity op =
@@ -627,11 +558,13 @@ let arity op =
   | And | Or -> 2
   | Not -> 1
   | UAdd _ -> 2
+  | FAdd | FDiv -> 2
   | Eq -> 2
-  | ULess _ | ULeq _ | NLeq | NLess | ELess | ELeq -> 2
+  | ULess _ | ULeq _ | NLeq | NLess | ELess | ELeq | FLess | FLeq -> 2
   | MCreate -> 1
   | MGet -> 2
   | MSet -> 3
+  | MMerge -> 3
   | TGet _ -> 1
   | BddAdd _ | BddAnd | BddOr | BddEq | BddLess _ | BddLeq _ -> 2
   | BddNot -> 1
@@ -671,6 +604,8 @@ let vedge e = value (VEdge (EdgeId e))
 let vedgeRaw e = value (VEdge (Raw e))
 
 let vint i = value (VInt i)
+
+let vfloat f = value (VFloat f)
 
 let vtuple vs = value (VTuple vs)
 
@@ -735,7 +670,8 @@ let rec liftSymbolicTy ty =
         typ = TOption (liftSymbolicTy ty);
         mode = Some (liftSymbolicMode (OCamlUtils.oget ty.mode));
       }
-  | TMap (_, _) | TArrow (_, _) -> failwith "Cannot lift to symbolic"
+  | TMap (_, _) | TArrow (_, _) | TFloat -> 
+      failwith "Cannot lift to symbolic"
 
 let etoBdd e1 =
   let e1' = exp (EToBdd e1) in
@@ -753,7 +689,7 @@ let rec liftMultiTy ty =
   match ty.typ with
   | TVar { contents = Link typ } -> liftMultiTy typ
   | TVar _ | QVar _ -> failwith "Should be an instantiated type"
-  | TBool | TInt _ | TNode | TEdge ->
+  | TBool | TInt _ | TNode | TEdge | TFloat ->
       { ty with mode = Some (liftMultiMode (OCamlUtils.oget ty.mode)) }
   | TTuple ts ->
       {
@@ -781,7 +717,7 @@ let rec liftTy m ty =
   match ty.typ with
   | TVar { contents = Link typ } -> liftTy m typ
   | TVar _ | QVar _ -> ty
-  | TBool | TInt _ | TNode | TEdge ->
+  | TBool | TInt _ | TNode | TEdge | TFloat ->
       { ty with mode = Some (liftMode m (OCamlUtils.oget ty.mode)) }
   | TTuple ts ->
       {
@@ -914,6 +850,11 @@ let rec join_ty ty1 ty2 =
   match (ty1.typ, ty2.typ) with
   | TInt sz1, TInt sz2 when sz1 = sz2 ->
       { ty1 with mode = join_opts ty1.mode ty2.mode }
+  | TFloat, TFloat ->
+      let m = join_opts ty1.mode ty2.mode in
+      if (not (m = Some Symbolic)) then
+        { ty1 with mode = m}
+      else failwith "Float cannot be of symbolic mode"
   | TBool, TBool | TNode, TNode | TEdge, TEdge ->
       { ty1 with mode = join_opts ty1.mode ty2.mode }
   | TOption tyo1, TOption tyo2 ->
@@ -970,6 +911,7 @@ let rec join_ty ty1 ty2 =
   | TOption _, _
   | TRecord _, _
   | TEdge, _
+  | TFloat, _
   | TNode, _ ->
       failwith "Cannot join the given types"
 
@@ -1007,3 +949,70 @@ let create_topology_mapping nodes topology =
       topology IntMap.empty;
   node_mapping :=
     List.fold_left (fun acc (uid, u) -> IntMap.add uid u acc) IntMap.empty nodes
+
+
+(* Hashing values for MTBDDs *)
+
+let hash_span (span : Span.t) = (19 * span.start) + span.finish
+let hash_opt h o = match o with None -> 1 | Some x -> (19 * h x) + 2
+let rec hash_ty ty =
+  match ty.typ with
+  | TVar tyvar -> (
+      match !tyvar with
+      | Unbound (name, x) -> Hashtbl.hash (Var.to_string name) + x
+      | Link t -> hash_ty t )
+  | QVar name -> 3 + Hashtbl.hash (Var.to_string name)
+  | TBool -> 4
+  | TInt _ -> 5
+  | TArrow (ty1, ty2) -> 6 + hash_ty ty1 + hash_ty ty2
+  | TTuple ts -> List.fold_left (fun acc t -> acc + hash_ty t) 0 ts + 7
+  | TOption t -> 8 + hash_ty t
+  | TMap (ty1, ty2) -> 9 + hash_ty ty1 + hash_ty ty2
+  | TNode -> 12
+  | TEdge -> 13
+  | TFloat -> 14
+  | TRecord map ->
+      StringMap.fold (fun l t acc -> acc + Hashtbl.hash l + hash_ty t) map 0 + 10
+
+  let hash_map vdd = Hashtbl.hash vdd
+
+let rec hash_value ~hash_meta v : int =
+  let m =
+    if hash_meta then (19 * hash_opt hash_ty v.vty) + hash_span v.vspan else 0
+  in
+  (19 * hash_v ~hash_meta v.v) + m
+
+and hash_v ~hash_meta v =
+  match v with
+  | VBool b -> if b then 1 else 0
+  | VInt i -> (19 * Integer.to_int i) + 1
+  | VFloat i -> (19 * (int_of_float i) + 2)
+  | VNode n -> (19 * n) + 9
+  | VEdge (Raw (e1, e2)) -> (19 * (e1 + (19 * e2))) + 10
+  | VEdge (EdgeId n) -> (19 * n) + 10
+  | VTuple vs ->
+      let acc =
+        List.fold_left (fun acc v -> acc + hash_value ~hash_meta v) 0 vs
+      in
+      (19 * acc) + 3
+  | VOption vo -> (
+      match vo with None -> 4 | Some x -> (19 * hash_value ~hash_meta x) + 4 )
+  | VClosure (e1, _) ->
+      let { ty = _; value = v } = e1 in
+      let vs = Env.to_list v in
+      let acc =
+        List.fold_left
+          (fun acc (x, v) ->
+            let x = Hashtbl.hash (Var.to_string x) in
+            acc + x + hash_value ~hash_meta v)
+          0 vs
+      in
+      (19 * acc) + 5
+  | VTotalMap (m, _) -> (19 * hash_map m) + 2
+  | VRecord map ->
+      let acc =
+        StringMap.fold
+          (fun l v acc -> acc + Hashtbl.hash l + hash_value ~hash_meta v)
+          map 0
+      in
+      (19 * acc) + 7
