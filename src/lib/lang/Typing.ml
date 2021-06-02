@@ -977,7 +977,10 @@ module HLLTypeInf = struct
               let keyMode1, valueMode1 =
                 match (get_inner_type mapty1).typ with
                 | TMap (kty, vty) -> (get_mode kty, get_mode vty)
-                | _ -> failwith "Expected map type"
+                | ty ->
+                    Console.error_position info e.espan
+                      (Printf.sprintf "Expected a map type but got %s instead"
+                         (Printing.base_ty_to_string ty))
               in
 
               let keyMode2, valueMode2 =
