@@ -268,6 +268,15 @@ let concat_map f l =
   in
   aux f [] l
 
+let generateAllSymbolicsMemoized :
+    ((Cudd.Man.tbool list * ProbNv_lang.Syntax.ty)
+     ProbNv_lang.Collections.StringMap.t
+     * Cudd.Man.v Cudd.Bdd.t ->
+    symbolicAssignments)
+    option
+    ref =
+  ref None
+
 (* TODO: generateSatFast should compute a set of assignments to symbolic values. *)
 let generateSatFast (phi : Cudd.Man.v Cudd.Bdd.t) bounds =
   (* Compute the assignments for the full BDD *)
@@ -348,7 +357,12 @@ let generateSatFast (phi : Cudd.Man.v Cudd.Bdd.t) bounds =
           combo
   in
   let generateAllSymbolics =
-    memoize2 () generateAllSymbolics generateOneSymbolic
+    match !generateAllSymbolicsMemoized with
+    | None ->
+        let f = memoize2 () generateAllSymbolics generateOneSymbolic in
+        generateAllSymbolicsMemoized := Some f;
+        f
+    | Some f -> f
   in
   generateAllSymbolics (Collections.StringMap.empty, phi)
 
@@ -487,8 +501,12 @@ symbolic *)
 let isNextSymbolic dd end_var =
   match Bdd.inspect dd with Bool _ -> false | Ite (i, _, _) -> i > end_var
 
+let computeTrueProbMemoized : (Cudd.Man.v Cudd.Bdd.t -> float) option ref =
+  ref None
+
 (* Algorithm currently used to compute probability of an assertion being true *)
-let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds distrs cond =
+let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds distrs cond
+    counterexample =
   (* Compute the probability of the full BDD *)
   let rec computeProb _ probSymbolic guard =
     match Bdd.inspect guard with
@@ -570,19 +588,29 @@ let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds distrs cond =
                  +. self (e, i + 1, end_var, distr) ) )
   in
   let trueBdd = Mtbddc.guard_of_leaf tbl assertion true in
-  let computeProbMem = memoize2 () computeProb probSymbolic in
+  let computeProbMem =
+    match !computeTrueProbMemoized with
+    | None ->
+        let f = memoize2 () computeProb probSymbolic in
+        computeTrueProbMemoized := Some f;
+        f
+    | Some f -> f
+  in
   match cond with
   | None ->
-      ( computeProbMem trueBdd,
-        symbolicAssignmentsToSvalues
-        @@ generateSatFast (Bdd.dnot trueBdd) distrs )
+      let cprob = computeProbMem trueBdd in
+      ( cprob,
+        if counterexample && cprob < 1.0 then
+          symbolicAssignmentsToSvalues
+          @@ generateSatFast (Bdd.dnot trueBdd) distrs
+        else [] )
   | Some c ->
       let intersection = Bdd.dand trueBdd c in
       let intersectionProb = computeProbMem intersection in
       let cprob = computeProbMem c in
       (* Printf.printf "inter: %5f, %5f\n" intersection cprob; *)
       ( intersectionProb /. cprob,
-        if cprob < 1.0 then
+        if counterexample && cprob < 1.0 then
           (* generateSat (Bdd.dand c (Bdd.dnot trueBdd)) bounds; *)
           symbolicAssignmentsToSvalues
           @@ generateSatFast (Bdd.dand c (Bdd.dnot trueBdd)) distrs

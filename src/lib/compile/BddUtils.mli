@@ -55,6 +55,7 @@ val computeTrueProbability :
   symbolic_var list ->
   symbolic_var BatMap.Int.t ->
   Cudd.Man.v Cudd.Bdd.t option ->
+  bool ->
   float * ProbNv_lang.Syntax.svalue ProbNv_lang.Collections.StringMap.t list
 
 (* val computeTrueProbabilityBDD :aa

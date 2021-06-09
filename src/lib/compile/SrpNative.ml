@@ -1002,7 +1002,7 @@ let build_forwarding record_fns fwd =
 (* Two modes of computation until we implement fast prob for all type of symbolics *)
 let check_assertion
     ((name, a, cond) : string * bool Cudd.Mtbddc.t * BddFunc.t option)
-    symbolic_bounds distrs =
+    symbolic_bounds distrs counterexample =
   let cond =
     match cond with
     | Some (BBool b) -> Some b
@@ -1011,7 +1011,7 @@ let check_assertion
   in
   (* let prob' = BddUtils.computeTrueProbabilityOld *)
   let prob, counterExample =
-    BddUtils.computeTrueProbability a symbolic_bounds distrs cond
+    BddUtils.computeTrueProbability a symbolic_bounds distrs cond counterexample
   in
   (name, prob, counterExample)
 
@@ -1026,13 +1026,14 @@ let build_solutions nodes record_fns (fwd : unit Solution.forwardSolutions list)
 
   let symbolic_bounds = List.rev !BddUtils.vars_list in
   let distrs = BddUtils.createDistributionMap symbolic_bounds in
+  let cfg = Cmdline.get_cfg () in
   {
     assertions =
       Profile.time_profile "Time to check assertions" (fun () ->
           List.map
             (fun a ->
               (* TODO: generateSat when a counterexample is required *)
-              check_assertion a symbolic_bounds distrs)
+              check_assertion a symbolic_bounds distrs cfg.counterexample)
             assertions);
     solves =
       List.map
