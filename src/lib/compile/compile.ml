@@ -103,7 +103,7 @@ let build_constructors () =
 let is_prefix_op op =
   match op with
   | BddAnd | BddOr | BddAdd _ | BddNot | BddLess _ | BddLeq _ | BddEq | MGet
-  | MCreate | MSet | TGet _ | MMerge ->
+  | MCreate | MSet | MSize | TGet _ | MMerge ->
       true
   | And | Or | Not | UAdd _ | Eq | ULess _ | ULeq _ | NLess | NLeq | ELess
   | FLess | FLeq | ELeq | FAdd | FDiv ->
@@ -128,7 +128,7 @@ let op_to_ocaml_string op =
   | NLess | ELess -> "<"
   | NLeq | ELeq -> "<="
   | BddAnd | BddOr | BddNot | BddEq | BddAdd _ | BddLess _ | BddLeq _ | MGet
-  | MSet | MCreate | TGet _ | MMerge ->
+  | MSet | MCreate | TGet _ | MMerge | MSize ->
       failwith
         ( "Operation: " ^ Printing.op_to_string op
         ^ ", prefix operations are handled elsewhere" )
@@ -475,6 +475,10 @@ and prefix_op_to_ocaml_string op es ty =
           Printf.sprintf
             "(Obj.magic (BddMap.find record_fns (%s) (Obj.magic (%s))))"
             (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
+      | MSize ->
+          Printf.sprintf
+            "(Obj.magic (BddMap.cardinality (%s) (Obj.magic (%s))))"
+            (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
       | MSet | MCreate | MMerge ->
           failwith "Wrong number of arguments to MSet/MCreate/MMerge operation"
       | Eq | UAdd _ | ULess _ | NLess | ULeq _ | NLeq | ELess | ELeq | And | Or
@@ -498,8 +502,8 @@ and prefix_op_to_ocaml_string op es ty =
             op_key_var op_key op_key_var (exp_to_ocaml_string e1)
             (exp_to_ocaml_string e2) (exp_to_ocaml_string e3)
       | And | Or | Not | Eq | NLess | NLeq | ELess | ELeq | MGet | MCreate
-      | BddAnd | BddOr | BddNot | BddEq | UAdd _ | ULess _ | ULeq _ | BddAdd _
-      | BddLess _ | BddLeq _ | TGet _ | FAdd | FDiv | FLess | FLeq ->
+      | MSize | BddAnd | BddOr | BddNot | BddEq | UAdd _ | ULess _ | ULeq _
+      | BddAdd _ | BddLess _ | BddLeq _ | TGet _ | FAdd | FDiv | FLess | FLeq ->
           failwith "Wrong number of arguments to operation." )
   | _ -> failwith "too many arguments to operation"
 
@@ -545,7 +549,7 @@ let compile_decl decl =
       let dist_id = Collections.DistrIds.fresh_id distr_store dist in
       Printf.sprintf "let %s = BddFunc.create_value \"%s\" %d %d SIM.graph\n"
         (varname x) (varname x) dist_id ty_id
-  | DLet (x, e) ->
+  | DLet (x, e, _) ->
       Printf.sprintf "let %s = %s" (varname x) (exp_to_ocaml_string e)
   | DInfer (name, e, cond) ->
       let cond' =

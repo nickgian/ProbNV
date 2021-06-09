@@ -150,7 +150,7 @@ let rec check_annot (e : exp) =
 
 let check_annot_decl (d : declaration) =
   match d with
-  | DLet (_, e) | DInfer (_, e, _) -> check_annot e
+  | DLet (_, e, _) | DInfer (_, e, _) -> check_annot e
   | DSolve { var_names; init; trans; merge; _ } ->
       check_annot var_names;
       check_annot init;
@@ -422,7 +422,7 @@ let op_typ op =
   | FLeq -> ([ concrete TFloat; concrete TFloat ], concrete TBool)
   | TGet _ -> failwith "internal error (op_typ): tuple op"
   (* Map operations *)
-  | MCreate | MGet | MSet | Eq | MMerge ->
+  | MCreate | MGet | MSet | Eq | MMerge | MSize ->
       failwith
         (Printf.sprintf "(op_typ): %s should be handled elsewhere"
            (Printing.op_to_string op))
@@ -613,7 +613,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
   let infer_exp = infer_exp (i + 1) info env record_types in
   let open ProbNv_utils.OCamlUtils in
   match d with
-  | DLet (x, e1) when isHLL ->
+  | DLet (x, e1, inline) when isHLL ->
       enter_level ();
 
       let e1, ty_e1 = infer_exp e1 |> textract in
@@ -621,10 +621,10 @@ and infer_declaration isHLL infer_exp i info env record_types d :
          (Printing.ty_to_string ty_e1); *)
       leave_level ();
       let ty = generalize ty_e1 in
-      (Env.update env x ty, DLet (x, texp (e1, ty, e1.espan)))
-  | DLet (x, e1) ->
+      (Env.update env x ty, DLet (x, texp (e1, ty, e1.espan), inline))
+  | DLet (x, e1, inline) ->
       let e1, ty_e1 = infer_exp e1 |> textract in
-      (Env.update env x ty_e1, DLet (x, texp (e1, ty_e1, e1.espan)))
+      (Env.update env x ty_e1, DLet (x, texp (e1, ty_e1, e1.espan), inline))
   | DSymbolic (x, ty, prob) -> (Env.update env x ty, DSymbolic (x, ty, prob))
   | DInfer (name, e, cond) -> (
       let e' = infer_exp e in
@@ -962,13 +962,16 @@ module HLLTypeInf = struct
                           ( eop o [ e1; e2; e3 ],
                             { mapty with mode = m },
                             e.espan )
-                    | _ -> failwith "resulting mode for map set is unsupported"
-                    )
+                    | _ ->
+                        Console.error_position info e.espan
+                          (Printf.sprintf "Map cannot be symbolic") )
                 | _ ->
-                    failwith
+                    Console.error_position info e.espan
                       "map and map set arguments (key/val) have incompatible \
                        modes" )
-              else failwith "Incompatible mode types for map set"
+              else
+                Console.error_position info e.espan
+                  "Incompatible mode types for map set"
           | MMerge, [ e1; e2; e3 ] ->
               let e1, functy = infer_exp e1 |> textract in
               let e2, mapty1 = infer_exp e2 |> textract in
@@ -986,7 +989,7 @@ module HLLTypeInf = struct
               let keyMode2, valueMode2 =
                 match (get_inner_type mapty2).typ with
                 | TMap (kty, vty) -> (get_mode kty, get_mode vty)
-                | _ -> failwith "Expected map type"
+                | _ -> Console.error_position info e.espan "Expected map type"
               in
 
               let fargMode1, fargMode2, fresMode =
@@ -1040,6 +1043,30 @@ module HLLTypeInf = struct
                     mode = m;
                   },
                   e.espan )
+          | MSize, [ e1; e2 ] -> (
+              let e1, mapty = infer_exp e1 |> textract in
+              let e2, valty = infer_exp e2 |> textract in
+              let keyty = concrete @@ fresh_tyvar () in
+
+              unify info e mapty { mapty with typ = TMap (keyty, valty) };
+
+              let argMode = get_mode valty in
+              let mapMode = get_mode mapty in
+
+              let vty =
+                match (get_inner_type mapty).typ with
+                | TMap (_, vty) -> vty
+                | _ -> Console.error_position info e.espan "Expected a map type"
+              in
+              let valMode = get_mode vty in
+              match valMode with
+              | Some Concrete ->
+                  texp
+                    ( eop o [ e1; e2 ],
+                      { typ = TFloat; mode = join_opts mapMode argMode },
+                      e.espan )
+              | _ ->
+                  Console.error_position info e.espan "Map cannot be symbolic" )
           | TGet (idx, _), [ e1 ] -> (
               (* we don't need to do inference here, because this operation
                  is not exposed to the user so type inference will
@@ -1652,6 +1679,37 @@ module LLLTypeInf = struct
                         e.espan )
                   else failwith "Mode mismatch in MCreate"
               | _ -> failwith "Type mismatch in MCreate" )
+          | MSize, [ e1; e2 ] -> (
+              let _, mapty = e1 |> textract in
+              let _, valty = e2 |> textract in
+
+              let kty, vty =
+                match (get_inner_type mapty).typ with
+                | TMap (kty, vty) -> (kty, vty)
+                | _ -> failwith "Expected a map type"
+              in
+
+              (* Check that the value type matches *)
+              unify info e2 vty valty;
+
+              let argMode = get_mode valty in
+
+              (* check that key and arg mode is concrete *)
+              if get_mode kty = Some Concrete && get_mode vty = Some Concrete
+              then ()
+              else
+                Console.error_position info e.espan
+                  "Non concrete key or value mode in map";
+
+              let mapMode = get_mode mapty in
+              match mapMode with
+              | Some Concrete | Some Multivalue ->
+                  texp
+                    ( eop o [ e1; e2 ],
+                      { typ = TFloat; mode = join_opts mapMode argMode },
+                      e.espan )
+              | _ ->
+                  Console.error_position info e.espan "Map cannot be symbolic" )
           | TGet (idx, _), [ e1 ] -> (
               (* we don't need to do inference here, because this operation
                   is not exposed to the user so type inference will

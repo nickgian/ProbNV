@@ -22,8 +22,8 @@ type 'a forwardSolutions = {
 type t = {
   solves : (var * sol) list;
   forwarding : value forwardSolutions list;
-  assertions : (string * float) list;
-  (* One for each assert statement, name * probability assertion holds *)
+  assertions : (string * float * svalue Collections.StringMap.t list) list;
+  (* One for each assert statement: name, probability assertion holds,  *)
   nodes : int * string IntMap.t;
 }
 
@@ -65,6 +65,18 @@ let print_fun_edge nodes vals =
     vals;
   Buffer.contents buf
 
+(* Helper functions to print counterexamples *)
+let printCounterExample counterExample =
+  Collections.StringMap.fold
+    (fun var sval acc ->
+      Printf.sprintf "%s, %s = %s" acc var (Printing.printSvalue sval))
+    counterExample ""
+
+let printCounterExamples counterExamples =
+  Collections.printList
+    (fun cube -> printCounterExample cube)
+    counterExamples "" "\n" "\n"
+
 let print_solution (solution : t) =
   let cfg = ProbNv_lang.Cmdline.get_cfg () in
   print_newline ();
@@ -88,7 +100,14 @@ let print_solution (solution : t) =
   | asns ->
       Printf.printf "%s"
         (Collections.printListi
-           (fun i (name, p) ->
-             Printf.sprintf
-               "Assertion %s (%d) returned true with probability %f" name i p)
+           (fun i (name, p, counterExamples) ->
+             let s =
+               Printf.sprintf
+                 "Assertion %s (%d) returned true with probability %.10f" name i
+                 p
+             in
+             if cfg.counterexample && p != 1.0 then
+               Printf.sprintf "%s\nCounterexamples:\n----------------\n%s" s
+                 (printCounterExamples counterExamples)
+             else s)
            asns "" "\n" "\n")

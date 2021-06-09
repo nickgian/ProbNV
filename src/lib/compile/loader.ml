@@ -40,11 +40,16 @@ let simulate nodeNames topology name decls =
   let module CompleteSRP = (val get_srp ()) in
   (* Plug everything together to simulate the SRPs - this is where simulation occurs*)
   (* Doing the time profiling manually because I don't know how to make it work with modules *)
+  let cfg = Cmdline.get_cfg () in
+
   let start_time = Sys.time () in
   let module Srp = (val (module CompleteSRP (SrpSimulator)) : NATIVE_SRP) in
   let finish_time = Sys.time () in
-  Printf.printf "Native simulation took: %f\n%!" (finish_time -. start_time);
-  BddUtils.get_statistics ();
+  if cfg.nostats then ()
+  else (
+    Printf.printf "Native simulation took: %f\n" (finish_time -. start_time);
+    RouteComputationStats.printTotalSimulationStats ();
+    BddUtils.get_statistics () );
   (* Get the computed solutions *)
   build_solutions
     (AdjGraph.nb_vertex topology, nodeNames)

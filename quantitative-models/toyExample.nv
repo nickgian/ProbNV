@@ -35,11 +35,12 @@ let merge u x y =
   | (Some a, Some b) -> if a.aslen < b.aslen then x else y
 
 
+symbolic failures : int2
 symbolic f0 : tedge (*indicates the first failed link - uniform distribution assumed*)
 symbolic f1 : tedge (*indicates the second failed link*) 
 
 let linkFailed e =
-  (f0 = e) || (f1 = e)
+  failures >u2 0u2 && ((f0 = e) || (f1 = e))
 
 let transLinkFaults e (x : [M]route) =
   if linkFailed e then
@@ -51,6 +52,10 @@ let initLinkFaults d u = init d u
 (* Control plane solutions for destination 0 and 3 *)
 (* let rib0 = solution(initLinkFaults 0n, transLinkFaults, merge) *)
 solution rib3 = (initLinkFaults 3n, transLinkFaults, merge)
+
+let ord = failures = 0u2 || (failures = 1u2 && (f0 = f1)) || (failures = 2u2 && (f0 <e f1))
+
+assert("Reachable", (match rib3[0n] with | None -> false | Some _ -> true) | ord)
 
 
 (* Tc1: src 0 to dst 3*)
@@ -72,9 +77,6 @@ let initTc3 u =
   else None
 
 let fwdOutTc (rib:[C]dict[[C]tnode,[M]route]) e (fs : [M]flow) =
-  if (linkFailed e) then
-      None
-  else
   match fs with
   | None -> None
   | Some fs ->

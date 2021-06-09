@@ -151,6 +151,7 @@ type op =
   | MGet
   | MSet
   | MCreate
+  | MSize
   | MMerge
   | TGet of int (* index *) * int (* size *)
   (* Low-Level Language BDD operations *)
@@ -275,8 +276,10 @@ type forward = {
   bot : exp;
 }
 
+type inlineLevel = Inline | NoInline
+
 type declaration =
-  | DLet of var * exp
+  | DLet of (var * exp * inlineLevel) (* Variable name, expression, inline? *)
   | DSymbolic of var * ty * distrExpr option
   | DInfer of (string * exp * exp option)
   | DSolve of solve
@@ -564,6 +567,7 @@ let arity op =
   | MCreate -> 1
   | MGet -> 2
   | MSet -> 3
+  | MSize -> 2
   | MMerge -> 3
   | TGet _ -> 1
   | BddAdd _ | BddAnd | BddOr | BddEq | BddLess _ | BddLeq _ -> 2
@@ -945,6 +949,7 @@ let create_topology_mapping nodes topology =
   edge_mapping :=
     AdjGraph.fold_edges_e
       (fun e acc ->
+        Printf.printf "%d -> %s\n" (AdjGraph.E.label e) (AdjGraph.Edge.to_string e);
         IntMap.add (AdjGraph.E.label e) (AdjGraph.E.src e, AdjGraph.E.dst e) acc)
       topology IntMap.empty;
   node_mapping :=
@@ -1016,3 +1021,14 @@ and hash_v ~hash_meta v =
           map 0
       in
       (19 * acc) + 7
+
+
+(** Used to translate symbolic values to sets of concrete values *)
+
+type 'a valueSet = FullSet | Subset of 'a
+
+type svalue =
+| SBool of bool valueSet
+| SInt of Integer.t list valueSet
+| SNode of node list valueSet
+| SEdge of (node * node) list valueSet

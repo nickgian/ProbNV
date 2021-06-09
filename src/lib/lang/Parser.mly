@@ -34,10 +34,10 @@
   let local_let (id,params) body body_span span =
     (id, make_fun params body body_span span)
 
-  let global_let (id,params) body body_span span =
+  let global_let inline (id,params) body body_span span =
     let e = make_fun params body body_span span in
     (* Printf.printf "%s, %s\n" (Var.to_string id) (Printing.exp_to_string e); *)
-    DLet (id, e)
+    DLet (id, e, inline)
 
 
   let ip_to_dec b1 b2 b3 b4 =
@@ -188,6 +188,7 @@
 %token <ProbNv_datastructures.Span.t> FGEQ
 %token <ProbNv_datastructures.Span.t> FLEQ
 %token <ProbNv_datastructures.Span.t> LET
+%token <ProbNv_datastructures.Span.t> NOINLINE
 %token <ProbNv_datastructures.Span.t> IN
 %token <ProbNv_datastructures.Span.t> IF
 %token <ProbNv_datastructures.Span.t> THEN
@@ -233,9 +234,7 @@
 %token <ProbNv_datastructures.Span.t> CONCRETE
 %token <ProbNv_datastructures.Span.t> CREATEMAP
 %token <ProbNv_datastructures.Span.t> COMBINE
-
-
-
+%token <ProbNv_datastructures.Span.t> SIZE
 
 %token EOF
 
@@ -345,7 +344,8 @@ component:
     | LET LPAREN ID COMMA ID RPAREN EQ FORWARD LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN     { make_dfwd (evar (snd $3)) (evar (snd $5)) $10 $12 $14 $16 $18 $20 $22 $24 } */
     | SOLUTION ID EQ LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (snd $2) $5 $7 $9 }
     | FORWARD LPAREN ID COMMA ID RPAREN EQ LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN     { make_dfwd (evar (snd $3)) (evar (snd $5)) $9 $11 $13 $15 $17 $19 $21 $23 }
-    | LET letvars EQ expr                       { global_let $2 $4 $4.espan (Span.extend $1 $4.espan) }
+    | LET letvars EQ expr                      { global_let Inline $2 $4 $4.espan (Span.extend $1 $4.espan) }
+    | NOINLINE LET letvars EQ expr             { global_let NoInline $3 $5 $5.espan (Span.extend $2 $5.espan) }
     | SYMBOLIC ID COLON bty                    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, None) }
     | SYMBOLIC ID COLON bty EQ distBranches    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, Some $6) }
     | ASSERT LPAREN assertion RPAREN      { DInfer ("\"\"", fst $3 , snd $3) }
@@ -399,6 +399,7 @@ expr:
     | MAPIF exprsspace                  { exp (eop MMapFilter $2) $1 }
     | MAPITE exprsspace                 { exp (eop MMapIte $2) $1 } */
     | COMBINE expr3 expr3 expr3         { exp (eop MMerge [$2;$3;$4]) $1 } 
+    | SIZE expr3 expr3                    { exp (eop MSize [$2;$3]) $1 }
     | CREATEMAP expr                    { exp (eop MCreate [$2]) $1 }
     | expr LBRACKET expr RBRACKET       { exp (eop MGet [$1;$3]) (Span.extend $1.espan $4) }
     | expr LBRACKET expr COLON EQ expr RBRACKET { exp (eop MSet [$1;$3;$6]) (Span.extend $1.espan $7) }

@@ -35,6 +35,7 @@ rule token = parse
   | "false"           { FALSE (position lexbuf) }
   | "true"            { TRUE (position lexbuf) }
   | "let"             { LET (position lexbuf) }
+  | "@noinline"       { NOINLINE (position lexbuf) }
   | "in"              { IN (position lexbuf) }
   | "if"              { IF (position lexbuf) }
   | "then"            { THEN (position lexbuf) }
@@ -49,6 +50,7 @@ rule token = parse
   | "with"            { WITH (position lexbuf) }
   | "createDict"      { CREATEMAP (position lexbuf) }
   | "combine"         { COMBINE (position lexbuf) }
+  | "size"            { SIZE (position lexbuf) }
   (* | "union"           { UNION (position lexbuf) }
   | "inter"           { INTER (position lexbuf) } *)
   | "set"             { TSET (position lexbuf) }

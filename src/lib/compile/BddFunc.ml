@@ -260,10 +260,6 @@ let apply1 ~op_key ~f ~arg1 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
   in
   User.apply_op1 op arg1
 
-let apply2_time = ref 0.0
-
-let apply3_time = ref 0.0
-
 (* specialized version of applyN for two arguments*)
 let apply2 ~op_key ~f ~arg1 ~arg2 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
   let g v1 v2 =
@@ -283,7 +279,6 @@ let apply2 ~op_key ~f ~arg1 ~arg2 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
         o
     | Some op -> op
   in
-  (* Profile.time_profile_total apply2_time (fun () -> User.apply_op2 op arg1 arg2) *)
   User.apply_op2 op arg1 arg2
 
 let apply3 ~op_key ~f ~arg1 ~arg2 ~arg3 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
@@ -464,6 +459,9 @@ let create_value (name : string) (dist : distrExpr option) (ty : ty)
     match dist with
     | None -> uniform_distribution res typ g
     | Some dexpr -> computeDistr dexpr (res, typ) g
+  in
+  let name =
+    try fst @@ BatString.rsplit name ~by:"_" with Not_found -> name
   in
   B.push_symbolic_vars (name, symbolic_start, symbolic_end, typ, distr);
   res

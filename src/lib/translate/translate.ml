@@ -73,7 +73,8 @@ let opToBddOp op =
   | ELess -> BddLess !tedge_sz
   | ELeq -> BddLeq !tedge_sz
   | BddAnd | BddAdd _ | BddOr | BddNot | BddEq | BddLess _ | BddLeq _ -> op
-  | MCreate | MGet | MSet | MMerge | TGet _ | FAdd | FDiv | FLess | FLeq ->
+  | MCreate | MGet | MSet | MMerge | MSize | TGet _ | FAdd | FDiv | FLess | FLeq
+    ->
       failwith "Can't convert operation to symbolic operation"
 
 let liftBdd e1 =
@@ -135,6 +136,16 @@ let rec translate (e : exp) : exp * BddBinds.t =
             },
             BddBinds.union r1 (BddBinds.union r2 r3) )
       | MSet, _ -> failwith "invalid number of arguments to MSet"
+      | MSize, [ eh1; eh2 ] ->
+          let el1, r1 = translate eh1 in
+          let el2, r2 = translate eh2 in
+          ( {
+              e with
+              e = (eop MSize [ el1; el2 ]).e;
+              ety = Some (fty (OCamlUtils.oget e.ety));
+            },
+            BddBinds.union r1 r2 )
+      | MSize, _ -> failwith "invalid number of arguments to MSize"
       | MMerge, [ eh1; eh2; eh3 ] ->
           let el1, r1 = translate eh1 in
           let el2, r2 = translate eh2 in
@@ -552,37 +563,47 @@ let free e = free VarSet.empty e
 
 (* Give an expression, and a map of bindings, "closes" the expression using an ApplyN operation *)
 let buildApply e r =
-  let e', es =
-    BddBinds.fold
-      (fun x e1 (acc, es) ->
-        let resty = acc.ety in
-        let argty = set_concrete_mode (OCamlUtils.oget e1.ety) in
-        let f =
-          {
-            arg = x;
-            argty = Some argty;
-            resty;
-            body = acc;
-            fmode = Some Concrete;
-          }
-        in
-        let e' =
-          aexp
-            ( efun f,
-              Some
-                {
-                  typ = TArrow (argty, OCamlUtils.oget resty);
-                  mode = Some Concrete;
-                },
-              acc.espan )
-        in
-        (e', e1 :: es))
-      r (e, [])
+  let rec applyOnBody f e =
+    match e.e with
+    | EFun funct ->
+        aexp
+          (efun { funct with body = applyOnBody f funct.body }, e.ety, e.espan)
+    | _ -> f e
   in
-  aexp
-    ( eApplyN e' es,
-      Some { (OCamlUtils.oget e.ety) with mode = Some Multivalue },
-      e.espan )
+  applyOnBody
+    (fun e ->
+      let e', es =
+        BddBinds.fold
+          (fun x e1 (acc, es) ->
+            let resty = acc.ety in
+            let argty = set_concrete_mode (OCamlUtils.oget e1.ety) in
+            let f =
+              {
+                arg = x;
+                argty = Some argty;
+                resty;
+                body = acc;
+                fmode = Some Concrete;
+              }
+            in
+            let e' =
+              aexp
+                ( efun f,
+                  Some
+                    {
+                      typ = TArrow (argty, OCamlUtils.oget resty);
+                      mode = Some Concrete;
+                    },
+                  acc.espan )
+            in
+            (e', e1 :: es))
+          r (e, [])
+      in
+      aexp
+        ( eApplyN e' es,
+          Some { (OCamlUtils.oget e.ety) with mode = Some Multivalue },
+          e.espan ))
+    e
 
 let liftOne func_body arg_ty aty =
   (* Concrete node argument *)
@@ -762,10 +783,15 @@ let translateTwo info func aty =
             else liftTwo func (OCamlUtils.oget f1.argty) aty
           else
             (*TODO: this code is largely similar with the code above, factor it out? *)
+            (* need to lift the input route type*)
+            let argTy = liftMultiTy (OCamlUtils.oget f2.argty) in
+            let rho =
+              BddBinds.union rho
+                (BddBinds.singleton f2.arg
+                   (aexp (evar f2.arg, Some argTy, eh2.espan)))
+            in
             let el2' = buildApply el2 rho in
             let resTy = liftMultiTy (OCamlUtils.oget el2'.ety) in
-            (* also need to lift the input route type*)
-            let argTy = liftMultiTy (OCamlUtils.oget f2.argty) in
             let f2' =
               { f2 with body = el2'; resty = Some resTy; argty = Some argTy }
             in
@@ -1038,13 +1064,14 @@ let translateThree info func pty hty =
 
 let translateDecl info d =
   match d with
-  | DLet (x, e) ->
+  | DLet (x, e, inline) ->
       BddBinds.clearStore ();
       let e', r = translate e in
       let fv = free e in
 
       let rho = BddBinds.union r fv in
-      if BddBinds.isEmpty rho then DLet (x, e') else DLet (x, buildApply e' rho)
+      if BddBinds.isEmpty rho then DLet (x, e', inline)
+      else DLet (x, buildApply e' rho, inline)
   | DSolve { aty; var_names; init; trans; merge } ->
       let route_ty = OCamlUtils.oget aty in
       BddBinds.clearStore ();

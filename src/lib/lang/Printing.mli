@@ -29,3 +29,5 @@ val distrExpr_to_string : (Syntax.distrPattern * float) list -> string
 val declaration_to_string : ?show_types:bool -> Syntax.declaration -> string
 
 val declarations_to_string : ?show_types:bool -> Syntax.declarations -> string
+
+val printSvalue : Syntax.svalue -> string

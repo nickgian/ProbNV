@@ -138,7 +138,6 @@ let value_to_bdd (record_fns : int * int -> 'a -> 'b) (ty : Syntax.ty) (v : 'v)
 
 (** Takes as input an OCaml map and an ocaml key and returns an ocaml value*)
 let find record_fns (vmap : 'v t) (k : 'key) : 'v =
-  (* print_endline "inside find\n"; *)
   let key_ty = TypeIds.get_elt type_store vmap.key_ty_id in
   let bdd = value_to_bdd record_fns key_ty k in
   let for_key = Mtbddc.constrain vmap.bdd bdd in
@@ -151,6 +150,56 @@ let update record_fns (vmap : 'v t) (k : 'key) (v : 'v) : 'v t =
   let key = value_to_bdd record_fns key_ty k in
   let leaf = Mtbddc.cst mgr tbl v in
   { vmap with bdd = Mtbddc.ite key leaf vmap.bdd }
+
+let printBdd g =
+  let rec aux g depth =
+    match Bdd.inspect g with
+    | Bool b -> Printf.printf "Bool: %b\n" b
+    | Ite (i, t, e) ->
+        Printf.printf "Var: %d: \n" i;
+        Printf.printf "%s" (depth ^ "dthen: ");
+        aux t (depth ^ "  ");
+        Printf.printf "%s" (depth ^ "delse: ");
+        aux e (depth ^ "  ")
+  in
+  aux g "  "
+
+(* Returns the number of NV values that point to a given leaf *)
+let cardinality (vmap : 'v t) (v : 'v) =
+  (* i is guaranteed to be within (start, end) by construction *)
+  (* Printf.printf "Entering cardinality\n";
+     flush_all (); *)
+  let guard = Mtbddc.guard_of_leaf tbl vmap.bdd v in
+
+  (* Printf.printf "Got guard of leaf\n";
+     flush_all (); *)
+  (* Printf.printf "start, end: %d, %d\n%!" (fst vmap.var_range)
+       (snd vmap.var_range);
+     flush_all ();
+     printBdd guard; *)
+  let rec aux (phi, start_var, end_var) =
+    match Bdd.inspect phi with
+    | Bool true ->
+        let res = 1 lsl (end_var - (start_var - 1)) in
+        (* Printf.printf "true leaf returning %d\n" res; *)
+        res
+    | Bool false ->
+        (* Printf.printf "false leaf\n"; *)
+        0
+    | Ite (i, t, e) ->
+        (* Printf.printf "i: %d\n" i; *)
+        let trueRec = aux (t, i + 1, end_var) in
+        let falseRec = aux (e, i + 1, end_var) in
+
+        (* Multiply by 2^(i - start_var) the cardinality *)
+        let fillStart = if i > start_var then 1 lsl (i - start_var) else 1 in
+        fillStart * (trueRec + falseRec)
+  in
+  let res =
+    float_of_int @@ aux (guard, fst vmap.var_range, snd vmap.var_range)
+  in
+  (* Printf.printf "res: %f\n" res; *)
+  res
 
 (** ** Map merge operation, operates on top of OCaml values*)
 
@@ -177,15 +226,14 @@ let merge (op_key : int * 'f) f (vmap1 : 'a t) (vmap2 : 'a t) =
    *   else *)
   let op_key = Obj.magic op_key in
   let op =
-    match HashMergeMap.Exceptionless.find op_key !merge_op_cache with
-    | None ->
-        let o =
-          User.make_op2 ~memo:Cudd.Memo.Global ~commutative:false
-            ~idempotent:false g
-        in
-        merge_op_cache := HashMergeMap.add op_key o !merge_op_cache;
-        o
-    | Some op -> op
+    (* match HashMergeMap.Exceptionless.find op_key !merge_op_cache with
+       | None -> *)
+    (* let o = *)
+    User.make_op2 ~memo:Cudd.Memo.Global ~commutative:false ~idempotent:false g
+    (* in
+           merge_op_cache := HashMergeMap.add op_key o !merge_op_cache;
+           o
+       | Some op -> op *)
   in
   { vmap1 with bdd = User.apply_op2 op vmap1.bdd vmap2.bdd }
 

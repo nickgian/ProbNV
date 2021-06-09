@@ -178,10 +178,11 @@ and inline_branch cond env (p, e) =
 let inline_declaration (cond : ty -> bool) (env : exp Env.t) (d : declaration) =
   let inline_exp' = inline_exp cond in
   match d with
-  | DLet (x, e) ->
+  | DLet (x, e, inline) ->
       let e = inline_exp' env e in
-      if cond (OCamlUtils.oget e.ety) then (Env.update env x e, None)
-      else (env, Some (DLet (x, e)))
+      if cond (OCamlUtils.oget e.ety) && inline = Inline then
+        (Env.update env x e, None)
+      else (env, Some (DLet (x, e, inline)))
   | DSymbolic (x, ty, p) -> (env, Some (DSymbolic (x, ty, p)))
   | DInfer (name, e, None) ->
       (env, Some (DInfer (name, inline_exp' env e, None)))

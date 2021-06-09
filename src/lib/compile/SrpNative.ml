@@ -1,6 +1,6 @@
-open ProbNv_utils
 (** Simulates an SRP compiled to a native OCaml progam *)
 
+open ProbNv_utils
 open Unsigned
 open ProbNv_solution
 open ProbNv_lang
@@ -354,6 +354,83 @@ module ForwardingSimulation (G : Topology) = struct
     (bdd_full_V, bdd_full_E)
 end
 
+(* SRP simulation statistics *)
+
+module RouteComputationStats = struct
+  let transfer_time = ref 0.0
+
+  let merge_time = ref 0.0
+
+  let merges = ref 0
+
+  let incr_merges = ref 0
+
+  let transfers = ref 0
+
+  type simulationStats = {
+    transTime : float;
+    mergeTime : float;
+    mergeNumber : int;
+    incrMergeNumber : int;
+    transferNumber : int;
+  }
+
+  let perSimulationStats : simulationStats PrimitiveCollections.StringMap.t ref
+      =
+    ref StringMap.empty
+
+  let clearSimulationStats () =
+    incr_merges := 0;
+    merges := 0;
+    transfers := 0;
+    transfer_time := 0.0;
+    merge_time := 0.0
+
+  let logSimulationStats name =
+    perSimulationStats :=
+      StringMap.add name
+        {
+          transTime = !transfer_time;
+          mergeTime = !merge_time;
+          transferNumber = !transfers;
+          mergeNumber = !merges;
+          incrMergeNumber = !incr_merges;
+        }
+        !perSimulationStats;
+    clearSimulationStats ()
+
+  let printSimulationStats name stats =
+    Printf.printf
+      "Route computation Stats for %s\n---------------------------\n" name;
+    Printf.printf "Number of incremental merges: %d\n" stats.incrMergeNumber;
+    Printf.printf "Number of calls to merge: %d\n" stats.mergeNumber;
+    Printf.printf "Number of transfers: %d\n" stats.transferNumber;
+    Printf.printf "Transfer time: %f\n" stats.transTime;
+    Printf.printf "Merge time: %f\n" stats.mergeTime
+
+  let printTotalSimulationStats () =
+    let total =
+      StringMap.fold
+        (fun _ v acc ->
+          {
+            transTime = v.transTime +. acc.transTime;
+            mergeTime = v.mergeTime +. acc.mergeTime;
+            transferNumber = v.transferNumber + acc.transferNumber;
+            mergeNumber = v.mergeNumber + acc.mergeNumber;
+            incrMergeNumber = v.incrMergeNumber + acc.incrMergeNumber;
+          })
+        !perSimulationStats
+        {
+          transTime = 0.0;
+          mergeTime = 0.0;
+          transferNumber = 0;
+          mergeNumber = 0;
+          incrMergeNumber = 0;
+        }
+    in
+    printSimulationStats "all simulations" total
+end
+
 module SrpSimulation (G : Topology) : SrpSimulationSig = struct
   (* Simulation States *)
   (* Solution Invariant: All valid graph vertices are associated with an
@@ -396,12 +473,6 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
     | Some a -> a
 
   let attr_equal = ref (fun _ _ -> true)
-
-  let merges = ref 0
-
-  let incr_merges = ref 0
-
-  let transfers = ref 0
 
   let simulate_step trans merge (s : 'a extendedSolution) (origin : int) =
     let do_neighbor (_, initial_attribute) (s, todo) neighbor =
@@ -515,21 +586,19 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
   let solved : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list ref =
     ref []
 
-  let transfer_time = ref 0.0
-
-  let merge_time = ref 0.0
-
   let simulate_solve record_fns attr_ty_id name init trans merge =
     let mgr = BddUtils.mgr in
     Cudd.Man.group mgr 0 !BddMap.svars Cudd.Man.MTR_DEFAULT;
     let s = create_state (AdjGraph.nb_vertex G.graph) init in
     let trans e x =
-      incr transfers;
-      Profile.time_profile_total transfer_time (fun () -> trans e x)
+      incr RouteComputationStats.transfers;
+      Profile.time_profile_total RouteComputationStats.transfer_time (fun () ->
+          trans e x)
     in
     let merge u x y =
-      incr merges;
-      Profile.time_profile_total merge_time (fun () -> merge u x y)
+      incr RouteComputationStats.merges;
+      Profile.time_profile_total RouteComputationStats.merge_time (fun () ->
+          merge u x y)
     in
     let vals =
       match (Cmdline.get_cfg ()).bound with
@@ -541,13 +610,8 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
           |> AdjGraph.VertexMap.map (fun (_, v) -> v)
     in
 
-    Printf.printf "Number of incremental merges: %d\n" !incr_merges;
-    Printf.printf "Number of calls to merge: %d\n" !merges;
-    Printf.printf "Number of transfers: %d\n" !transfers;
-    Printf.printf "Transfer time: %f\n" !transfer_time;
-    Printf.printf "Merge time: %f\n" !merge_time;
-    Printf.printf "Apply2 time: %f\n" !BddFunc.apply2_time;
-    Printf.printf "Apply3 time: %f\n" !BddFunc.apply3_time;
+    RouteComputationStats.logSimulationStats name;
+
     let default = AdjGraph.VertexMap.choose vals |> snd in
     (* Constructing a function from the solutions *)
     let bdd_base =
@@ -642,16 +706,6 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
 
   let attr_equal = ref (fun _ _ -> true)
 
-  let incr_merges = ref 0
-
-  let merges = ref 0
-
-  let transfers = ref 0
-
-  let transfer_time = ref 0.0
-
-  let merge_time = ref 0.0
-
   let updateNeighbors u global =
     let neighbors = AdjGraph.succ G.graph u in
     BatList.iter
@@ -661,19 +715,6 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
         global.queueSet <- AdjGraph.VertexSet.add v global.queueSet;
         global.worklist.(v) <- AdjGraph.VertexSet.add u global.worklist.(v))
       neighbors
-
-  let rec printBdd distr =
-    match Mtbddc.inspect distr with
-    | Leaf _ -> (
-        match Obj.magic (Mtbddc.dval distr) with
-        | None -> Printf.printf "Leaf: None\n"
-        | Some v -> Printf.printf "Leaf: Some %d\n" v )
-    | Ite (i, t, e) ->
-        Printf.printf "top: %d: \n" i;
-        Printf.printf "  dthen: ";
-        printBdd t;
-        Printf.printf "  delse: ";
-        printBdd e
 
   (* Performs the sending of message from every node [v] in [todoSet] to [u].*)
   let simulate_step init trans merge local global u todoSet =
@@ -745,7 +786,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
               if
                 Mtbddc.is_equal (Obj.magic compare_routes) (Obj.magic dummy_new)
               then (
-                incr incr_merges;
+                incr RouteComputationStats.incr_merges;
                 (*we can incrementally compute in this case*)
                 let u_new_attribute = merge u labu n_incoming_attribute in
                 (* add the new message from v to u's inbox *)
@@ -874,25 +915,22 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     let initArr = Array.init n (fun i -> init i) in
     let local, global = create_initial_state n initArr in
     let trans e x =
-      incr transfers;
-      Profile.time_profile_total transfer_time (fun () -> trans e x)
+      incr RouteComputationStats.transfers;
+      Profile.time_profile_total RouteComputationStats.transfer_time (fun () ->
+          trans e x)
     in
     let merge u x y =
-      incr merges;
-      Profile.time_profile_total merge_time (fun () -> merge u x y)
+      incr RouteComputationStats.merges;
+      Profile.time_profile_total RouteComputationStats.merge_time (fun () ->
+          merge u x y)
     in
     skips := (Cmdline.get_cfg ()).sim_skip;
     let vals =
       simulate_init initArr trans merge global local
       |> AdjGraph.VertexMap.map (fun v -> v.labels)
     in
-    Printf.printf "Number of incremental merges: %d\n" !incr_merges;
-    Printf.printf "Number of calls to merge: %d\n" !merges;
-    Printf.printf "Number of transfers: %d\n" !transfers;
-    Printf.printf "Transfer time: %f\n" !transfer_time;
-    Printf.printf "Merge time: %f\n" !merge_time;
-    Printf.printf "Apply2 time: %f\n" !BddFunc.apply2_time;
-    Printf.printf "Apply3 time: %f\n" !BddFunc.apply3_time;
+    RouteComputationStats.logSimulationStats name;
+
     let default = AdjGraph.VertexMap.choose vals |> snd in
     (* Constructing a function from the solutions *)
     let bdd_base =
@@ -963,7 +1001,8 @@ let build_forwarding record_fns fwd =
 
 (* Two modes of computation until we implement fast prob for all type of symbolics *)
 let check_assertion
-    ((name, a, cond) : string * bool Cudd.Mtbddc.t * BddFunc.t option) distrs =
+    ((name, a, cond) : string * bool Cudd.Mtbddc.t * BddFunc.t option)
+    symbolic_bounds distrs =
   let cond =
     match cond with
     | Some (BBool b) -> Some b
@@ -971,8 +1010,10 @@ let check_assertion
     | _ -> failwith "Impossible case - condition has typechecked to a boolean"
   in
   (* let prob' = BddUtils.computeTrueProbabilityOld *)
-  let prob = BddUtils.computeTrueProbability a distrs cond in
-  (name, prob)
+  let prob, counterExample =
+    BddUtils.computeTrueProbability a symbolic_bounds distrs cond
+  in
+  (name, prob, counterExample)
 
 let build_solutions nodes record_fns (fwd : unit Solution.forwardSolutions list)
     (sols : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list)
@@ -982,6 +1023,7 @@ let build_solutions nodes record_fns (fwd : unit Solution.forwardSolutions list)
   (* let arr = Array.init (Cudd.Man.get_bddvar_nb BddUtils.mgr) (fun i -> i) in
      Cudd.Man.shuffle_heap BddUtils.mgr arr; *)
   Cudd.Man.disable_autodyn BddUtils.mgr;
+
   let symbolic_bounds = List.rev !BddUtils.vars_list in
   let distrs = BddUtils.createDistributionMap symbolic_bounds in
   {
@@ -990,7 +1032,7 @@ let build_solutions nodes record_fns (fwd : unit Solution.forwardSolutions list)
           List.map
             (fun a ->
               (* TODO: generateSat when a counterexample is required *)
-              check_assertion a distrs)
+              check_assertion a symbolic_bounds distrs)
             assertions);
     solves =
       List.map

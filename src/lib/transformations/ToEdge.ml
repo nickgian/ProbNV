@@ -63,7 +63,8 @@ let toEdge_decl topology =
                 resty = Some (concrete (TOption (concrete TEdge)));
                 body = ematch (etuple [ evar n1_var; evar n2_var ]) branches;
               };
-        } )
+        },
+      Inline )
 
 (* Likewise, a function returning the node points given an edge label - only for internal use! *)
 let fromEdge_decl topology =
@@ -88,4 +89,5 @@ let fromEdge_decl topology =
           resty = Some (concrete (TTuple [ concrete TNode; concrete TNode ]));
           fmode = Some Concrete;
           body = ematch (evar e_var) branches;
-        } )
+        },
+      Inline )

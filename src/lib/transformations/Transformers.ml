@@ -186,7 +186,7 @@ let transform_decl ~(name : string) (transformers : transformers)
   let transform_exp = transform_exp ~name transformers in
   let transform_symbolic = transform_symbolic ~name transformers in
   match d with
-  | DLet (x, e) -> DLet (x, transform_exp e)
+  | DLet (x, e, inline) -> DLet (x, transform_exp e, inline)
   | DInfer (name, e, None) -> DInfer (name, transform_exp e, None)
   | DInfer (name, e, Some c) ->
       DInfer (name, transform_exp e, Some (transform_exp c))

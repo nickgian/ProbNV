@@ -133,6 +133,7 @@ let prec_op op =
   | ULess _ | BddLess _ | NLess | ULeq _ | NLeq | BddLeq _ | ELess | ELeq -> 5
   | TGet _ -> 5
   | MMerge -> 3
+  | FLess | FLeq -> 5
 
 let prec_exp e =
   match e.e with
@@ -298,10 +299,13 @@ let op_to_string op =
   | NLeq -> "<=n"
   | ELess -> "<e"
   | ELeq -> "<=e"
+  | FLess -> "<."
+  | FLeq -> "<=."
   | MCreate -> "createMap"
   | MGet -> "at"
   | MSet -> "set"
-  | MMerge -> failwith "prefix op"
+  | MMerge -> "combine"
+  | MSize -> "size"
   | TGet (i, _) -> "get-" ^ string_of_int i
 
 let rec pattern_to_string pattern =
@@ -415,16 +419,6 @@ and closure_to_string_p ~show_types prec
   in
   if prec < max_prec then "(" ^ s ^ ")" else s
 
-(*
-and map_to_string ~show_types sep_s term_s m =
-  let binding_to_string (k, v) =
-    (* BddMap.multiValue_to_string k *)
-    value_to_string_p ~show_types max_prec k
-    ^ sep_s
-    ^ value_to_string_p ~show_types max_prec v
-  in
-  let bs, _ = BddMap.bindings m in
-  Printf.sprintf "{ %s }" (term term_s binding_to_string bs) *)
 and value_to_string_p ~show_types prec v =
   let value_to_string_p = value_to_string_p ~show_types in
   match v.v with
@@ -463,16 +457,18 @@ and map_to_string ~show_types term_s m kty range =
            k ""
        in *)
     Printf.sprintf "%s" (value_to_string_p ~show_types max_prec v)
+    (* Printf.sprintf "%s |-> %s" key (value_to_string_p ~show_types max_prec v) *)
   in
   let bs = Array.to_list @@ Mtbddc.guardleafs m in
   Printf.sprintf "{ %s }" (term term_s binding_to_string bs)
 
-(* and multivalue_to_string ~show_types term_s m =
+and multivalue_to_string ~show_types term_s m =
   let bs = Array.to_list @@ Mtbddc.leaves m in
   term term_s
     (fun v -> Printf.sprintf "  %s" (value_to_string_p ~show_types max_prec v))
-    bs *)
-and multivalue_to_string ~show_types term_s m =
+    bs
+
+(* and multivalue_to_string ~show_types term_s m =
   let binding_to_string (k, v) =
     (* BddMap.multiValue_to_string k *)
     value_to_string_p ~show_types max_prec k
@@ -484,8 +480,7 @@ and multivalue_to_string ~show_types term_s m =
   in
   match bs with
   | [] -> Printf.sprintf "{ _ |-> _ }"
-  | _ -> Printf.sprintf "{ %s }" (term term_s binding_to_string bs)
-
+  | _ -> Printf.sprintf "{ %s }" (term term_s binding_to_string bs) *)
 and exp_to_string_p ~show_types prec e =
   let exp_to_string_p = exp_to_string_p ~show_types in
   let value_to_string_p = value_to_string_p ~show_types in
@@ -597,7 +592,7 @@ and distrBranch_to_string (pat, p) =
 let rec declaration_to_string ?(show_types = false) d =
   let exp_to_string = exp_to_string ~show_types in
   match d with
-  | DLet (x, e) -> "let " ^ Var.to_string x ^ " = " ^ exp_to_string e
+  | DLet (x, e, _) -> "let " ^ Var.to_string x ^ " = " ^ exp_to_string e ^ "\n"
   | DSymbolic (x, ty, None) ->
       Printf.sprintf "symbolic %s : %s" (Var.to_string x) (ty_to_string ty)
   | DSymbolic (x, ty, Some distr) ->
@@ -611,14 +606,15 @@ let rec declaration_to_string ?(show_types = false) d =
       in
       Printf.sprintf "assert(%s, %s%s)" name (exp_to_string e) condString
   | DSolve { aty; var_names; init; trans; merge } ->
-      Printf.sprintf "let %s = solution<%s> {init = %s; trans = %s; merge = %s}"
+      Printf.sprintf
+        "let %s = solution<%s> {init = %s; trans = %s; merge = %s}\n"
         (exp_to_string var_names)
         (match aty with None -> "None" | Some ty -> ty_to_string ty)
         (exp_to_string init) (exp_to_string trans) (exp_to_string merge)
   | DForward
       { names_V; names_E; fwdInit; fwdOut; fwdIn; hinitV; hinitE; logE; logV }
     ->
-      Printf.sprintf "let (%s, %s) = forward(%s, %s, %s, %s, %s, %s, %s)"
+      Printf.sprintf "let (%s, %s) = forward(%s, %s, %s, %s, %s, %s, %s)\n"
         (exp_to_string names_V) (exp_to_string names_E) (exp_to_string fwdInit)
         (exp_to_string fwdOut) (exp_to_string fwdIn) (exp_to_string hinitV)
         (exp_to_string hinitE) (exp_to_string logV) (exp_to_string logE)
@@ -642,3 +638,20 @@ let rec declarations_to_string ?(show_types = false) ds =
       declaration_to_string ~show_types d
       ^ "\n"
       ^ declarations_to_string ~show_types ds
+
+let printSvalue sv =
+  match sv with
+  | SBool FullSet | SNode FullSet | SEdge FullSet | SInt FullSet -> "*"
+  | SBool (Subset b) -> Printf.sprintf "%b" b
+  | SInt (Subset is) ->
+      PrimitiveCollections.printList
+        (fun i -> Integer.to_string i)
+        is "{" "," "}"
+  | SNode (Subset ns) ->
+      PrimitiveCollections.printList (fun i -> string_of_int i) ns "{" "," "}"
+  | SEdge (Subset es) ->
+      PrimitiveCollections.printList
+        (fun (u, v) -> Printf.sprintf "%d~%d" u v)
+        es
+        (Printf.sprintf "%d:{" (List.length es))
+        "," "}"
