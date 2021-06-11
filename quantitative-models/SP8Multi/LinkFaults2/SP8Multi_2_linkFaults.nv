@@ -1,0 +1,87 @@
+(* Bounded link faults *)
+
+include "../SP8Multi_control.nv"
+
+symbolic failures : int2 =
+  | [0u2, 0u2] -> 0.7740924087715096p
+  | [1u2, 1u2] -> 0.1982667900405049p
+  | [2u2, 2u2] -> 0.0253412530541988p
+  | _ -> 0.0p
+
+symbolic f0 : tedge
+symbolic f1 : tedge
+
+let mergeLinkFaults u (x : [M]attribute) (y : [M]attribute) =
+  merge u x y
+
+let transLinkFaults d e (x : [M]attribute) =
+  if (failures >u2 0u2) && ((f0 = e)|| (f1 = e)) then
+    {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+  else trans d e x
+
+let initLinkFaults d u = init d u 
+
+solution rib_70_0_20_0_24 = (initLinkFaults (70.0.20.0/24), transLinkFaults (70.0.20.0/24), mergeLinkFaults)
+
+solution rib_70_0_21_0_24 = (initLinkFaults (70.0.21.0/24), transLinkFaults (70.0.21.0/24), mergeLinkFaults)
+
+solution rib_70_0_22_0_24 = (initLinkFaults (70.0.22.0/24), transLinkFaults (70.0.22.0/24), mergeLinkFaults)
+
+solution rib_70_0_23_0_24 = (initLinkFaults (70.0.23.0/24), transLinkFaults (70.0.23.0/24), mergeLinkFaults)
+
+solution rib_70_0_28_0_24 = (initLinkFaults (70.0.28.0/24), transLinkFaults (70.0.28.0/24), mergeLinkFaults)
+
+solution rib_70_0_29_0_24 = (initLinkFaults (70.0.29.0/24), transLinkFaults (70.0.29.0/24), mergeLinkFaults)
+
+solution rib_70_0_30_0_24 = (initLinkFaults (70.0.30.0/24), transLinkFaults (70.0.30.0/24), mergeLinkFaults)
+
+solution rib_70_0_31_0_24 = (initLinkFaults (70.0.31.0/24), transLinkFaults (70.0.31.0/24), mergeLinkFaults)
+
+solution rib_70_0_36_0_24 = (initLinkFaults (70.0.36.0/24), transLinkFaults (70.0.36.0/24), mergeLinkFaults)
+
+solution rib_70_0_37_0_24 = (initLinkFaults (70.0.37.0/24), transLinkFaults (70.0.37.0/24), mergeLinkFaults)
+
+solution rib_70_0_38_0_24 = (initLinkFaults (70.0.38.0/24), transLinkFaults (70.0.38.0/24), mergeLinkFaults)
+
+solution rib_70_0_39_0_24 = (initLinkFaults (70.0.39.0/24), transLinkFaults (70.0.39.0/24), mergeLinkFaults)
+
+solution rib_70_0_44_0_24 = (initLinkFaults (70.0.44.0/24), transLinkFaults (70.0.44.0/24), mergeLinkFaults)
+
+solution rib_70_0_45_0_24 = (initLinkFaults (70.0.45.0/24), transLinkFaults (70.0.45.0/24), mergeLinkFaults)
+
+solution rib_70_0_46_0_24 = (initLinkFaults (70.0.46.0/24), transLinkFaults (70.0.46.0/24), mergeLinkFaults)
+
+solution rib_70_0_47_0_24 = (initLinkFaults (70.0.47.0/24), transLinkFaults (70.0.47.0/24), mergeLinkFaults)
+
+solution rib_70_0_52_0_24 = (initLinkFaults (70.0.52.0/24), transLinkFaults (70.0.52.0/24), mergeLinkFaults)
+
+solution rib_70_0_53_0_24 = (initLinkFaults (70.0.53.0/24), transLinkFaults (70.0.53.0/24), mergeLinkFaults)
+
+solution rib_70_0_54_0_24 = (initLinkFaults (70.0.54.0/24), transLinkFaults (70.0.54.0/24), mergeLinkFaults)
+
+solution rib_70_0_55_0_24 = (initLinkFaults (70.0.55.0/24), transLinkFaults (70.0.55.0/24), mergeLinkFaults)
+
+solution rib_70_0_60_0_24 = (initLinkFaults (70.0.60.0/24), transLinkFaults (70.0.60.0/24), mergeLinkFaults)
+
+solution rib_70_0_61_0_24 = (initLinkFaults (70.0.61.0/24), transLinkFaults (70.0.61.0/24), mergeLinkFaults)
+
+solution rib_70_0_62_0_24 = (initLinkFaults (70.0.62.0/24), transLinkFaults (70.0.62.0/24), mergeLinkFaults)
+
+solution rib_70_0_63_0_24 = (initLinkFaults (70.0.63.0/24), transLinkFaults (70.0.63.0/24), mergeLinkFaults)
+
+solution rib_70_0_68_0_24 = (initLinkFaults (70.0.68.0/24), transLinkFaults (70.0.68.0/24), mergeLinkFaults)
+
+solution rib_70_0_69_0_24 = (initLinkFaults (70.0.69.0/24), transLinkFaults (70.0.69.0/24), mergeLinkFaults)
+
+solution rib_70_0_70_0_24 = (initLinkFaults (70.0.70.0/24), transLinkFaults (70.0.70.0/24), mergeLinkFaults)
+
+solution rib_70_0_71_0_24 = (initLinkFaults (70.0.71.0/24), transLinkFaults (70.0.71.0/24), mergeLinkFaults)
+
+solution rib_70_0_76_0_24 = (initLinkFaults (70.0.76.0/24), transLinkFaults (70.0.76.0/24), mergeLinkFaults)
+
+solution rib_70_0_77_0_24 = (initLinkFaults (70.0.77.0/24), transLinkFaults (70.0.77.0/24), mergeLinkFaults)
+
+solution rib_70_0_78_0_24 = (initLinkFaults (70.0.78.0/24), transLinkFaults (70.0.78.0/24), mergeLinkFaults)
+
+solution rib_70_0_79_0_24 = (initLinkFaults (70.0.79.0/24), transLinkFaults (70.0.79.0/24), mergeLinkFaults)
+

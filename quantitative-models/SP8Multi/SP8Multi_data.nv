@@ -1,0 +1,2304 @@
+include "LinkFaults2/SP8Multi_2_linkFaults.nv"
+
+type flow = {srcIp: int; dstIp: int; srcPort:int16; dstPort:int16; protocol: int8; flowSize:float }
+
+let aclOut edge fs = 
+  match edge with
+  | _ -> true
+
+let split fs npaths = {fs with flowSize = fs.flowSize /. npaths}
+
+let fwdOut (r : [C]rib) e (fs : [C]option[flow])  = 
+  match fs with
+  | None -> None
+  | Some fs -> 
+     (match r.selected with
+       | None -> None
+       | Some 0u2 -> Some None
+       | Some 1u2 -> Some None
+       | Some 2u2 -> (match r.ospf with
+                 | None -> None (*can't happen *) 
+                 | Some o -> (
+                   if o.ospfNextHop = {} then Some None else
+                 if o.ospfNextHop[e] && (aclOut e fs) then Some (Some (split fs (size o.ospfNextHop true))) else None))
+        | Some 3u2 -> (match r.bgp with
+                 | None -> None (*can't happen *)
+                 | Some b -> (
+                   if b.bgpNextHop = {} then Some None else
+                 if b.bgpNextHop[e] && (aclOut e fs) then Some (Some (split fs (size b.bgpNextHop true))) else None))
+      )
+
+let aclIn edge fs = 
+  match edge with
+  | _ -> true
+
+let fwdIn e fs = if aclIn e fs then fs else None
+
+let hinitV u = 0.0
+
+let logV u fs nodeHistory = 0.0
+
+let hinitE e = 0.0
+
+let logE e fs edgeHistory =
+  match fs with
+  | None -> edgeHistory
+  | Some f -> f.flowSize +. edgeHistory
+
+let initTC0 u =
+  if (u = 0n) then
+    Some ({srcIp = 70.0.28.1; dstIp = 70.0.36.1; srcPort = 37646u16; dstPort = 27515u16; protocol = 17u8; flowSize = 453.0})
+  else None
+
+let fwdOutTc0 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_36_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC1 u =
+  if (u = 0n) then
+    Some ({srcIp = 70.0.28.1; dstIp = 70.0.45.1; srcPort = 55930u16; dstPort = 30674u16; protocol = 6u8; flowSize = 363.0})
+  else None
+
+let fwdOutTc1 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_45_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC2 u =
+  if (u = 0n) then
+    Some ({srcIp = 70.0.28.1; dstIp = 70.0.46.1; srcPort = 8676u16; dstPort = 53260u16; protocol = 17u8; flowSize = 78.0})
+  else None
+
+let fwdOutTc2 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_46_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC3 u =
+  if (u = 0n) then
+    Some ({srcIp = 70.0.28.1; dstIp = 70.0.53.1; srcPort = 39274u16; dstPort = 44244u16; protocol = 6u8; flowSize = 45.0})
+  else None
+
+let fwdOutTc3 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_53_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC4 u =
+  if (u = 0n) then
+    Some ({srcIp = 70.0.28.1; dstIp = 70.0.54.1; srcPort = 47051u16; dstPort = 17054u16; protocol = 17u8; flowSize = 233.0})
+  else None
+
+let fwdOutTc4 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_54_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC5 u =
+  if (u = 0n) then
+    Some ({srcIp = 70.0.28.1; dstIp = 70.0.55.1; srcPort = 12950u16; dstPort = 38461u16; protocol = 6u8; flowSize = 224.0})
+  else None
+
+let fwdOutTc5 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_55_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC6 u =
+  if (u = 0n) then
+    Some ({srcIp = 70.0.28.1; dstIp = 70.0.78.1; srcPort = 14054u16; dstPort = 19392u16; protocol = 17u8; flowSize = 409.0})
+  else None
+
+let fwdOutTc6 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_78_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC7 u =
+  if (u = 1n) then
+    Some ({srcIp = 70.0.29.1; dstIp = 70.0.21.1; srcPort = 43170u16; dstPort = 9909u16; protocol = 6u8; flowSize = 237.0})
+  else None
+
+let fwdOutTc7 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_21_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC8 u =
+  if (u = 1n) then
+    Some ({srcIp = 70.0.29.1; dstIp = 70.0.22.1; srcPort = 48349u16; dstPort = 49597u16; protocol = 6u8; flowSize = 428.0})
+  else None
+
+let fwdOutTc8 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_22_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC9 u =
+  if (u = 1n) then
+    Some ({srcIp = 70.0.29.1; dstIp = 70.0.28.1; srcPort = 43677u16; dstPort = 33556u16; protocol = 6u8; flowSize = 402.0})
+  else None
+
+let fwdOutTc9 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_28_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC10 u =
+  if (u = 1n) then
+    Some ({srcIp = 70.0.29.1; dstIp = 70.0.46.1; srcPort = 32697u16; dstPort = 4212u16; protocol = 17u8; flowSize = 358.0})
+  else None
+
+let fwdOutTc10 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_46_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC11 u =
+  if (u = 1n) then
+    Some ({srcIp = 70.0.29.1; dstIp = 70.0.53.1; srcPort = 16112u16; dstPort = 56388u16; protocol = 6u8; flowSize = 137.0})
+  else None
+
+let fwdOutTc11 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_53_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC12 u =
+  if (u = 1n) then
+    Some ({srcIp = 70.0.29.1; dstIp = 70.0.61.1; srcPort = 12904u16; dstPort = 2260u16; protocol = 17u8; flowSize = 165.0})
+  else None
+
+let fwdOutTc12 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_61_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC13 u =
+  if (u = 1n) then
+    Some ({srcIp = 70.0.29.1; dstIp = 70.0.70.1; srcPort = 38261u16; dstPort = 51379u16; protocol = 6u8; flowSize = 61.0})
+  else None
+
+let fwdOutTc13 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_70_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC14 u =
+  if (u = 2n) then
+    Some ({srcIp = 70.0.22.1; dstIp = 70.0.29.1; srcPort = 2531u16; dstPort = 5786u16; protocol = 17u8; flowSize = 88.0})
+  else None
+
+let fwdOutTc14 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_29_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC15 u =
+  if (u = 2n) then
+    Some ({srcIp = 70.0.22.1; dstIp = 70.0.31.1; srcPort = 32164u16; dstPort = 55145u16; protocol = 6u8; flowSize = 362.0})
+  else None
+
+let fwdOutTc15 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_31_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC16 u =
+  if (u = 2n) then
+    Some ({srcIp = 70.0.22.1; dstIp = 70.0.54.1; srcPort = 40731u16; dstPort = 5380u16; protocol = 17u8; flowSize = 219.0})
+  else None
+
+let fwdOutTc16 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_54_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC17 u =
+  if (u = 2n) then
+    Some ({srcIp = 70.0.22.1; dstIp = 70.0.55.1; srcPort = 35742u16; dstPort = 21911u16; protocol = 17u8; flowSize = 209.0})
+  else None
+
+let fwdOutTc17 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_55_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC18 u =
+  if (u = 2n) then
+    Some ({srcIp = 70.0.22.1; dstIp = 70.0.60.1; srcPort = 17907u16; dstPort = 55831u16; protocol = 6u8; flowSize = 63.0})
+  else None
+
+let fwdOutTc18 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_60_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC19 u =
+  if (u = 2n) then
+    Some ({srcIp = 70.0.22.1; dstIp = 70.0.62.1; srcPort = 13030u16; dstPort = 46440u16; protocol = 6u8; flowSize = 349.0})
+  else None
+
+let fwdOutTc19 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_62_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC20 u =
+  if (u = 2n) then
+    Some ({srcIp = 70.0.22.1; dstIp = 70.0.76.1; srcPort = 46660u16; dstPort = 21639u16; protocol = 17u8; flowSize = 187.0})
+  else None
+
+let fwdOutTc20 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_76_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC21 u =
+  if (u = 3n) then
+    Some ({srcIp = 70.0.23.1; dstIp = 70.0.21.1; srcPort = 61681u16; dstPort = 15451u16; protocol = 17u8; flowSize = 107.0})
+  else None
+
+let fwdOutTc21 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_21_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC22 u =
+  if (u = 3n) then
+    Some ({srcIp = 70.0.23.1; dstIp = 70.0.31.1; srcPort = 45127u16; dstPort = 30761u16; protocol = 6u8; flowSize = 18.0})
+  else None
+
+let fwdOutTc22 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_31_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC23 u =
+  if (u = 3n) then
+    Some ({srcIp = 70.0.23.1; dstIp = 70.0.38.1; srcPort = 31418u16; dstPort = 16182u16; protocol = 6u8; flowSize = 478.0})
+  else None
+
+let fwdOutTc23 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_38_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC24 u =
+  if (u = 3n) then
+    Some ({srcIp = 70.0.23.1; dstIp = 70.0.55.1; srcPort = 56507u16; dstPort = 24520u16; protocol = 17u8; flowSize = 467.0})
+  else None
+
+let fwdOutTc24 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_55_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC25 u =
+  if (u = 3n) then
+    Some ({srcIp = 70.0.23.1; dstIp = 70.0.68.1; srcPort = 55637u16; dstPort = 57231u16; protocol = 17u8; flowSize = 358.0})
+  else None
+
+let fwdOutTc25 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_68_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC26 u =
+  if (u = 4n) then
+    Some ({srcIp = 70.0.68.1; dstIp = 70.0.39.1; srcPort = 31454u16; dstPort = 23258u16; protocol = 17u8; flowSize = 255.0})
+  else None
+
+let fwdOutTc26 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_39_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC27 u =
+  if (u = 5n) then
+    Some ({srcIp = 70.0.69.1; dstIp = 70.0.23.1; srcPort = 53232u16; dstPort = 48163u16; protocol = 6u8; flowSize = 475.0})
+  else None
+
+let fwdOutTc27 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_23_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC28 u =
+  if (u = 5n) then
+    Some ({srcIp = 70.0.69.1; dstIp = 70.0.53.1; srcPort = 43133u16; dstPort = 11075u16; protocol = 6u8; flowSize = 307.0})
+  else None
+
+let fwdOutTc28 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_53_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC29 u =
+  if (u = 5n) then
+    Some ({srcIp = 70.0.69.1; dstIp = 70.0.78.1; srcPort = 20276u16; dstPort = 26242u16; protocol = 6u8; flowSize = 166.0})
+  else None
+
+let fwdOutTc29 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_78_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC30 u =
+  if (u = 5n) then
+    Some ({srcIp = 70.0.69.1; dstIp = 70.0.79.1; srcPort = 18592u16; dstPort = 25271u16; protocol = 17u8; flowSize = 395.0})
+  else None
+
+let fwdOutTc30 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_79_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC31 u =
+  if (u = 8n) then
+    Some ({srcIp = 70.0.62.1; dstIp = 70.0.21.1; srcPort = 14693u16; dstPort = 58652u16; protocol = 17u8; flowSize = 371.0})
+  else None
+
+let fwdOutTc31 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_21_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC32 u =
+  if (u = 8n) then
+    Some ({srcIp = 70.0.62.1; dstIp = 70.0.29.1; srcPort = 4797u16; dstPort = 21101u16; protocol = 17u8; flowSize = 440.0})
+  else None
+
+let fwdOutTc32 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_29_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC33 u =
+  if (u = 8n) then
+    Some ({srcIp = 70.0.62.1; dstIp = 70.0.38.1; srcPort = 44874u16; dstPort = 31425u16; protocol = 17u8; flowSize = 206.0})
+  else None
+
+let fwdOutTc33 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_38_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC34 u =
+  if (u = 8n) then
+    Some ({srcIp = 70.0.62.1; dstIp = 70.0.44.1; srcPort = 31766u16; dstPort = 6089u16; protocol = 17u8; flowSize = 353.0})
+  else None
+
+let fwdOutTc34 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_44_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC35 u =
+  if (u = 8n) then
+    Some ({srcIp = 70.0.62.1; dstIp = 70.0.46.1; srcPort = 48999u16; dstPort = 1505u16; protocol = 6u8; flowSize = 476.0})
+  else None
+
+let fwdOutTc35 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_46_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC36 u =
+  if (u = 8n) then
+    Some ({srcIp = 70.0.62.1; dstIp = 70.0.55.1; srcPort = 33967u16; dstPort = 40187u16; protocol = 17u8; flowSize = 479.0})
+  else None
+
+let fwdOutTc36 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_55_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC37 u =
+  if (u = 8n) then
+    Some ({srcIp = 70.0.62.1; dstIp = 70.0.69.1; srcPort = 7316u16; dstPort = 31088u16; protocol = 6u8; flowSize = 40.0})
+  else None
+
+let fwdOutTc37 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_69_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC38 u =
+  if (u = 8n) then
+    Some ({srcIp = 70.0.62.1; dstIp = 70.0.79.1; srcPort = 39402u16; dstPort = 39843u16; protocol = 6u8; flowSize = 187.0})
+  else None
+
+let fwdOutTc38 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_79_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC39 u =
+  if (u = 10n) then
+    Some ({srcIp = 70.0.63.1; dstIp = 70.0.31.1; srcPort = 46003u16; dstPort = 62869u16; protocol = 6u8; flowSize = 380.0})
+  else None
+
+let fwdOutTc39 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_31_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC40 u =
+  if (u = 10n) then
+    Some ({srcIp = 70.0.63.1; dstIp = 70.0.52.1; srcPort = 48587u16; dstPort = 63379u16; protocol = 17u8; flowSize = 173.0})
+  else None
+
+let fwdOutTc40 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_52_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC41 u =
+  if (u = 10n) then
+    Some ({srcIp = 70.0.63.1; dstIp = 70.0.53.1; srcPort = 11886u16; dstPort = 36937u16; protocol = 17u8; flowSize = 435.0})
+  else None
+
+let fwdOutTc41 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_53_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC42 u =
+  if (u = 10n) then
+    Some ({srcIp = 70.0.63.1; dstIp = 70.0.55.1; srcPort = 23666u16; dstPort = 40525u16; protocol = 6u8; flowSize = 126.0})
+  else None
+
+let fwdOutTc42 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_55_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC43 u =
+  if (u = 12n) then
+    Some ({srcIp = 70.0.20.1; dstIp = 70.0.31.1; srcPort = 32851u16; dstPort = 47907u16; protocol = 6u8; flowSize = 403.0})
+  else None
+
+let fwdOutTc43 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_31_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC44 u =
+  if (u = 12n) then
+    Some ({srcIp = 70.0.20.1; dstIp = 70.0.53.1; srcPort = 59268u16; dstPort = 63098u16; protocol = 17u8; flowSize = 334.0})
+  else None
+
+let fwdOutTc44 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_53_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC45 u =
+  if (u = 12n) then
+    Some ({srcIp = 70.0.20.1; dstIp = 70.0.54.1; srcPort = 64806u16; dstPort = 33681u16; protocol = 17u8; flowSize = 53.0})
+  else None
+
+let fwdOutTc45 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_54_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC46 u =
+  if (u = 12n) then
+    Some ({srcIp = 70.0.20.1; dstIp = 70.0.79.1; srcPort = 23240u16; dstPort = 10934u16; protocol = 17u8; flowSize = 135.0})
+  else None
+
+let fwdOutTc46 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_79_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC47 u =
+  if (u = 13n) then
+    Some ({srcIp = 70.0.21.1; dstIp = 70.0.30.1; srcPort = 50487u16; dstPort = 60826u16; protocol = 6u8; flowSize = 471.0})
+  else None
+
+let fwdOutTc47 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_30_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC48 u =
+  if (u = 13n) then
+    Some ({srcIp = 70.0.21.1; dstIp = 70.0.39.1; srcPort = 38117u16; dstPort = 9557u16; protocol = 17u8; flowSize = 88.0})
+  else None
+
+let fwdOutTc48 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_39_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC49 u =
+  if (u = 13n) then
+    Some ({srcIp = 70.0.21.1; dstIp = 70.0.44.1; srcPort = 60282u16; dstPort = 56846u16; protocol = 6u8; flowSize = 169.0})
+  else None
+
+let fwdOutTc49 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_44_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC50 u =
+  if (u = 13n) then
+    Some ({srcIp = 70.0.21.1; dstIp = 70.0.52.1; srcPort = 15971u16; dstPort = 15211u16; protocol = 17u8; flowSize = 373.0})
+  else None
+
+let fwdOutTc50 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_52_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC51 u =
+  if (u = 13n) then
+    Some ({srcIp = 70.0.21.1; dstIp = 70.0.54.1; srcPort = 11145u16; dstPort = 30375u16; protocol = 6u8; flowSize = 56.0})
+  else None
+
+let fwdOutTc51 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_54_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC52 u =
+  if (u = 13n) then
+    Some ({srcIp = 70.0.21.1; dstIp = 70.0.77.1; srcPort = 36185u16; dstPort = 40789u16; protocol = 17u8; flowSize = 142.0})
+  else None
+
+let fwdOutTc52 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_77_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC53 u =
+  if (u = 16n) then
+    Some ({srcIp = 70.0.60.1; dstIp = 70.0.38.1; srcPort = 23420u16; dstPort = 51219u16; protocol = 17u8; flowSize = 288.0})
+  else None
+
+let fwdOutTc53 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_38_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC54 u =
+  if (u = 16n) then
+    Some ({srcIp = 70.0.60.1; dstIp = 70.0.39.1; srcPort = 11416u16; dstPort = 57984u16; protocol = 6u8; flowSize = 105.0})
+  else None
+
+let fwdOutTc54 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_39_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC55 u =
+  if (u = 16n) then
+    Some ({srcIp = 70.0.60.1; dstIp = 70.0.46.1; srcPort = 19688u16; dstPort = 13841u16; protocol = 6u8; flowSize = 75.0})
+  else None
+
+let fwdOutTc55 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_46_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC56 u =
+  if (u = 16n) then
+    Some ({srcIp = 70.0.60.1; dstIp = 70.0.68.1; srcPort = 32159u16; dstPort = 57473u16; protocol = 17u8; flowSize = 454.0})
+  else None
+
+let fwdOutTc56 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_68_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC57 u =
+  if (u = 18n) then
+    Some ({srcIp = 70.0.61.1; dstIp = 70.0.30.1; srcPort = 16920u16; dstPort = 31516u16; protocol = 17u8; flowSize = 277.0})
+  else None
+
+let fwdOutTc57 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_30_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC58 u =
+  if (u = 18n) then
+    Some ({srcIp = 70.0.61.1; dstIp = 70.0.79.1; srcPort = 43636u16; dstPort = 15272u16; protocol = 17u8; flowSize = 374.0})
+  else None
+
+let fwdOutTc58 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_79_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC59 u =
+  if (u = 20n) then
+    Some ({srcIp = 70.0.37.1; dstIp = 70.0.61.1; srcPort = 28506u16; dstPort = 20824u16; protocol = 17u8; flowSize = 466.0})
+  else None
+
+let fwdOutTc59 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_61_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC60 u =
+  if (u = 21n) then
+    Some ({srcIp = 70.0.38.1; dstIp = 70.0.47.1; srcPort = 4476u16; dstPort = 50601u16; protocol = 6u8; flowSize = 304.0})
+  else None
+
+let fwdOutTc60 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_47_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC61 u =
+  if (u = 21n) then
+    Some ({srcIp = 70.0.38.1; dstIp = 70.0.61.1; srcPort = 37944u16; dstPort = 31224u16; protocol = 6u8; flowSize = 59.0})
+  else None
+
+let fwdOutTc61 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_61_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC62 u =
+  if (u = 21n) then
+    Some ({srcIp = 70.0.38.1; dstIp = 70.0.63.1; srcPort = 49357u16; dstPort = 8160u16; protocol = 17u8; flowSize = 56.0})
+  else None
+
+let fwdOutTc62 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_63_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC63 u =
+  if (u = 22n) then
+    Some ({srcIp = 70.0.39.1; dstIp = 70.0.55.1; srcPort = 40943u16; dstPort = 1529u16; protocol = 17u8; flowSize = 270.0})
+  else None
+
+let fwdOutTc63 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_55_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC64 u =
+  if (u = 22n) then
+    Some ({srcIp = 70.0.39.1; dstIp = 70.0.63.1; srcPort = 58618u16; dstPort = 21348u16; protocol = 17u8; flowSize = 479.0})
+  else None
+
+let fwdOutTc64 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_63_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC65 u =
+  if (u = 22n) then
+    Some ({srcIp = 70.0.39.1; dstIp = 70.0.70.1; srcPort = 59007u16; dstPort = 20391u16; protocol = 6u8; flowSize = 91.0})
+  else None
+
+let fwdOutTc65 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_70_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC66 u =
+  if (u = 23n) then
+    Some ({srcIp = 70.0.77.1; dstIp = 70.0.20.1; srcPort = 15123u16; dstPort = 46829u16; protocol = 17u8; flowSize = 65.0})
+  else None
+
+let fwdOutTc66 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_20_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC67 u =
+  if (u = 23n) then
+    Some ({srcIp = 70.0.77.1; dstIp = 70.0.44.1; srcPort = 49529u16; dstPort = 35472u16; protocol = 17u8; flowSize = 188.0})
+  else None
+
+let fwdOutTc67 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_44_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC68 u =
+  if (u = 23n) then
+    Some ({srcIp = 70.0.77.1; dstIp = 70.0.47.1; srcPort = 20536u16; dstPort = 16592u16; protocol = 17u8; flowSize = 71.0})
+  else None
+
+let fwdOutTc68 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_47_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC69 u =
+  if (u = 23n) then
+    Some ({srcIp = 70.0.77.1; dstIp = 70.0.61.1; srcPort = 24189u16; dstPort = 48878u16; protocol = 17u8; flowSize = 137.0})
+  else None
+
+let fwdOutTc69 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_61_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC70 u =
+  if (u = 23n) then
+    Some ({srcIp = 70.0.77.1; dstIp = 70.0.76.1; srcPort = 49028u16; dstPort = 2158u16; protocol = 6u8; flowSize = 379.0})
+  else None
+
+let fwdOutTc70 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_76_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC71 u =
+  if (u = 24n) then
+    Some ({srcIp = 70.0.78.1; dstIp = 70.0.21.1; srcPort = 13436u16; dstPort = 53633u16; protocol = 6u8; flowSize = 95.0})
+  else None
+
+let fwdOutTc71 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_21_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC72 u =
+  if (u = 24n) then
+    Some ({srcIp = 70.0.78.1; dstIp = 70.0.47.1; srcPort = 2820u16; dstPort = 52870u16; protocol = 6u8; flowSize = 202.0})
+  else None
+
+let fwdOutTc72 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_47_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC73 u =
+  if (u = 24n) then
+    Some ({srcIp = 70.0.78.1; dstIp = 70.0.61.1; srcPort = 34433u16; dstPort = 59554u16; protocol = 17u8; flowSize = 208.0})
+  else None
+
+let fwdOutTc73 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_61_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC74 u =
+  if (u = 24n) then
+    Some ({srcIp = 70.0.78.1; dstIp = 70.0.77.1; srcPort = 65031u16; dstPort = 57715u16; protocol = 17u8; flowSize = 248.0})
+  else None
+
+let fwdOutTc74 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_77_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC75 u =
+  if (u = 26n) then
+    Some ({srcIp = 70.0.79.1; dstIp = 70.0.62.1; srcPort = 15390u16; dstPort = 17134u16; protocol = 17u8; flowSize = 214.0})
+  else None
+
+let fwdOutTc75 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_62_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC76 u =
+  if (u = 26n) then
+    Some ({srcIp = 70.0.79.1; dstIp = 70.0.69.1; srcPort = 34728u16; dstPort = 47809u16; protocol = 6u8; flowSize = 490.0})
+  else None
+
+let fwdOutTc76 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_69_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC77 u =
+  if (u = 26n) then
+    Some ({srcIp = 70.0.79.1; dstIp = 70.0.71.1; srcPort = 60024u16; dstPort = 62781u16; protocol = 17u8; flowSize = 417.0})
+  else None
+
+let fwdOutTc77 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_71_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC78 u =
+  if (u = 27n) then
+    Some ({srcIp = 70.0.36.1; dstIp = 70.0.54.1; srcPort = 163u16; dstPort = 34498u16; protocol = 6u8; flowSize = 409.0})
+  else None
+
+let fwdOutTc78 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_54_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC79 u =
+  if (u = 27n) then
+    Some ({srcIp = 70.0.36.1; dstIp = 70.0.55.1; srcPort = 33908u16; dstPort = 33919u16; protocol = 6u8; flowSize = 490.0})
+  else None
+
+let fwdOutTc79 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_55_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC80 u =
+  if (u = 27n) then
+    Some ({srcIp = 70.0.36.1; dstIp = 70.0.63.1; srcPort = 12796u16; dstPort = 2657u16; protocol = 17u8; flowSize = 153.0})
+  else None
+
+let fwdOutTc80 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_63_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC81 u =
+  if (u = 27n) then
+    Some ({srcIp = 70.0.36.1; dstIp = 70.0.68.1; srcPort = 53796u16; dstPort = 43237u16; protocol = 6u8; flowSize = 77.0})
+  else None
+
+let fwdOutTc81 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_68_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC82 u =
+  if (u = 29n) then
+    Some ({srcIp = 70.0.30.1; dstIp = 70.0.31.1; srcPort = 48362u16; dstPort = 40465u16; protocol = 17u8; flowSize = 439.0})
+  else None
+
+let fwdOutTc82 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_31_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC83 u =
+  if (u = 29n) then
+    Some ({srcIp = 70.0.30.1; dstIp = 70.0.39.1; srcPort = 8885u16; dstPort = 34946u16; protocol = 17u8; flowSize = 38.0})
+  else None
+
+let fwdOutTc83 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_39_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC84 u =
+  if (u = 29n) then
+    Some ({srcIp = 70.0.30.1; dstIp = 70.0.46.1; srcPort = 25465u16; dstPort = 22447u16; protocol = 6u8; flowSize = 225.0})
+  else None
+
+let fwdOutTc84 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_46_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC85 u =
+  if (u = 29n) then
+    Some ({srcIp = 70.0.30.1; dstIp = 70.0.77.1; srcPort = 64391u16; dstPort = 53606u16; protocol = 6u8; flowSize = 67.0})
+  else None
+
+let fwdOutTc85 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_77_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC86 u =
+  if (u = 31n) then
+    Some ({srcIp = 70.0.31.1; dstIp = 70.0.45.1; srcPort = 18089u16; dstPort = 63827u16; protocol = 17u8; flowSize = 95.0})
+  else None
+
+let fwdOutTc86 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_45_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC87 u =
+  if (u = 31n) then
+    Some ({srcIp = 70.0.31.1; dstIp = 70.0.53.1; srcPort = 44260u16; dstPort = 16403u16; protocol = 6u8; flowSize = 431.0})
+  else None
+
+let fwdOutTc87 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_53_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC88 u =
+  if (u = 33n) then
+    Some ({srcIp = 70.0.76.1; dstIp = 70.0.36.1; srcPort = 59674u16; dstPort = 54789u16; protocol = 6u8; flowSize = 228.0})
+  else None
+
+let fwdOutTc88 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_36_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC89 u =
+  if (u = 33n) then
+    Some ({srcIp = 70.0.76.1; dstIp = 70.0.44.1; srcPort = 63807u16; dstPort = 17917u16; protocol = 6u8; flowSize = 39.0})
+  else None
+
+let fwdOutTc89 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_44_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC90 u =
+  if (u = 33n) then
+    Some ({srcIp = 70.0.76.1; dstIp = 70.0.54.1; srcPort = 61963u16; dstPort = 54819u16; protocol = 17u8; flowSize = 482.0})
+  else None
+
+let fwdOutTc90 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_54_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC91 u =
+  if (u = 33n) then
+    Some ({srcIp = 70.0.76.1; dstIp = 70.0.77.1; srcPort = 14684u16; dstPort = 58206u16; protocol = 6u8; flowSize = 227.0})
+  else None
+
+let fwdOutTc91 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_77_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC92 u =
+  if (u = 37n) then
+    Some ({srcIp = 70.0.71.1; dstIp = 70.0.21.1; srcPort = 46328u16; dstPort = 59090u16; protocol = 17u8; flowSize = 467.0})
+  else None
+
+let fwdOutTc92 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_21_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC93 u =
+  if (u = 37n) then
+    Some ({srcIp = 70.0.71.1; dstIp = 70.0.45.1; srcPort = 6949u16; dstPort = 3765u16; protocol = 6u8; flowSize = 158.0})
+  else None
+
+let fwdOutTc93 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_45_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC94 u =
+  if (u = 37n) then
+    Some ({srcIp = 70.0.71.1; dstIp = 70.0.52.1; srcPort = 47812u16; dstPort = 61178u16; protocol = 6u8; flowSize = 149.0})
+  else None
+
+let fwdOutTc94 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_52_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC95 u =
+  if (u = 37n) then
+    Some ({srcIp = 70.0.71.1; dstIp = 70.0.77.1; srcPort = 7469u16; dstPort = 3524u16; protocol = 6u8; flowSize = 480.0})
+  else None
+
+let fwdOutTc95 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_77_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC96 u =
+  if (u = 42n) then
+    Some ({srcIp = 70.0.44.1; dstIp = 70.0.36.1; srcPort = 11283u16; dstPort = 10522u16; protocol = 17u8; flowSize = 129.0})
+  else None
+
+let fwdOutTc96 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_36_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC97 u =
+  if (u = 42n) then
+    Some ({srcIp = 70.0.44.1; dstIp = 70.0.45.1; srcPort = 20623u16; dstPort = 9568u16; protocol = 6u8; flowSize = 291.0})
+  else None
+
+let fwdOutTc97 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_45_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC98 u =
+  if (u = 42n) then
+    Some ({srcIp = 70.0.44.1; dstIp = 70.0.52.1; srcPort = 54357u16; dstPort = 14212u16; protocol = 17u8; flowSize = 238.0})
+  else None
+
+let fwdOutTc98 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_52_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC99 u =
+  if (u = 42n) then
+    Some ({srcIp = 70.0.44.1; dstIp = 70.0.60.1; srcPort = 21898u16; dstPort = 53997u16; protocol = 6u8; flowSize = 112.0})
+  else None
+
+let fwdOutTc99 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_60_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC100 u =
+  if (u = 42n) then
+    Some ({srcIp = 70.0.44.1; dstIp = 70.0.61.1; srcPort = 12675u16; dstPort = 21056u16; protocol = 6u8; flowSize = 139.0})
+  else None
+
+let fwdOutTc100 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_61_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC101 u =
+  if (u = 45n) then
+    Some ({srcIp = 70.0.45.1; dstIp = 70.0.38.1; srcPort = 444u16; dstPort = 54759u16; protocol = 17u8; flowSize = 29.0})
+  else None
+
+let fwdOutTc101 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_38_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC102 u =
+  if (u = 45n) then
+    Some ({srcIp = 70.0.45.1; dstIp = 70.0.47.1; srcPort = 52321u16; dstPort = 61394u16; protocol = 17u8; flowSize = 41.0})
+  else None
+
+let fwdOutTc102 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_47_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC103 u =
+  if (u = 45n) then
+    Some ({srcIp = 70.0.45.1; dstIp = 70.0.52.1; srcPort = 28189u16; dstPort = 19155u16; protocol = 17u8; flowSize = 395.0})
+  else None
+
+let fwdOutTc103 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_52_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC104 u =
+  if (u = 45n) then
+    Some ({srcIp = 70.0.45.1; dstIp = 70.0.62.1; srcPort = 49769u16; dstPort = 54688u16; protocol = 17u8; flowSize = 458.0})
+  else None
+
+let fwdOutTc104 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_62_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC105 u =
+  if (u = 45n) then
+    Some ({srcIp = 70.0.45.1; dstIp = 70.0.70.1; srcPort = 16019u16; dstPort = 60745u16; protocol = 6u8; flowSize = 152.0})
+  else None
+
+let fwdOutTc105 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_70_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC106 u =
+  if (u = 48n) then
+    Some ({srcIp = 70.0.46.1; dstIp = 70.0.21.1; srcPort = 24409u16; dstPort = 761u16; protocol = 17u8; flowSize = 30.0})
+  else None
+
+let fwdOutTc106 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_21_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC107 u =
+  if (u = 51n) then
+    Some ({srcIp = 70.0.47.1; dstIp = 70.0.31.1; srcPort = 39838u16; dstPort = 59071u16; protocol = 17u8; flowSize = 178.0})
+  else None
+
+let fwdOutTc107 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_31_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC108 u =
+  if (u = 51n) then
+    Some ({srcIp = 70.0.47.1; dstIp = 70.0.36.1; srcPort = 33608u16; dstPort = 25046u16; protocol = 17u8; flowSize = 365.0})
+  else None
+
+let fwdOutTc108 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_36_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC109 u =
+  if (u = 51n) then
+    Some ({srcIp = 70.0.47.1; dstIp = 70.0.45.1; srcPort = 23498u16; dstPort = 31302u16; protocol = 17u8; flowSize = 256.0})
+  else None
+
+let fwdOutTc109 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_45_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC110 u =
+  if (u = 64n) then
+    Some ({srcIp = 70.0.55.1; dstIp = 70.0.36.1; srcPort = 11357u16; dstPort = 29150u16; protocol = 17u8; flowSize = 381.0})
+  else None
+
+let fwdOutTc110 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_36_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC111 u =
+  if (u = 73n) then
+    Some ({srcIp = 70.0.52.1; dstIp = 70.0.37.1; srcPort = 31355u16; dstPort = 59580u16; protocol = 6u8; flowSize = 466.0})
+  else None
+
+let fwdOutTc111 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_37_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC112 u =
+  if (u = 74n) then
+    Some ({srcIp = 70.0.53.1; dstIp = 70.0.31.1; srcPort = 39171u16; dstPort = 3551u16; protocol = 6u8; flowSize = 473.0})
+  else None
+
+let fwdOutTc112 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_31_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC113 u =
+  if (u = 74n) then
+    Some ({srcIp = 70.0.53.1; dstIp = 70.0.70.1; srcPort = 64685u16; dstPort = 9688u16; protocol = 6u8; flowSize = 12.0})
+  else None
+
+let fwdOutTc113 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_70_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC114 u =
+  if (u = 76n) then
+    Some ({srcIp = 70.0.54.1; dstIp = 70.0.20.1; srcPort = 43645u16; dstPort = 19058u16; protocol = 17u8; flowSize = 289.0})
+  else None
+
+let fwdOutTc114 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_20_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+let initTC115 u =
+  if (u = 76n) then
+    Some ({srcIp = 70.0.54.1; dstIp = 70.0.31.1; srcPort = 34502u16; dstPort = 27604u16; protocol = 17u8; flowSize = 446.0})
+  else None
+
+let fwdOutTc115 e (fs : [C]option[flow])  =
+  match fwdOut (rib_70_0_31_0_24[let (u~v) = e in u]) e fs with
+  | Some (Some fs) -> Some fs
+  | Some None -> None
+  | None -> None
+
+
+forward (hVTc0,hETc0) = (initTC0, fwdOutTc0, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc1,hETc1) = (initTC1, fwdOutTc1, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc2,hETc2) = (initTC2, fwdOutTc2, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc3,hETc3) = (initTC3, fwdOutTc3, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc4,hETc4) = (initTC4, fwdOutTc4, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc5,hETc5) = (initTC5, fwdOutTc5, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc6,hETc6) = (initTC6, fwdOutTc6, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc7,hETc7) = (initTC7, fwdOutTc7, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc8,hETc8) = (initTC8, fwdOutTc8, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc9,hETc9) = (initTC9, fwdOutTc9, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc10,hETc10) = (initTC10, fwdOutTc10, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc11,hETc11) = (initTC11, fwdOutTc11, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc12,hETc12) = (initTC12, fwdOutTc12, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc13,hETc13) = (initTC13, fwdOutTc13, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc14,hETc14) = (initTC14, fwdOutTc14, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc15,hETc15) = (initTC15, fwdOutTc15, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc16,hETc16) = (initTC16, fwdOutTc16, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc17,hETc17) = (initTC17, fwdOutTc17, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc18,hETc18) = (initTC18, fwdOutTc18, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc19,hETc19) = (initTC19, fwdOutTc19, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc20,hETc20) = (initTC20, fwdOutTc20, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc21,hETc21) = (initTC21, fwdOutTc21, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc22,hETc22) = (initTC22, fwdOutTc22, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc23,hETc23) = (initTC23, fwdOutTc23, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc24,hETc24) = (initTC24, fwdOutTc24, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc25,hETc25) = (initTC25, fwdOutTc25, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc26,hETc26) = (initTC26, fwdOutTc26, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc27,hETc27) = (initTC27, fwdOutTc27, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc28,hETc28) = (initTC28, fwdOutTc28, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc29,hETc29) = (initTC29, fwdOutTc29, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc30,hETc30) = (initTC30, fwdOutTc30, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc31,hETc31) = (initTC31, fwdOutTc31, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc32,hETc32) = (initTC32, fwdOutTc32, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc33,hETc33) = (initTC33, fwdOutTc33, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc34,hETc34) = (initTC34, fwdOutTc34, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc35,hETc35) = (initTC35, fwdOutTc35, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc36,hETc36) = (initTC36, fwdOutTc36, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc37,hETc37) = (initTC37, fwdOutTc37, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc38,hETc38) = (initTC38, fwdOutTc38, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc39,hETc39) = (initTC39, fwdOutTc39, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc40,hETc40) = (initTC40, fwdOutTc40, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc41,hETc41) = (initTC41, fwdOutTc41, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc42,hETc42) = (initTC42, fwdOutTc42, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc43,hETc43) = (initTC43, fwdOutTc43, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc44,hETc44) = (initTC44, fwdOutTc44, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc45,hETc45) = (initTC45, fwdOutTc45, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc46,hETc46) = (initTC46, fwdOutTc46, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc47,hETc47) = (initTC47, fwdOutTc47, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc48,hETc48) = (initTC48, fwdOutTc48, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc49,hETc49) = (initTC49, fwdOutTc49, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc50,hETc50) = (initTC50, fwdOutTc50, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc51,hETc51) = (initTC51, fwdOutTc51, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc52,hETc52) = (initTC52, fwdOutTc52, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc53,hETc53) = (initTC53, fwdOutTc53, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc54,hETc54) = (initTC54, fwdOutTc54, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc55,hETc55) = (initTC55, fwdOutTc55, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc56,hETc56) = (initTC56, fwdOutTc56, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc57,hETc57) = (initTC57, fwdOutTc57, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc58,hETc58) = (initTC58, fwdOutTc58, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc59,hETc59) = (initTC59, fwdOutTc59, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc60,hETc60) = (initTC60, fwdOutTc60, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc61,hETc61) = (initTC61, fwdOutTc61, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc62,hETc62) = (initTC62, fwdOutTc62, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc63,hETc63) = (initTC63, fwdOutTc63, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc64,hETc64) = (initTC64, fwdOutTc64, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc65,hETc65) = (initTC65, fwdOutTc65, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc66,hETc66) = (initTC66, fwdOutTc66, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc67,hETc67) = (initTC67, fwdOutTc67, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc68,hETc68) = (initTC68, fwdOutTc68, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc69,hETc69) = (initTC69, fwdOutTc69, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc70,hETc70) = (initTC70, fwdOutTc70, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc71,hETc71) = (initTC71, fwdOutTc71, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc72,hETc72) = (initTC72, fwdOutTc72, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc73,hETc73) = (initTC73, fwdOutTc73, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc74,hETc74) = (initTC74, fwdOutTc74, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc75,hETc75) = (initTC75, fwdOutTc75, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc76,hETc76) = (initTC76, fwdOutTc76, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc77,hETc77) = (initTC77, fwdOutTc77, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc78,hETc78) = (initTC78, fwdOutTc78, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc79,hETc79) = (initTC79, fwdOutTc79, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc80,hETc80) = (initTC80, fwdOutTc80, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc81,hETc81) = (initTC81, fwdOutTc81, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc82,hETc82) = (initTC82, fwdOutTc82, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc83,hETc83) = (initTC83, fwdOutTc83, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc84,hETc84) = (initTC84, fwdOutTc84, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc85,hETc85) = (initTC85, fwdOutTc85, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc86,hETc86) = (initTC86, fwdOutTc86, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc87,hETc87) = (initTC87, fwdOutTc87, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc88,hETc88) = (initTC88, fwdOutTc88, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc89,hETc89) = (initTC89, fwdOutTc89, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc90,hETc90) = (initTC90, fwdOutTc90, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc91,hETc91) = (initTC91, fwdOutTc91, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc92,hETc92) = (initTC92, fwdOutTc92, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc93,hETc93) = (initTC93, fwdOutTc93, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc94,hETc94) = (initTC94, fwdOutTc94, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc95,hETc95) = (initTC95, fwdOutTc95, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc96,hETc96) = (initTC96, fwdOutTc96, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc97,hETc97) = (initTC97, fwdOutTc97, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc98,hETc98) = (initTC98, fwdOutTc98, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc99,hETc99) = (initTC99, fwdOutTc99, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc100,hETc100) = (initTC100, fwdOutTc100, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc101,hETc101) = (initTC101, fwdOutTc101, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc102,hETc102) = (initTC102, fwdOutTc102, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc103,hETc103) = (initTC103, fwdOutTc103, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc104,hETc104) = (initTC104, fwdOutTc104, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc105,hETc105) = (initTC105, fwdOutTc105, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc106,hETc106) = (initTC106, fwdOutTc106, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc107,hETc107) = (initTC107, fwdOutTc107, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc108,hETc108) = (initTC108, fwdOutTc108, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc109,hETc109) = (initTC109, fwdOutTc109, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc110,hETc110) = (initTC110, fwdOutTc110, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc111,hETc111) = (initTC111, fwdOutTc111, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc112,hETc112) = (initTC112, fwdOutTc112, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc113,hETc113) = (initTC113, fwdOutTc113, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc114,hETc114) = (initTC114, fwdOutTc114, fwdIn, hinitV, hinitE, logV, logE, None)
+forward (hVTc115,hETc115) = (initTC115, fwdOutTc115, fwdIn, hinitV, hinitE, logV, logE, None)
+
+@noinline let linkUtilization0 e = hETc0[e] +. hETc1[e]
+
+@noinline let linkUtilization1 e = (linkUtilization0 e) +. hETc2[e]
+
+@noinline let linkUtilization2 e = (linkUtilization1 e) +. hETc3[e]
+
+@noinline let linkUtilization3 e = (linkUtilization2 e) +. hETc4[e]
+
+@noinline let linkUtilization4 e = (linkUtilization3 e) +. hETc5[e]
+
+@noinline let linkUtilization5 e = (linkUtilization4 e) +. hETc6[e]
+
+@noinline let linkUtilization6 e = (linkUtilization5 e) +. hETc7[e]
+
+@noinline let linkUtilization7 e = (linkUtilization6 e) +. hETc8[e]
+
+@noinline let linkUtilization8 e = (linkUtilization7 e) +. hETc9[e]
+
+@noinline let linkUtilization9 e = (linkUtilization8 e) +. hETc10[e]
+
+@noinline let linkUtilization10 e = (linkUtilization9 e) +. hETc11[e]
+
+@noinline let linkUtilization11 e = (linkUtilization10 e) +. hETc12[e]
+
+@noinline let linkUtilization12 e = (linkUtilization11 e) +. hETc13[e]
+
+@noinline let linkUtilization13 e = (linkUtilization12 e) +. hETc14[e]
+
+@noinline let linkUtilization14 e = (linkUtilization13 e) +. hETc15[e]
+
+@noinline let linkUtilization15 e = (linkUtilization14 e) +. hETc16[e]
+
+@noinline let linkUtilization16 e = (linkUtilization15 e) +. hETc17[e]
+
+@noinline let linkUtilization17 e = (linkUtilization16 e) +. hETc18[e]
+
+@noinline let linkUtilization18 e = (linkUtilization17 e) +. hETc19[e]
+
+@noinline let linkUtilization19 e = (linkUtilization18 e) +. hETc20[e]
+
+@noinline let linkUtilization20 e = (linkUtilization19 e) +. hETc21[e]
+
+@noinline let linkUtilization21 e = (linkUtilization20 e) +. hETc22[e]
+
+@noinline let linkUtilization22 e = (linkUtilization21 e) +. hETc23[e]
+
+@noinline let linkUtilization23 e = (linkUtilization22 e) +. hETc24[e]
+
+@noinline let linkUtilization24 e = (linkUtilization23 e) +. hETc25[e]
+
+@noinline let linkUtilization25 e = (linkUtilization24 e) +. hETc26[e]
+
+@noinline let linkUtilization26 e = (linkUtilization25 e) +. hETc27[e]
+
+@noinline let linkUtilization27 e = (linkUtilization26 e) +. hETc28[e]
+
+@noinline let linkUtilization28 e = (linkUtilization27 e) +. hETc29[e]
+
+@noinline let linkUtilization29 e = (linkUtilization28 e) +. hETc30[e]
+
+@noinline let linkUtilization30 e = (linkUtilization29 e) +. hETc31[e]
+
+@noinline let linkUtilization31 e = (linkUtilization30 e) +. hETc32[e]
+
+@noinline let linkUtilization32 e = (linkUtilization31 e) +. hETc33[e]
+
+@noinline let linkUtilization33 e = (linkUtilization32 e) +. hETc34[e]
+
+@noinline let linkUtilization34 e = (linkUtilization33 e) +. hETc35[e]
+
+@noinline let linkUtilization35 e = (linkUtilization34 e) +. hETc36[e]
+
+@noinline let linkUtilization36 e = (linkUtilization35 e) +. hETc37[e]
+
+@noinline let linkUtilization37 e = (linkUtilization36 e) +. hETc38[e]
+
+@noinline let linkUtilization38 e = (linkUtilization37 e) +. hETc39[e]
+
+@noinline let linkUtilization39 e = (linkUtilization38 e) +. hETc40[e]
+
+@noinline let linkUtilization40 e = (linkUtilization39 e) +. hETc41[e]
+
+@noinline let linkUtilization41 e = (linkUtilization40 e) +. hETc42[e]
+
+@noinline let linkUtilization42 e = (linkUtilization41 e) +. hETc43[e]
+
+@noinline let linkUtilization43 e = (linkUtilization42 e) +. hETc44[e]
+
+@noinline let linkUtilization44 e = (linkUtilization43 e) +. hETc45[e]
+
+@noinline let linkUtilization45 e = (linkUtilization44 e) +. hETc46[e]
+
+@noinline let linkUtilization46 e = (linkUtilization45 e) +. hETc47[e]
+
+@noinline let linkUtilization47 e = (linkUtilization46 e) +. hETc48[e]
+
+@noinline let linkUtilization48 e = (linkUtilization47 e) +. hETc49[e]
+
+@noinline let linkUtilization49 e = (linkUtilization48 e) +. hETc50[e]
+
+@noinline let linkUtilization50 e = (linkUtilization49 e) +. hETc51[e]
+
+@noinline let linkUtilization51 e = (linkUtilization50 e) +. hETc52[e]
+
+@noinline let linkUtilization52 e = (linkUtilization51 e) +. hETc53[e]
+
+@noinline let linkUtilization53 e = (linkUtilization52 e) +. hETc54[e]
+
+@noinline let linkUtilization54 e = (linkUtilization53 e) +. hETc55[e]
+
+@noinline let linkUtilization55 e = (linkUtilization54 e) +. hETc56[e]
+
+@noinline let linkUtilization56 e = (linkUtilization55 e) +. hETc57[e]
+
+@noinline let linkUtilization57 e = (linkUtilization56 e) +. hETc58[e]
+
+@noinline let linkUtilization58 e = (linkUtilization57 e) +. hETc59[e]
+
+@noinline let linkUtilization59 e = (linkUtilization58 e) +. hETc60[e]
+
+@noinline let linkUtilization60 e = (linkUtilization59 e) +. hETc61[e]
+
+@noinline let linkUtilization61 e = (linkUtilization60 e) +. hETc62[e]
+
+@noinline let linkUtilization62 e = (linkUtilization61 e) +. hETc63[e]
+
+@noinline let linkUtilization63 e = (linkUtilization62 e) +. hETc64[e]
+
+@noinline let linkUtilization64 e = (linkUtilization63 e) +. hETc65[e]
+
+@noinline let linkUtilization65 e = (linkUtilization64 e) +. hETc66[e]
+
+@noinline let linkUtilization66 e = (linkUtilization65 e) +. hETc67[e]
+
+@noinline let linkUtilization67 e = (linkUtilization66 e) +. hETc68[e]
+
+@noinline let linkUtilization68 e = (linkUtilization67 e) +. hETc69[e]
+
+@noinline let linkUtilization69 e = (linkUtilization68 e) +. hETc70[e]
+
+@noinline let linkUtilization70 e = (linkUtilization69 e) +. hETc71[e]
+
+@noinline let linkUtilization71 e = (linkUtilization70 e) +. hETc72[e]
+
+@noinline let linkUtilization72 e = (linkUtilization71 e) +. hETc73[e]
+
+@noinline let linkUtilization73 e = (linkUtilization72 e) +. hETc74[e]
+
+@noinline let linkUtilization74 e = (linkUtilization73 e) +. hETc75[e]
+
+@noinline let linkUtilization75 e = (linkUtilization74 e) +. hETc76[e]
+
+@noinline let linkUtilization76 e = (linkUtilization75 e) +. hETc77[e]
+
+@noinline let linkUtilization77 e = (linkUtilization76 e) +. hETc78[e]
+
+@noinline let linkUtilization78 e = (linkUtilization77 e) +. hETc79[e]
+
+@noinline let linkUtilization79 e = (linkUtilization78 e) +. hETc80[e]
+
+@noinline let linkUtilization80 e = (linkUtilization79 e) +. hETc81[e]
+
+@noinline let linkUtilization81 e = (linkUtilization80 e) +. hETc82[e]
+
+@noinline let linkUtilization82 e = (linkUtilization81 e) +. hETc83[e]
+
+@noinline let linkUtilization83 e = (linkUtilization82 e) +. hETc84[e]
+
+@noinline let linkUtilization84 e = (linkUtilization83 e) +. hETc85[e]
+
+@noinline let linkUtilization85 e = (linkUtilization84 e) +. hETc86[e]
+
+@noinline let linkUtilization86 e = (linkUtilization85 e) +. hETc87[e]
+
+@noinline let linkUtilization87 e = (linkUtilization86 e) +. hETc88[e]
+
+@noinline let linkUtilization88 e = (linkUtilization87 e) +. hETc89[e]
+
+@noinline let linkUtilization89 e = (linkUtilization88 e) +. hETc90[e]
+
+@noinline let linkUtilization90 e = (linkUtilization89 e) +. hETc91[e]
+
+@noinline let linkUtilization91 e = (linkUtilization90 e) +. hETc92[e]
+
+@noinline let linkUtilization92 e = (linkUtilization91 e) +. hETc93[e]
+
+@noinline let linkUtilization93 e = (linkUtilization92 e) +. hETc94[e]
+
+@noinline let linkUtilization94 e = (linkUtilization93 e) +. hETc95[e]
+
+@noinline let linkUtilization95 e = (linkUtilization94 e) +. hETc96[e]
+
+@noinline let linkUtilization96 e = (linkUtilization95 e) +. hETc97[e]
+
+@noinline let linkUtilization97 e = (linkUtilization96 e) +. hETc98[e]
+
+@noinline let linkUtilization98 e = (linkUtilization97 e) +. hETc99[e]
+
+@noinline let linkUtilization99 e = (linkUtilization98 e) +. hETc100[e]
+
+@noinline let linkUtilization100 e = (linkUtilization99 e) +. hETc101[e]
+
+@noinline let linkUtilization101 e = (linkUtilization100 e) +. hETc102[e]
+
+@noinline let linkUtilization102 e = (linkUtilization101 e) +. hETc103[e]
+
+@noinline let linkUtilization103 e = (linkUtilization102 e) +. hETc104[e]
+
+@noinline let linkUtilization104 e = (linkUtilization103 e) +. hETc105[e]
+
+@noinline let linkUtilization105 e = (linkUtilization104 e) +. hETc106[e]
+
+@noinline let linkUtilization106 e = (linkUtilization105 e) +. hETc107[e]
+
+@noinline let linkUtilization107 e = (linkUtilization106 e) +. hETc108[e]
+
+@noinline let linkUtilization108 e = (linkUtilization107 e) +. hETc109[e]
+
+@noinline let linkUtilization109 e = (linkUtilization108 e) +. hETc110[e]
+
+@noinline let linkUtilization110 e = (linkUtilization109 e) +. hETc111[e]
+
+@noinline let linkUtilization111 e = (linkUtilization110 e) +. hETc112[e]
+
+@noinline let linkUtilization112 e = (linkUtilization111 e) +. hETc113[e]
+
+@noinline let linkUtilization113 e = (linkUtilization112 e) +. hETc114[e]
+
+@noinline let linkUtilization114 e = (linkUtilization113 e) +. hETc115[e]
+
+let ltf0_1 = f0 <e f1
+let eqf0_1 = f0 = f1
+let ord1 = eqf0_1
+let ord2 = ltf0_1
+let ord = (failures = 0u2) ||  ((failures = 1u2) && ord1) ||  ((failures = 2u2) && ord2)
+
+assert("Link(edge-76,Serial2 --> aggregation-74,Serial0", linkUtilization114 (33~15) <. 20000.0 | ord)
+ assert("Link(edge-20,Serial0 --> aggregation-16,Serial0", linkUtilization114 (12~47) <. 10000.0 | ord)
+assert("Link(aggregation-34,Serial1 --> edge-37,Serial2", linkUtilization114 (11~20) <. 10000.0 | ord)
+assert("Link(core-7,Serial0 --> aggregation-17,Serial7", linkUtilization114 (54~44) <. 10000.0 | ord)
+assert("Link(aggregation-65,Serial3 --> edge-71,Serial1", linkUtilization114 (39~37) <. 10000.0 | ord)
+assert("Link(core-11,Serial5 --> aggregation-58,Serial7", linkUtilization114 (67~63) <. 10000.0 | ord)
+assert("Link(aggregation-32,Serial7 --> core-3,Serial2", linkUtilization114 (19~43) <. 10000.0 | ord)
+assert("Link(aggregation-32,Serial4 --> core-0,Serial2", linkUtilization114 (19~41) <. 10000.0 | ord)
+assert("Link(aggregation-16,Serial1 --> edge-21,Serial0", linkUtilization114 (47~13) <. 10000.0 | ord)
+assert("Link(aggregation-51,Serial5 --> core-13,Serial4", linkUtilization114 (58~72) <. 10000.0 | ord)
+assert("Link(aggregation-40,Serial1 --> edge-45,Serial0", linkUtilization114 (69~45) <. 10000.0 | ord)
+assert("Link(aggregation-75,Serial7 --> core-15,Serial7", linkUtilization114 (14~70) <. 10000.0 | ord)
+assert("Link(aggregation-56,Serial6 --> core-2,Serial5", linkUtilization114 (61~46) <. 10000.0 | ord)
+assert("Link(aggregation-59,Serial0 --> edge-60,Serial3", linkUtilization114 (62~16) <. 10000.0 | ord)
+assert("Link(core-6,Serial1 --> aggregation-25,Serial6", linkUtilization114 (55~34) <. 10000.0 | ord)
+assert("Link(aggregation-75,Serial4 --> core-12,Serial7", linkUtilization114 (14~66) <. 10000.0 | ord)
+assert("Link(aggregation-59,Serial3 --> edge-63,Serial3", linkUtilization114 (62~10) <. 10000.0 | ord)
+assert("Link(core-5,Serial2 --> aggregation-33,Serial5", linkUtilization114 (49~17) <. 10000.0 | ord)
+assert("Link(aggregation-27,Serial6 --> core-14,Serial1", linkUtilization114 (25~71) <. 10000.0 | ord)
+assert("Link(core-10,Serial1 --> aggregation-26,Serial6", linkUtilization114 (68~32) <. 10000.0 | ord)
+assert("Link(edge-52,Serial2 --> aggregation-50,Serial0", linkUtilization114 (73~59) <. 10000.0 | ord)
+assert("Link(aggregation-25,Serial5 --> core-5,Serial1", linkUtilization114 (34~49) <. 10000.0 | ord)
+assert("Link(aggregation-58,Serial5 --> core-9,Serial5", linkUtilization114 (63~56) <. 10000.0 | ord)
+assert("Link(core-4,Serial7 --> aggregation-73,Serial4", linkUtilization114 (52~6) <. 10000.0 | ord)
+assert("Link(edge-21,Serial0 --> aggregation-16,Serial1", linkUtilization114 (13~47) <. 10000.0 | ord)
+assert("Link(edge-70,Serial2 --> aggregation-66,Serial2", linkUtilization114 (36~38) <. 10000.0 | ord)
+assert("Link(core-4,Serial2 --> aggregation-33,Serial4", linkUtilization114 (52~17) <. 10000.0 | ord)
+assert("Link(core-10,Serial6 --> aggregation-66,Serial6", linkUtilization114 (68~38) <. 10000.0 | ord)
+assert("Link(edge-39,Serial2 --> aggregation-34,Serial3", linkUtilization114 (22~11) <. 10000.0 | ord)
+assert("Link(core-7,Serial5 --> aggregation-57,Serial7", linkUtilization114 (54~60) <. 10000.0 | ord)
+assert("Link(aggregation-35,Serial1 --> edge-37,Serial3", linkUtilization114 (9~20) <. 10000.0 | ord)
+assert("Link(core-5,Serial7 --> aggregation-73,Serial5", linkUtilization114 (49~6) <. 10000.0 | ord)
+assert("Link(aggregation-65,Serial4 --> core-4,Serial6", linkUtilization114 (39~52) <. 10000.0 | ord)
+assert("Link(aggregation-49,Serial7 --> core-7,Serial4", linkUtilization114 (65~54) <. 10000.0 | ord)
+assert("Link(edge-69,Serial2 --> aggregation-66,Serial1", linkUtilization114 (5~38) <. 10000.0 | ord)
+assert("Link(core-6,Serial2 --> aggregation-33,Serial6", linkUtilization114 (55~17) <. 10000.0 | ord)
+assert("Link(core-6,Serial5 --> aggregation-57,Serial6", linkUtilization114 (55~60) <. 10000.0 | ord)
+assert("Link(core-11,Serial6 --> aggregation-66,Serial7", linkUtilization114 (67~38) <. 10000.0 | ord)
+assert("Link(edge-62,Serial2 --> aggregation-58,Serial2", linkUtilization114 (8~63) <. 10000.0 | ord)
+assert("Link(aggregation-66,Serial6 --> core-10,Serial6", linkUtilization114 (38~68) <. 10000.0 | ord)
+assert("Link(aggregation-41,Serial1 --> edge-45,Serial1", linkUtilization114 (78~45) <. 10000.0 | ord)
+assert("Link(aggregation-51,Serial3 --> edge-55,Serial3", linkUtilization114 (58~64) <. 10000.0 | ord)
+assert("Link(core-7,Serial1 --> aggregation-25,Serial7", linkUtilization114 (54~34) <. 10000.0 | ord)
+assert("Link(core-5,Serial6 --> aggregation-65,Serial5", linkUtilization114 (49~39) <. 10000.0 | ord)
+assert("Link(aggregation-42,Serial7 --> core-11,Serial3", linkUtilization114 (77~67) <. 10000.0 | ord)
+assert("Link(core-6,Serial7 --> aggregation-73,Serial6", linkUtilization114 (55~6) <. 10000.0 | ord)
+assert("Link(core-15,Serial4 --> aggregation-51,Serial7", linkUtilization114 (70~58) <. 10000.0 | ord)
+assert("Link(core-11,Serial1 --> aggregation-26,Serial7", linkUtilization114 (67~32) <. 10000.0 | ord)
+assert("Link(edge-28,Serial0 --> aggregation-24,Serial0", linkUtilization114 (0~28) <. 10000.0 | ord)
+assert("Link(aggregation-72,Serial6 --> core-2,Serial7", linkUtilization114 (7~46) <. 10000.0 | ord)
+assert("Link(aggregation-17,Serial1 --> edge-21,Serial1", linkUtilization114 (44~13) <. 10000.0 | ord)
+assert("Link(aggregation-59,Serial7 --> core-15,Serial5", linkUtilization114 (62~70) <. 10000.0 | ord)
+assert("Link(aggregation-59,Serial4 --> core-12,Serial5", linkUtilization114 (62~66) <. 10000.0 | ord)
+assert("Link(core-10,Serial5 --> aggregation-58,Serial6", linkUtilization114 (68~63) <. 10000.0 | ord)
+assert("Link(edge-22,Serial0 --> aggregation-16,Serial2", linkUtilization114 (2~47) <. 10000.0 | ord)
+assert("Link(edge-31,Serial2 --> aggregation-26,Serial3", linkUtilization114 (31~32) <. 10000.0 | ord)
+assert("Link(edge-29,Serial0 --> aggregation-24,Serial1", linkUtilization114 (1~28) <. 10000.0 | ord)
+assert("Link(aggregation-75,Serial0 --> edge-76,Serial3", linkUtilization114 (14~33) <. 10000.0 | ord)
+assert("Link(aggregation-16,Serial4 --> core-0,Serial0", linkUtilization114 (47~41) <. 10000.0 | ord)
+assert("Link(core-7,Serial6 --> aggregation-65,Serial7", linkUtilization114 (54~39) <. 10000.0 | ord)
+assert("Link(core-11,Serial0 --> aggregation-18,Serial7", linkUtilization114 (67~53) <. 10000.0 | ord)
+assert("Link(aggregation-42,Serial5 --> core-9,Serial3", linkUtilization114 (77~56) <. 10000.0 | ord)
+assert("Link(core-5,Serial1 --> aggregation-25,Serial5", linkUtilization114 (49~34) <. 10000.0 | ord)
+assert("Link(core-14,Serial4 --> aggregation-51,Serial6", linkUtilization114 (71~58) <. 10000.0 | ord)
+assert("Link(core-7,Serial2 --> aggregation-33,Serial7", linkUtilization114 (54~17) <. 10000.0 | ord)
+assert("Link(edge-63,Serial2 --> aggregation-58,Serial3", linkUtilization114 (10~63) <. 10000.0 | ord)
+assert("Link(aggregation-42,Serial1 --> edge-45,Serial2", linkUtilization114 (77~45) <. 10000.0 | ord)
+assert("Link(core-10,Serial0 --> aggregation-18,Serial6", linkUtilization114 (68~53) <. 10000.0 | ord)
+assert("Link(aggregation-48,Serial1 --> edge-53,Serial0", linkUtilization114 (75~74) <. 10000.0 | ord)
+assert("Link(aggregation-49,Serial4 --> core-4,Serial4", linkUtilization114 (65~52) <. 10000.0 | ord)
+assert("Link(aggregation-65,Serial7 --> core-7,Serial6", linkUtilization114 (39~54) <. 10000.0 | ord)
+assert("Link(core-4,Serial1 --> aggregation-25,Serial4", linkUtilization114 (52~34) <. 10000.0 | ord)
+assert("Link(core-6,Serial6 --> aggregation-65,Serial6", linkUtilization114 (55~39) <. 10000.0 | ord)
+assert("Link(edge-68,Serial2 --> aggregation-66,Serial0", linkUtilization114 (4~38) <. 10000.0 | ord)
+assert("Link(aggregation-24,Serial5 --> core-1,Serial1", linkUtilization114 (28~40) <. 10000.0 | ord)
+assert("Link(edge-23,Serial3 --> aggregation-19,Serial3", linkUtilization114 (3~50) <. 10000.0 | ord)
+assert("Link(aggregation-67,Serial5 --> core-13,Serial6", linkUtilization114 (30~72) <. 10000.0 | ord)
+assert("Link(aggregation-64,Serial5 --> core-1,Serial6", linkUtilization114 (35~40) <. 10000.0 | ord)
+assert("Link(edge-23,Serial0 --> aggregation-16,Serial3", linkUtilization114 (3~47) <. 10000.0 | ord)
+assert("Link(core-4,Serial0 --> aggregation-17,Serial4", linkUtilization114 (52~44) <. 10000.0 | ord)
+assert("Link(aggregation-49,Serial1 --> edge-53,Serial1", linkUtilization114 (65~74) <. 10000.0 | ord)
+assert("Link(core-11,Serial7 --> aggregation-74,Serial7", linkUtilization114 (67~15) <. 10000.0 | ord)
+assert("Link(edge-61,Serial2 --> aggregation-58,Serial1", linkUtilization114 (18~63) <. 10000.0 | ord)
+assert("Link(aggregation-26,Serial3 --> edge-31,Serial2", linkUtilization114 (32~31) <. 10000.0 | ord)
+assert("Link(core-6,Serial4 --> aggregation-49,Serial6", linkUtilization114 (55~65) <. 10000.0 | ord)
+assert("Link(aggregation-50,Serial3 --> edge-55,Serial2", linkUtilization114 (59~64) <. 10000.0 | ord)
+assert("Link(aggregation-50,Serial0 --> edge-52,Serial2", linkUtilization114 (59~73) <. 10000.0 | ord)
+assert("Link(core-7,Serial7 --> aggregation-73,Serial7", linkUtilization114 (54~6) <. 10000.0 | ord)
+assert("Link(core-0,Serial5 --> aggregation-56,Serial4", linkUtilization114 (41~61) <. 10000.0 | ord)
+assert("Link(core-5,Serial0 --> aggregation-17,Serial5", linkUtilization114 (49~44) <. 10000.0 | ord)
+assert("Link(aggregation-33,Serial7 --> core-7,Serial2", linkUtilization114 (17~54) <. 10000.0 | ord)
+assert("Link(edge-29,Serial3 --> aggregation-27,Serial1", linkUtilization114 (1~25) <. 10000.0 | ord)
+assert("Link(edge-60,Serial2 --> aggregation-58,Serial0", linkUtilization114 (16~63) <. 10000.0 | ord)
+assert("Link(aggregation-56,Serial3 --> edge-63,Serial0", linkUtilization114 (61~10) <. 10000.0 | ord)
+assert("Link(core-7,Serial3 --> aggregation-41,Serial7", linkUtilization114 (54~78) <. 10000.0 | ord)
+assert("Link(edge-54,Serial0 --> aggregation-48,Serial2", linkUtilization114 (76~75) <. 10000.0 | ord)
+assert("Link(aggregation-35,Serial5 --> core-13,Serial2", linkUtilization114 (9~72) <. 10000.0 | ord)
+assert("Link(core-5,Serial4 --> aggregation-49,Serial5", linkUtilization114 (49~65) <. 10000.0 | ord)
+assert("Link(aggregation-16,Serial7 --> core-3,Serial0", linkUtilization114 (47~43) <. 10000.0 | ord)
+assert("Link(aggregation-67,Serial3 --> edge-71,Serial3", linkUtilization114 (30~37) <. 10000.0 | ord)
+assert("Link(aggregation-18,Serial1 --> edge-21,Serial2", linkUtilization114 (53~13) <. 10000.0 | ord)
+assert("Link(aggregation-33,Serial6 --> core-6,Serial2", linkUtilization114 (17~55) <. 10000.0 | ord)
+assert("Link(aggregation-57,Serial3 --> edge-63,Serial1", linkUtilization114 (60~10) <. 10000.0 | ord)
+assert("Link(core-9,Serial4 --> aggregation-50,Serial5", linkUtilization114 (56~59) <. 10000.0 | ord)
+assert("Link(edge-53,Serial0 --> aggregation-48,Serial1", linkUtilization114 (74~75) <. 10000.0 | ord)
+assert("Link(edge-60,Serial3 --> aggregation-59,Serial0", linkUtilization114 (16~62) <. 10000.0 | ord)
+assert("Link(core-6,Serial3 --> aggregation-41,Serial6", linkUtilization114 (55~78) <. 10000.0 | ord)
+assert("Link(aggregation-19,Serial1 --> edge-21,Serial3", linkUtilization114 (50~13) <. 10000.0 | ord)
+assert("Link(aggregation-73,Serial6 --> core-6,Serial7", linkUtilization114 (6~55) <. 10000.0 | ord)
+assert("Link(aggregation-58,Serial7 --> core-11,Serial5", linkUtilization114 (63~67) <. 10000.0 | ord)
+assert("Link(aggregation-25,Serial3 --> edge-31,Serial1", linkUtilization114 (34~31) <. 10000.0 | ord)
+assert("Link(aggregation-58,Serial0 --> edge-60,Serial2", linkUtilization114 (63~16) <. 10000.0 | ord)
+assert("Link(aggregation-58,Serial3 --> edge-63,Serial2", linkUtilization114 (63~10) <. 10000.0 | ord)
+assert("Link(core-7,Serial4 --> aggregation-49,Serial7", linkUtilization114 (54~65) <. 10000.0 | ord)
+assert("Link(aggregation-51,Serial0 --> edge-52,Serial3", linkUtilization114 (58~73) <. 10000.0 | ord)
+assert("Link(core-15,Serial2 --> aggregation-35,Serial7", linkUtilization114 (70~9) <. 10000.0 | ord)
+assert("Link(core-5,Serial3 --> aggregation-41,Serial5", linkUtilization114 (49~78) <. 10000.0 | ord)
+assert("Link(aggregation-56,Serial1 --> edge-61,Serial0", linkUtilization114 (61~18) <. 10000.0 | ord)
+assert("Link(edge-52,Serial0 --> aggregation-48,Serial0", linkUtilization114 (73~75) <. 10000.0 | ord)
+assert("Link(aggregation-19,Serial0 --> edge-20,Serial3", linkUtilization114 (50~12) <. 10000.0 | ord)
+assert("Link(core-6,Serial0 --> aggregation-17,Serial6", linkUtilization114 (55~44) <. 10000.0 | ord)
+assert("Link(edge-28,Serial3 --> aggregation-27,Serial0", linkUtilization114 (0~25) <. 10000.0 | ord)
+assert("Link(aggregation-64,Serial4 --> core-0,Serial6", linkUtilization114 (35~41) <. 10000.0 | ord)
+assert("Link(aggregation-66,Serial3 --> edge-71,Serial2", linkUtilization114 (38~37) <. 10000.0 | ord)
+assert("Link(edge-22,Serial3 --> aggregation-19,Serial2", linkUtilization114 (2~50) <. 10000.0 | ord)
+assert("Link(core-1,Serial5 --> aggregation-56,Serial5", linkUtilization114 (40~61) <. 10000.0 | ord)
+assert("Link(aggregation-57,Serial1 --> edge-61,Serial1", linkUtilization114 (60~18) <. 10000.0 | ord)
+assert("Link(core-4,Serial3 --> aggregation-41,Serial4", linkUtilization114 (52~78) <. 10000.0 | ord)
+assert("Link(aggregation-67,Serial6 --> core-14,Serial6", linkUtilization114 (30~71) <. 10000.0 | ord)
+assert("Link(aggregation-64,Serial7 --> core-3,Serial6", linkUtilization114 (35~43) <. 10000.0 | ord)
+assert("Link(aggregation-56,Serial0 --> edge-60,Serial0", linkUtilization114 (61~16) <. 10000.0 | ord)
+assert("Link(aggregation-27,Serial3 --> edge-31,Serial3", linkUtilization114 (25~31) <. 10000.0 | ord)
+assert("Link(core-10,Serial3 --> aggregation-42,Serial6", linkUtilization114 (68~77) <. 10000.0 | ord)
+assert("Link(edge-21,Serial3 --> aggregation-19,Serial1", linkUtilization114 (13~50) <. 10000.0 | ord)
+assert("Link(aggregation-41,Serial5 --> core-5,Serial3", linkUtilization114 (78~49) <. 10000.0 | ord)
+assert("Link(aggregation-57,Serial0 --> edge-60,Serial1", linkUtilization114 (60~16) <. 10000.0 | ord)
+assert("Link(aggregation-64,Serial3 --> edge-71,Serial0", linkUtilization114 (35~37) <. 10000.0 | ord)
+assert("Link(core-15,Serial6 --> aggregation-67,Serial7", linkUtilization114 (70~30) <. 10000.0 | ord)
+assert("Link(core-10,Serial7 --> aggregation-74,Serial6", linkUtilization114 (68~15) <. 10000.0 | ord)
+assert("Link(edge-20,Serial3 --> aggregation-19,Serial0", linkUtilization114 (12~50) <. 10000.0 | ord)
+assert("Link(aggregation-24,Serial6 --> core-2,Serial1", linkUtilization114 (28~46) <. 10000.0 | ord)
+assert("Link(core-11,Serial3 --> aggregation-42,Serial7", linkUtilization114 (67~77) <. 10000.0 | ord)
+assert("Link(aggregation-18,Serial0 --> edge-20,Serial2", linkUtilization114 (53~12) <. 10000.0 | ord)
+assert("Link(aggregation-72,Serial4 --> core-0,Serial7", linkUtilization114 (7~41) <. 10000.0 | ord)
+assert("Link(edge-22,Serial2 --> aggregation-18,Serial2", linkUtilization114 (2~53) <. 10000.0 | ord)
+assert("Link(aggregation-59,Serial6 --> core-14,Serial5", linkUtilization114 (62~71) <. 10000.0 | ord)
+assert("Link(edge-29,Serial2 --> aggregation-26,Serial1", linkUtilization114 (1~32) <. 10000.0 | ord)
+assert("Link(aggregation-32,Serial2 --> edge-38,Serial0", linkUtilization114 (19~21) <. 10000.0 | ord)
+assert("Link(aggregation-66,Serial0 --> edge-68,Serial2", linkUtilization114 (38~4) <. 10000.0 | ord)
+assert("Link(core-2,Serial5 --> aggregation-56,Serial6", linkUtilization114 (46~61) <. 10000.0 | ord)
+assert("Link(core-11,Serial4 --> aggregation-50,Serial7", linkUtilization114 (67~59) <. 10000.0 | ord)
+assert("Link(aggregation-35,Serial7 --> core-15,Serial2", linkUtilization114 (9~70) <. 10000.0 | ord)
+assert("Link(core-15,Serial1 --> aggregation-27,Serial7", linkUtilization114 (70~25) <. 10000.0 | ord)
+assert("Link(aggregation-48,Serial0 --> edge-52,Serial0", linkUtilization114 (75~73) <. 10000.0 | ord)
+assert("Link(aggregation-17,Serial7 --> core-7,Serial0", linkUtilization114 (44~54) <. 10000.0 | ord)
+assert("Link(edge-38,Serial0 --> aggregation-32,Serial2", linkUtilization114 (21~19) <. 10000.0 | ord)
+assert("Link(edge-62,Serial0 --> aggregation-56,Serial2", linkUtilization114 (8~61) <. 10000.0 | ord)
+assert("Link(aggregation-42,Serial4 --> core-8,Serial3", linkUtilization114 (77~57) <. 10000.0 | ord)
+assert("Link(core-14,Serial2 --> aggregation-35,Serial6", linkUtilization114 (71~9) <. 10000.0 | ord)
+assert("Link(aggregation-72,Serial0 --> edge-76,Serial0", linkUtilization114 (7~33) <. 10000.0 | ord)
+assert("Link(aggregation-49,Serial0 --> edge-52,Serial1", linkUtilization114 (65~73) <. 10000.0 | ord)
+assert("Link(edge-68,Serial0 --> aggregation-64,Serial0", linkUtilization114 (4~35) <. 10000.0 | ord)
+assert("Link(aggregation-18,Serial5 --> core-9,Serial0", linkUtilization114 (53~56) <. 10000.0 | ord)
+assert("Link(core-15,Serial0 --> aggregation-19,Serial7", linkUtilization114 (70~50) <. 10000.0 | ord)
+assert("Link(aggregation-35,Serial0 --> edge-36,Serial3", linkUtilization114 (9~27) <. 10000.0 | ord)
+assert("Link(core-13,Serial7 --> aggregation-75,Serial5", linkUtilization114 (72~14) <. 10000.0 | ord)
+assert("Link(core-13,Serial2 --> aggregation-35,Serial5", linkUtilization114 (72~9) <. 10000.0 | ord)
+assert("Link(aggregation-17,Serial0 --> edge-20,Serial1", linkUtilization114 (44~12) <. 10000.0 | ord)
+assert("Link(aggregation-73,Serial5 --> core-5,Serial7", linkUtilization114 (6~49) <. 10000.0 | ord)
+assert("Link(core-3,Serial4 --> aggregation-48,Serial7", linkUtilization114 (43~75) <. 10000.0 | ord)
+assert("Link(edge-23,Serial2 --> aggregation-18,Serial3", linkUtilization114 (3~53) <. 10000.0 | ord)
+assert("Link(aggregation-25,Serial4 --> core-4,Serial1", linkUtilization114 (34~52) <. 10000.0 | ord)
+assert("Link(edge-37,Serial0 --> aggregation-32,Serial1", linkUtilization114 (20~19) <. 10000.0 | ord)
+assert("Link(edge-31,Serial0 --> aggregation-24,Serial3", linkUtilization114 (31~28) <. 10000.0 | ord)
+assert("Link(aggregation-42,Serial6 --> core-10,Serial3", linkUtilization114 (77~68) <. 10000.0 | ord)
+assert("Link(edge-28,Serial2 --> aggregation-26,Serial0", linkUtilization114 (0~32) <. 10000.0 | ord)
+assert("Link(edge-69,Serial0 --> aggregation-64,Serial1", linkUtilization114 (5~35) <. 10000.0 | ord)
+assert("Link(core-10,Serial4 --> aggregation-50,Serial6", linkUtilization114 (68~59) <. 10000.0 | ord)
+assert("Link(aggregation-67,Serial0 --> edge-68,Serial3", linkUtilization114 (30~4) <. 10000.0 | ord)
+assert("Link(core-14,Serial7 --> aggregation-75,Serial6", linkUtilization114 (71~14) <. 10000.0 | ord)
+assert("Link(aggregation-40,Serial0 --> edge-44,Serial0", linkUtilization114 (69~42) <. 10000.0 | ord)
+assert("Link(core-12,Serial2 --> aggregation-35,Serial4", linkUtilization114 (66~9) <. 10000.0 | ord)
+assert("Link(aggregation-49,Serial6 --> core-6,Serial4", linkUtilization114 (65~55) <. 10000.0 | ord)
+assert("Link(edge-63,Serial0 --> aggregation-56,Serial3", linkUtilization114 (10~61) <. 10000.0 | ord)
+assert("Link(edge-30,Serial0 --> aggregation-24,Serial2", linkUtilization114 (29~28) <. 10000.0 | ord)
+assert("Link(edge-36,Serial2 --> aggregation-34,Serial0", linkUtilization114 (27~11) <. 10000.0 | ord)
+assert("Link(aggregation-73,Serial0 --> edge-76,Serial1", linkUtilization114 (6~33) <. 10000.0 | ord)
+assert("Link(aggregation-32,Serial6 --> core-2,Serial2", linkUtilization114 (19~46) <. 10000.0 | ord)
+assert("Link(edge-55,Serial2 --> aggregation-50,Serial3", linkUtilization114 (64~59) <. 10000.0 | ord)
+assert("Link(aggregation-40,Serial5 --> core-1,Serial3", linkUtilization114 (69~40) <. 10000.0 | ord)
+assert("Link(core-0,Serial3 --> aggregation-40,Serial4", linkUtilization114 (41~69) <. 10000.0 | ord)
+assert("Link(edge-55,Serial0 --> aggregation-48,Serial3", linkUtilization114 (64~75) <. 10000.0 | ord)
+assert("Link(core-12,Serial7 --> aggregation-75,Serial4", linkUtilization114 (66~14) <. 10000.0 | ord)
+assert("Link(aggregation-43,Serial0 --> edge-44,Serial3", linkUtilization114 (79~42) <. 10000.0 | ord)
+assert("Link(core-1,Serial2 --> aggregation-32,Serial5", linkUtilization114 (40~19) <. 10000.0 | ord)
+assert("Link(aggregation-16,Serial0 --> edge-20,Serial0", linkUtilization114 (47~12) <. 10000.0 | ord)
+assert("Link(core-0,Serial2 --> aggregation-32,Serial4", linkUtilization114 (41~19) <. 10000.0 | ord)
+assert("Link(edge-61,Serial0 --> aggregation-56,Serial1", linkUtilization114 (18~61) <. 10000.0 | ord)
+assert("Link(aggregation-43,Serial4 --> core-12,Serial3", linkUtilization114 (79~66) <. 10000.0 | ord)
+assert("Link(core-4,Serial5 --> aggregation-57,Serial4", linkUtilization114 (52~60) <. 10000.0 | ord)
+assert("Link(aggregation-56,Serial5 --> core-1,Serial5", linkUtilization114 (61~40) <. 10000.0 | ord)
+assert("Link(aggregation-42,Serial0 --> edge-44,Serial2", linkUtilization114 (77~42) <. 10000.0 | ord)
+assert("Link(aggregation-41,Serial0 --> edge-44,Serial1", linkUtilization114 (78~42) <. 10000.0 | ord)
+assert("Link(aggregation-16,Serial2 --> edge-22,Serial0", linkUtilization114 (47~2) <. 10000.0 | ord)
+assert("Link(edge-30,Serial2 --> aggregation-26,Serial2", linkUtilization114 (29~32) <. 10000.0 | ord)
+assert("Link(edge-60,Serial0 --> aggregation-56,Serial0", linkUtilization114 (16~61) <. 10000.0 | ord)
+assert("Link(aggregation-74,Serial0 --> edge-76,Serial2", linkUtilization114 (15~33) <. 10000.0 | ord)
+assert("Link(aggregation-26,Serial6 --> core-10,Serial1", linkUtilization114 (32~68) <. 10000.0 | ord)
+assert("Link(aggregation-33,Serial0 --> edge-36,Serial1", linkUtilization114 (17~27) <. 10000.0 | ord)
+assert("Link(edge-54,Serial2 --> aggregation-50,Serial2", linkUtilization114 (76~59) <. 10000.0 | ord)
+assert("Link(edge-70,Serial0 --> aggregation-64,Serial2", linkUtilization114 (36~35) <. 10000.0 | ord)
+assert("Link(core-12,Serial1 --> aggregation-27,Serial4", linkUtilization114 (66~25) <. 10000.0 | ord)
+assert("Link(core-1,Serial3 --> aggregation-40,Serial5", linkUtilization114 (40~69) <. 10000.0 | ord)
+assert("Link(edge-77,Serial0 --> aggregation-72,Serial1", linkUtilization114 (23~7) <. 10000.0 | ord)
+assert("Link(core-2,Serial2 --> aggregation-32,Serial6", linkUtilization114 (46~19) <. 10000.0 | ord)
+assert("Link(aggregation-34,Serial7 --> core-11,Serial2", linkUtilization114 (11~67) <. 10000.0 | ord)
+assert("Link(aggregation-65,Serial6 --> core-6,Serial6", linkUtilization114 (39~55) <. 10000.0 | ord)
+assert("Link(aggregation-74,Serial5 --> core-9,Serial7", linkUtilization114 (15~56) <. 10000.0 | ord)
+assert("Link(aggregation-35,Serial2 --> edge-38,Serial3", linkUtilization114 (9~21) <. 10000.0 | ord)
+assert("Link(aggregation-25,Serial6 --> core-6,Serial1", linkUtilization114 (34~55) <. 10000.0 | ord)
+assert("Link(aggregation-48,Serial4 --> core-0,Serial4", linkUtilization114 (75~41) <. 10000.0 | ord)
+assert("Link(aggregation-26,Serial4 --> core-8,Serial1", linkUtilization114 (32~57) <. 10000.0 | ord)
+assert("Link(edge-37,Serial2 --> aggregation-34,Serial1", linkUtilization114 (20~11) <. 10000.0 | ord)
+assert("Link(core-4,Serial6 --> aggregation-65,Serial4", linkUtilization114 (52~39) <. 10000.0 | ord)
+assert("Link(aggregation-43,Serial6 --> core-14,Serial3", linkUtilization114 (79~71) <. 10000.0 | ord)
+assert("Link(core-5,Serial5 --> aggregation-57,Serial5", linkUtilization114 (49~60) <. 10000.0 | ord)
+assert("Link(aggregation-66,Serial4 --> core-8,Serial6", linkUtilization114 (38~57) <. 10000.0 | ord)
+assert("Link(edge-36,Serial0 --> aggregation-32,Serial0", linkUtilization114 (27~19) <. 10000.0 | ord)
+assert("Link(aggregation-19,Serial4 --> core-12,Serial0", linkUtilization114 (50~66) <. 10000.0 | ord)
+assert("Link(aggregation-41,Serial2 --> edge-46,Serial1", linkUtilization114 (78~48) <. 10000.0 | ord)
+assert("Link(edge-46,Serial0 --> aggregation-40,Serial2", linkUtilization114 (48~69) <. 10000.0 | ord)
+assert("Link(core-9,Serial1 --> aggregation-26,Serial5", linkUtilization114 (56~32) <. 10000.0 | ord)
+assert("Link(edge-38,Serial2 --> aggregation-34,Serial2", linkUtilization114 (21~11) <. 10000.0 | ord)
+assert("Link(aggregation-34,Serial0 --> edge-36,Serial2", linkUtilization114 (11~27) <. 10000.0 | ord)
+assert("Link(edge-53,Serial2 --> aggregation-50,Serial1", linkUtilization114 (74~59) <. 10000.0 | ord)
+assert("Link(aggregation-72,Serial2 --> edge-78,Serial0", linkUtilization114 (7~24) <. 10000.0 | ord)
+assert("Link(aggregation-40,Serial2 --> edge-46,Serial0", linkUtilization114 (69~48) <. 10000.0 | ord)
+assert("Link(edge-47,Serial0 --> aggregation-40,Serial3", linkUtilization114 (51~69) <. 10000.0 | ord)
+assert("Link(core-3,Serial2 --> aggregation-32,Serial7", linkUtilization114 (43~19) <. 10000.0 | ord)
+assert("Link(core-8,Serial1 --> aggregation-26,Serial4", linkUtilization114 (57~32) <. 10000.0 | ord)
+assert("Link(core-15,Serial7 --> aggregation-75,Serial7", linkUtilization114 (70~14) <. 10000.0 | ord)
+assert("Link(aggregation-51,Serial7 --> core-15,Serial4", linkUtilization114 (58~70) <. 10000.0 | ord)
+assert("Link(aggregation-57,Serial5 --> core-5,Serial5", linkUtilization114 (60~49) <. 10000.0 | ord)
+assert("Link(aggregation-26,Serial0 --> edge-28,Serial2", linkUtilization114 (32~0) <. 10000.0 | ord)
+assert("Link(edge-47,Serial2 --> aggregation-42,Serial3", linkUtilization114 (51~77) <. 10000.0 | ord)
+assert("Link(aggregation-17,Serial5 --> core-5,Serial0", linkUtilization114 (44~49) <. 10000.0 | ord)
+assert("Link(edge-77,Serial2 --> aggregation-74,Serial1", linkUtilization114 (23~15) <. 10000.0 | ord)
+assert("Link(aggregation-32,Serial0 --> edge-36,Serial0", linkUtilization114 (19~27) <. 10000.0 | ord)
+assert("Link(edge-45,Serial0 --> aggregation-40,Serial1", linkUtilization114 (45~69) <. 10000.0 | ord)
+assert("Link(core-2,Serial4 --> aggregation-48,Serial6", linkUtilization114 (46~75) <. 10000.0 | ord)
+assert("Link(edge-78,Serial0 --> aggregation-72,Serial2", linkUtilization114 (24~7) <. 10000.0 | ord)
+assert("Link(aggregation-65,Serial0 --> edge-68,Serial1", linkUtilization114 (39~4) <. 10000.0 | ord)
+assert("Link(edge-44,Serial2 --> aggregation-42,Serial0", linkUtilization114 (42~77) <. 10000.0 | ord)
+assert("Link(edge-71,Serial2 --> aggregation-66,Serial3", linkUtilization114 (37~38) <. 10000.0 | ord)
+assert("Link(aggregation-64,Serial0 --> edge-68,Serial0", linkUtilization114 (35~4) <. 10000.0 | ord)
+assert("Link(edge-78,Serial2 --> aggregation-74,Serial2", linkUtilization114 (24~15) <. 10000.0 | ord)
+assert("Link(edge-39,Serial0 --> aggregation-32,Serial3", linkUtilization114 (22~19) <. 10000.0 | ord)
+assert("Link(aggregation-34,Serial2 --> edge-38,Serial2", linkUtilization114 (11~21) <. 10000.0 | ord)
+assert("Link(core-1,Serial4 --> aggregation-48,Serial5", linkUtilization114 (40~75) <. 10000.0 | ord)
+assert("Link(core-8,Serial7 --> aggregation-74,Serial4", linkUtilization114 (57~15) <. 10000.0 | ord)
+assert("Link(core-14,Serial1 --> aggregation-27,Serial6", linkUtilization114 (71~25) <. 10000.0 | ord)
+assert("Link(aggregation-34,Serial5 --> core-9,Serial2", linkUtilization114 (11~56) <. 10000.0 | ord)
+assert("Link(edge-45,Serial2 --> aggregation-42,Serial1", linkUtilization114 (45~77) <. 10000.0 | ord)
+assert("Link(edge-46,Serial2 --> aggregation-42,Serial2", linkUtilization114 (48~77) <. 10000.0 | ord)
+assert("Link(aggregation-27,Serial0 --> edge-28,Serial3", linkUtilization114 (25~0) <. 10000.0 | ord)
+assert("Link(edge-79,Serial2 --> aggregation-74,Serial3", linkUtilization114 (26~15) <. 10000.0 | ord)
+assert("Link(edge-71,Serial0 --> aggregation-64,Serial3", linkUtilization114 (37~35) <. 10000.0 | ord)
+assert("Link(aggregation-74,Serial7 --> core-11,Serial7", linkUtilization114 (15~67) <. 10000.0 | ord)
+assert("Link(edge-44,Serial0 --> aggregation-40,Serial0", linkUtilization114 (42~69) <. 10000.0 | ord)
+assert("Link(edge-76,Serial0 --> aggregation-72,Serial0", linkUtilization114 (33~7) <. 10000.0 | ord)
+assert("Link(aggregation-33,Serial2 --> edge-38,Serial1", linkUtilization114 (17~21) <. 10000.0 | ord)
+assert("Link(core-0,Serial4 --> aggregation-48,Serial4", linkUtilization114 (41~75) <. 10000.0 | ord)
+assert("Link(core-9,Serial7 --> aggregation-74,Serial5", linkUtilization114 (56~15) <. 10000.0 | ord)
+assert("Link(core-13,Serial1 --> aggregation-27,Serial5", linkUtilization114 (72~25) <. 10000.0 | ord)
+assert("Link(edge-55,Serial3 --> aggregation-51,Serial3", linkUtilization114 (64~58) <. 10000.0 | ord)
+assert("Link(aggregation-33,Serial5 --> core-5,Serial2", linkUtilization114 (17~49) <. 10000.0 | ord)
+assert("Link(edge-60,Serial1 --> aggregation-57,Serial0", linkUtilization114 (16~60) <. 10000.0 | ord)
+assert("Link(edge-36,Serial1 --> aggregation-33,Serial0", linkUtilization114 (27~17) <. 10000.0 | ord)
+assert("Link(aggregation-74,Serial2 --> edge-78,Serial2", linkUtilization114 (15~24) <. 10000.0 | ord)
+assert("Link(aggregation-25,Serial0 --> edge-28,Serial1", linkUtilization114 (34~0) <. 10000.0 | ord)
+assert("Link(aggregation-25,Serial2 --> edge-30,Serial1", linkUtilization114 (34~29) <. 10000.0 | ord)
+assert("Link(aggregation-74,Serial6 --> core-10,Serial7", linkUtilization114 (15~68) <. 10000.0 | ord)
+assert("Link(aggregation-57,Serial4 --> core-4,Serial5", linkUtilization114 (60~52) <. 10000.0 | ord)
+assert("Link(aggregation-57,Serial7 --> core-7,Serial5", linkUtilization114 (60~54) <. 10000.0 | ord)
+assert("Link(edge-37,Serial1 --> aggregation-33,Serial1", linkUtilization114 (20~17) <. 10000.0 | ord)
+assert("Link(edge-23,Serial1 --> aggregation-17,Serial3", linkUtilization114 (3~44) <. 10000.0 | ord)
+assert("Link(aggregation-73,Serial2 --> edge-78,Serial1", linkUtilization114 (6~24) <. 10000.0 | ord)
+assert("Link(aggregation-24,Serial0 --> edge-28,Serial0", linkUtilization114 (28~0) <. 10000.0 | ord)
+assert("Link(aggregation-48,Serial6 --> core-2,Serial4", linkUtilization114 (75~46) <. 10000.0 | ord)
+assert("Link(aggregation-19,Serial2 --> edge-22,Serial3", linkUtilization114 (50~2) <. 10000.0 | ord)
+assert("Link(aggregation-50,Serial7 --> core-11,Serial4", linkUtilization114 (59~67) <. 10000.0 | ord)
+assert("Link(aggregation-40,Serial7 --> core-3,Serial3", linkUtilization114 (69~43) <. 10000.0 | ord)
+assert("Link(edge-79,Serial0 --> aggregation-72,Serial3", linkUtilization114 (26~7) <. 10000.0 | ord)
+assert("Link(core-8,Serial5 --> aggregation-58,Serial4", linkUtilization114 (57~63) <. 10000.0 | ord)
+assert("Link(edge-55,Serial1 --> aggregation-49,Serial3", linkUtilization114 (64~65) <. 10000.0 | ord)
+assert("Link(aggregation-50,Serial2 --> edge-54,Serial2", linkUtilization114 (59~76) <. 10000.0 | ord)
+assert("Link(aggregation-56,Serial2 --> edge-62,Serial0", linkUtilization114 (61~8) <. 10000.0 | ord)
+assert("Link(aggregation-67,Serial4 --> core-12,Serial6", linkUtilization114 (30~66) <. 10000.0 | ord)
+assert("Link(edge-54,Serial1 --> aggregation-49,Serial2", linkUtilization114 (76~65) <. 10000.0 | ord)
+assert("Link(edge-54,Serial3 --> aggregation-51,Serial2", linkUtilization114 (76~58) <. 10000.0 | ord)
+assert("Link(aggregation-43,Serial5 --> core-13,Serial3", linkUtilization114 (79~72) <. 10000.0 | ord)
+assert("Link(aggregation-75,Serial2 --> edge-78,Serial3", linkUtilization114 (14~24) <. 10000.0 | ord)
+assert("Link(edge-68,Serial1 --> aggregation-65,Serial0", linkUtilization114 (4~39) <. 10000.0 | ord)
+assert("Link(edge-31,Serial1 --> aggregation-25,Serial3", linkUtilization114 (31~34) <. 10000.0 | ord)
+assert("Link(core-8,Serial0 --> aggregation-18,Serial4", linkUtilization114 (57~53) <. 10000.0 | ord)
+assert("Link(aggregation-18,Serial2 --> edge-22,Serial2", linkUtilization114 (53~2) <. 10000.0 | ord)
+assert("Link(core-9,Serial5 --> aggregation-58,Serial5", linkUtilization114 (56~63) <. 10000.0 | ord)
+assert("Link(aggregation-42,Serial2 --> edge-46,Serial2", linkUtilization114 (77~48) <. 10000.0 | ord)
+assert("Link(edge-29,Serial1 --> aggregation-25,Serial1", linkUtilization114 (1~34) <. 10000.0 | ord)
+assert("Link(edge-30,Serial1 --> aggregation-25,Serial2", linkUtilization114 (29~34) <. 10000.0 | ord)
+assert("Link(aggregation-40,Serial4 --> core-0,Serial3", linkUtilization114 (69~41) <. 10000.0 | ord)
+assert("Link(aggregation-48,Serial2 --> edge-54,Serial0", linkUtilization114 (75~76) <. 10000.0 | ord)
+assert("Link(edge-62,Serial1 --> aggregation-57,Serial2", linkUtilization114 (8~60) <. 10000.0 | ord)
+assert("Link(core-3,Serial3 --> aggregation-40,Serial7", linkUtilization114 (43~69) <. 10000.0 | ord)
+assert("Link(aggregation-59,Serial5 --> core-13,Serial5", linkUtilization114 (62~72) <. 10000.0 | ord)
+assert("Link(aggregation-16,Serial5 --> core-1,Serial0", linkUtilization114 (47~40) <. 10000.0 | ord)
+assert("Link(aggregation-43,Serial2 --> edge-46,Serial3", linkUtilization114 (79~48) <. 10000.0 | ord)
+assert("Link(aggregation-49,Serial2 --> edge-54,Serial1", linkUtilization114 (65~76) <. 10000.0 | ord)
+assert("Link(edge-61,Serial1 --> aggregation-57,Serial1", linkUtilization114 (18~60) <. 10000.0 | ord)
+assert("Link(core-9,Serial0 --> aggregation-18,Serial5", linkUtilization114 (56~53) <. 10000.0 | ord)
+assert("Link(core-2,Serial3 --> aggregation-40,Serial6", linkUtilization114 (46~69) <. 10000.0 | ord)
+assert("Link(aggregation-19,Serial6 --> core-14,Serial0", linkUtilization114 (50~71) <. 10000.0 | ord)
+assert("Link(aggregation-41,Serial4 --> core-4,Serial3", linkUtilization114 (78~52) <. 10000.0 | ord)
+assert("Link(aggregation-41,Serial7 --> core-7,Serial3", linkUtilization114 (78~54) <. 10000.0 | ord)
+assert("Link(edge-21,Serial1 --> aggregation-17,Serial1", linkUtilization114 (13~44) <. 10000.0 | ord)
+assert("Link(aggregation-17,Serial2 --> edge-22,Serial1", linkUtilization114 (44~2) <. 10000.0 | ord)
+assert("Link(aggregation-64,Serial2 --> edge-70,Serial0", linkUtilization114 (35~36) <. 10000.0 | ord)
+assert("Link(core-12,Serial6 --> aggregation-67,Serial4", linkUtilization114 (66~30) <. 10000.0 | ord)
+assert("Link(core-13,Serial0 --> aggregation-19,Serial5", linkUtilization114 (72~50) <. 10000.0 | ord)
+assert("Link(edge-28,Serial1 --> aggregation-25,Serial0", linkUtilization114 (0~34) <. 10000.0 | ord)
+assert("Link(aggregation-18,Serial6 --> core-10,Serial0", linkUtilization114 (53~68) <. 10000.0 | ord)
+assert("Link(aggregation-58,Serial6 --> core-10,Serial5", linkUtilization114 (63~68) <. 10000.0 | ord)
+assert("Link(aggregation-73,Serial7 --> core-7,Serial7", linkUtilization114 (6~54) <. 10000.0 | ord)
+assert("Link(aggregation-58,Serial2 --> edge-62,Serial2", linkUtilization114 (63~8) <. 10000.0 | ord)
+assert("Link(core-8,Serial6 --> aggregation-66,Serial4", linkUtilization114 (57~38) <. 10000.0 | ord)
+assert("Link(aggregation-73,Serial4 --> core-4,Serial7", linkUtilization114 (6~52) <. 10000.0 | ord)
+assert("Link(core-3,Serial7 --> aggregation-72,Serial7", linkUtilization114 (43~7) <. 10000.0 | ord)
+assert("Link(aggregation-75,Serial5 --> core-13,Serial7", linkUtilization114 (14~72) <. 10000.0 | ord)
+assert("Link(aggregation-32,Serial5 --> core-1,Serial2", linkUtilization114 (19~40) <. 10000.0 | ord)
+assert("Link(aggregation-51,Serial2 --> edge-54,Serial3", linkUtilization114 (58~76) <. 10000.0 | ord)
+assert("Link(aggregation-72,Serial5 --> core-1,Serial7", linkUtilization114 (7~40) <. 10000.0 | ord)
+assert("Link(edge-22,Serial1 --> aggregation-17,Serial2", linkUtilization114 (2~44) <. 10000.0 | ord)
+assert("Link(core-9,Serial6 --> aggregation-66,Serial5", linkUtilization114 (56~38) <. 10000.0 | ord)
+assert("Link(aggregation-27,Serial5 --> core-13,Serial1", linkUtilization114 (25~72) <. 10000.0 | ord)
+assert("Link(aggregation-56,Serial7 --> core-3,Serial5", linkUtilization114 (61~43) <. 10000.0 | ord)
+assert("Link(aggregation-75,Serial6 --> core-14,Serial7", linkUtilization114 (14~71) <. 10000.0 | ord)
+assert("Link(aggregation-58,Serial4 --> core-8,Serial5", linkUtilization114 (63~57) <. 10000.0 | ord)
+assert("Link(core-14,Serial0 --> aggregation-19,Serial6", linkUtilization114 (71~50) <. 10000.0 | ord)
+assert("Link(aggregation-18,Serial4 --> core-8,Serial0", linkUtilization114 (53~57) <. 10000.0 | ord)
+assert("Link(aggregation-35,Serial6 --> core-14,Serial2", linkUtilization114 (9~71) <. 10000.0 | ord)
+assert("Link(aggregation-59,Serial1 --> edge-61,Serial3", linkUtilization114 (62~18) <. 10000.0 | ord)
+assert("Link(aggregation-24,Serial2 --> edge-30,Serial0", linkUtilization114 (28~29) <. 10000.0 | ord)
+assert("Link(aggregation-18,Serial7 --> core-11,Serial0", linkUtilization114 (53~67) <. 10000.0 | ord)
+assert("Link(aggregation-27,Serial7 --> core-15,Serial1", linkUtilization114 (25~70) <. 10000.0 | ord)
+assert("Link(aggregation-57,Serial2 --> edge-62,Serial1", linkUtilization114 (60~8) <. 10000.0 | ord)
+assert("Link(aggregation-50,Serial5 --> core-9,Serial4", linkUtilization114 (59~56) <. 10000.0 | ord)
+assert("Link(aggregation-24,Serial4 --> core-0,Serial1", linkUtilization114 (28~41) <. 10000.0 | ord)
+assert("Link(edge-53,Serial1 --> aggregation-49,Serial1", linkUtilization114 (74~65) <. 10000.0 | ord)
+assert("Link(aggregation-24,Serial7 --> core-3,Serial1", linkUtilization114 (28~43) <. 10000.0 | ord)
+assert("Link(edge-20,Serial1 --> aggregation-17,Serial0", linkUtilization114 (12~44) <. 10000.0 | ord)
+assert("Link(edge-21,Serial2 --> aggregation-18,Serial1", linkUtilization114 (13~53) <. 10000.0 | ord)
+assert("Link(core-2,Serial1 --> aggregation-24,Serial6", linkUtilization114 (46~28) <. 10000.0 | ord)
+assert("Link(core-12,Serial0 --> aggregation-19,Serial4", linkUtilization114 (66~50) <. 10000.0 | ord)
+assert("Link(aggregation-41,Serial6 --> core-6,Serial3", linkUtilization114 (78~55) <. 10000.0 | ord)
+assert("Link(aggregation-65,Serial2 --> edge-70,Serial1", linkUtilization114 (39~36) <. 10000.0 | ord)
+assert("Link(core-9,Serial2 --> aggregation-34,Serial5", linkUtilization114 (56~11) <. 10000.0 | ord)
+assert("Link(core-13,Serial6 --> aggregation-67,Serial5", linkUtilization114 (72~30) <. 10000.0 | ord)
+assert("Link(edge-52,Serial1 --> aggregation-49,Serial0", linkUtilization114 (73~65) <. 10000.0 | ord)
+assert("Link(edge-20,Serial2 --> aggregation-18,Serial0", linkUtilization114 (12~53) <. 10000.0 | ord)
+assert("Link(core-8,Serial2 --> aggregation-34,Serial4", linkUtilization114 (57~11) <. 10000.0 | ord)
+assert("Link(core-14,Serial6 --> aggregation-67,Serial6", linkUtilization114 (71~30) <. 10000.0 | ord)
+assert("Link(aggregation-26,Serial2 --> edge-30,Serial2", linkUtilization114 (32~29) <. 10000.0 | ord)
+assert("Link(aggregation-59,Serial2 --> edge-62,Serial3", linkUtilization114 (62~8) <. 10000.0 | ord)
+assert("Link(aggregation-64,Serial6 --> core-2,Serial6", linkUtilization114 (35~46) <. 10000.0 | ord)
+assert("Link(core-3,Serial1 --> aggregation-24,Serial7", linkUtilization114 (43~28) <. 10000.0 | ord)
+assert("Link(aggregation-67,Serial7 --> core-15,Serial6", linkUtilization114 (30~70) <. 10000.0 | ord)
+assert("Link(aggregation-58,Serial1 --> edge-61,Serial2", linkUtilization114 (63~18) <. 10000.0 | ord)
+assert("Link(aggregation-27,Serial2 --> edge-30,Serial3", linkUtilization114 (25~29) <. 10000.0 | ord)
+assert("Link(core-3,Serial5 --> aggregation-56,Serial7", linkUtilization114 (43~61) <. 10000.0 | ord)
+assert("Link(aggregation-67,Serial2 --> edge-70,Serial3", linkUtilization114 (30~36) <. 10000.0 | ord)
+assert("Link(aggregation-18,Serial3 --> edge-23,Serial2", linkUtilization114 (53~3) <. 10000.0 | ord)
+assert("Link(aggregation-72,Serial7 --> core-3,Serial7", linkUtilization114 (7~43) <. 10000.0 | ord)
+assert("Link(edge-78,Serial1 --> aggregation-73,Serial2", linkUtilization114 (24~6) <. 10000.0 | ord)
+assert("Link(core-1,Serial6 --> aggregation-64,Serial5", linkUtilization114 (40~35) <. 10000.0 | ord)
+assert("Link(edge-44,Serial3 --> aggregation-43,Serial0", linkUtilization114 (42~79) <. 10000.0 | ord)
+assert("Link(core-2,Serial0 --> aggregation-16,Serial6", linkUtilization114 (46~47) <. 10000.0 | ord)
+assert("Link(core-12,Serial3 --> aggregation-43,Serial4", linkUtilization114 (66~79) <. 10000.0 | ord)
+assert("Link(edge-71,Serial1 --> aggregation-65,Serial3", linkUtilization114 (37~39) <. 10000.0 | ord)
+assert("Link(core-9,Serial3 --> aggregation-42,Serial5", linkUtilization114 (56~77) <. 10000.0 | ord)
+assert("Link(core-0,Serial7 --> aggregation-72,Serial4", linkUtilization114 (41~7) <. 10000.0 | ord)
+assert("Link(aggregation-48,Serial3 --> edge-55,Serial0", linkUtilization114 (75~64) <. 10000.0 | ord)
+assert("Link(edge-62,Serial3 --> aggregation-59,Serial2", linkUtilization114 (8~62) <. 10000.0 | ord)
+assert("Link(aggregation-35,Serial4 --> core-12,Serial2", linkUtilization114 (9~66) <. 10000.0 | ord)
+assert("Link(aggregation-17,Serial4 --> core-4,Serial0", linkUtilization114 (44~52) <. 10000.0 | ord)
+assert("Link(edge-47,Serial1 --> aggregation-41,Serial3", linkUtilization114 (51~78) <. 10000.0 | ord)
+assert("Link(edge-38,Serial3 --> aggregation-35,Serial2", linkUtilization114 (21~9) <. 10000.0 | ord)
+assert("Link(aggregation-72,Serial3 --> edge-79,Serial0", linkUtilization114 (7~26) <. 10000.0 | ord)
+assert("Link(aggregation-16,Serial6 --> core-2,Serial0", linkUtilization114 (47~46) <. 10000.0 | ord)
+assert("Link(aggregation-51,Serial1 --> edge-53,Serial3", linkUtilization114 (58~74) <. 10000.0 | ord)
+assert("Link(aggregation-34,Serial6 --> core-10,Serial2", linkUtilization114 (11~68) <. 10000.0 | ord)
+assert("Link(aggregation-50,Serial1 --> edge-53,Serial2", linkUtilization114 (59~74) <. 10000.0 | ord)
+assert("Link(core-8,Serial3 --> aggregation-42,Serial4", linkUtilization114 (57~77) <. 10000.0 | ord)
+assert("Link(aggregation-65,Serial5 --> core-5,Serial6", linkUtilization114 (39~49) <. 10000.0 | ord)
+assert("Link(edge-61,Serial3 --> aggregation-59,Serial1", linkUtilization114 (18~62) <. 10000.0 | ord)
+assert("Link(aggregation-43,Serial7 --> core-15,Serial3", linkUtilization114 (79~70) <. 10000.0 | ord)
+assert("Link(edge-39,Serial3 --> aggregation-35,Serial3", linkUtilization114 (22~9) <. 10000.0 | ord)
+assert("Link(core-8,Serial4 --> aggregation-50,Serial4", linkUtilization114 (57~59) <. 10000.0 | ord)
+assert("Link(core-1,Serial1 --> aggregation-24,Serial5", linkUtilization114 (40~28) <. 10000.0 | ord)
+assert("Link(aggregation-42,Serial3 --> edge-47,Serial2", linkUtilization114 (77~51) <. 10000.0 | ord)
+assert("Link(aggregation-66,Serial2 --> edge-70,Serial2", linkUtilization114 (38~36) <. 10000.0 | ord)
+assert("Link(aggregation-50,Serial4 --> core-8,Serial4", linkUtilization114 (59~57) <. 10000.0 | ord)
+assert("Link(aggregation-24,Serial3 --> edge-31,Serial0", linkUtilization114 (28~31) <. 10000.0 | ord)
+assert("Link(core-15,Serial5 --> aggregation-59,Serial7", linkUtilization114 (70~62) <. 10000.0 | ord)
+assert("Link(core-0,Serial1 --> aggregation-24,Serial4", linkUtilization114 (41~28) <. 10000.0 | ord)
+assert("Link(core-2,Serial6 --> aggregation-64,Serial6", linkUtilization114 (46~35) <. 10000.0 | ord)
+assert("Link(core-4,Serial4 --> aggregation-49,Serial4", linkUtilization114 (52~65) <. 10000.0 | ord)
+assert("Link(aggregation-41,Serial3 --> edge-47,Serial1", linkUtilization114 (78~51) <. 10000.0 | ord)
+assert("Link(aggregation-26,Serial5 --> core-9,Serial1", linkUtilization114 (32~56) <. 10000.0 | ord)
+assert("Link(core-1,Serial7 --> aggregation-72,Serial5", linkUtilization114 (40~7) <. 10000.0 | ord)
+assert("Link(aggregation-74,Serial1 --> edge-77,Serial2", linkUtilization114 (15~23) <. 10000.0 | ord)
+assert("Link(aggregation-27,Serial4 --> core-12,Serial1", linkUtilization114 (25~66) <. 10000.0 | ord)
+assert("Link(edge-63,Serial3 --> aggregation-59,Serial3", linkUtilization114 (10~62) <. 10000.0 | ord)
+assert("Link(edge-37,Serial3 --> aggregation-35,Serial1", linkUtilization114 (20~9) <. 10000.0 | ord)
+assert("Link(edge-30,Serial3 --> aggregation-27,Serial2", linkUtilization114 (29~25) <. 10000.0 | ord)
+assert("Link(aggregation-24,Serial1 --> edge-29,Serial0", linkUtilization114 (28~1) <. 10000.0 | ord)
+assert("Link(aggregation-19,Serial5 --> core-13,Serial0", linkUtilization114 (50~72) <. 10000.0 | ord)
+assert("Link(aggregation-50,Serial6 --> core-10,Serial4", linkUtilization114 (59~68) <. 10000.0 | ord)
+assert("Link(core-12,Serial4 --> aggregation-51,Serial4", linkUtilization114 (66~58) <. 10000.0 | ord)
+assert("Link(aggregation-19,Serial3 --> edge-23,Serial3", linkUtilization114 (50~3) <. 10000.0 | ord)
+assert("Link(core-0,Serial6 --> aggregation-64,Serial4", linkUtilization114 (41~35) <. 10000.0 | ord)
+assert("Link(core-13,Serial3 --> aggregation-43,Serial5", linkUtilization114 (72~79) <. 10000.0 | ord)
+assert("Link(aggregation-43,Serial3 --> edge-47,Serial3", linkUtilization114 (79~51) <. 10000.0 | ord)
+assert("Link(aggregation-16,Serial3 --> edge-23,Serial0", linkUtilization114 (47~3) <. 10000.0 | ord)
+assert("Link(core-13,Serial4 --> aggregation-51,Serial5", linkUtilization114 (72~58) <. 10000.0 | ord)
+assert("Link(aggregation-43,Serial1 --> edge-45,Serial3", linkUtilization114 (79~45) <. 10000.0 | ord)
+assert("Link(aggregation-19,Serial7 --> core-15,Serial0", linkUtilization114 (50~70) <. 10000.0 | ord)
+assert("Link(aggregation-49,Serial3 --> edge-55,Serial1", linkUtilization114 (65~64) <. 10000.0 | ord)
+assert("Link(edge-36,Serial3 --> aggregation-35,Serial0", linkUtilization114 (27~9) <. 10000.0 | ord)
+assert("Link(aggregation-33,Serial4 --> core-4,Serial2", linkUtilization114 (17~52) <. 10000.0 | ord)
+assert("Link(edge-68,Serial3 --> aggregation-67,Serial0", linkUtilization114 (4~30) <. 10000.0 | ord)
+assert("Link(aggregation-26,Serial7 --> core-11,Serial1", linkUtilization114 (32~67) <. 10000.0 | ord)
+assert("Link(aggregation-17,Serial3 --> edge-23,Serial1", linkUtilization114 (44~3) <. 10000.0 | ord)
+assert("Link(core-2,Serial7 --> aggregation-72,Serial6", linkUtilization114 (46~7) <. 10000.0 | ord)
+assert("Link(aggregation-56,Serial4 --> core-0,Serial5", linkUtilization114 (61~41) <. 10000.0 | ord)
+assert("Link(aggregation-25,Serial7 --> core-7,Serial1", linkUtilization114 (34~54) <. 10000.0 | ord)
+assert("Link(edge-31,Serial3 --> aggregation-27,Serial3", linkUtilization114 (31~25) <. 10000.0 | ord)
+assert("Link(edge-69,Serial3 --> aggregation-67,Serial1", linkUtilization114 (5~30) <. 10000.0 | ord)
+assert("Link(aggregation-75,Serial1 --> edge-77,Serial3", linkUtilization114 (14~23) <. 10000.0 | ord)
+assert("Link(aggregation-33,Serial3 --> edge-39,Serial1", linkUtilization114 (17~22) <. 10000.0 | ord)
+assert("Link(aggregation-67,Serial1 --> edge-69,Serial3", linkUtilization114 (30~5) <. 10000.0 | ord)
+assert("Link(edge-39,Serial1 --> aggregation-33,Serial3", linkUtilization114 (22~17) <. 10000.0 | ord)
+assert("Link(edge-70,Serial3 --> aggregation-67,Serial2", linkUtilization114 (36~30) <. 10000.0 | ord)
+assert("Link(core-11,Serial2 --> aggregation-34,Serial7", linkUtilization114 (67~11) <. 10000.0 | ord)
+assert("Link(edge-77,Serial3 --> aggregation-75,Serial1", linkUtilization114 (23~14) <. 10000.0 | ord)
+assert("Link(aggregation-73,Serial1 --> edge-77,Serial1", linkUtilization114 (6~23) <. 10000.0 | ord)
+assert("Link(core-13,Serial5 --> aggregation-59,Serial5", linkUtilization114 (72~62) <. 10000.0 | ord)
+assert("Link(aggregation-66,Serial7 --> core-11,Serial6", linkUtilization114 (38~67) <. 10000.0 | ord)
+assert("Link(edge-69,Serial1 --> aggregation-65,Serial1", linkUtilization114 (5~39) <. 10000.0 | ord)
+assert("Link(aggregation-49,Serial5 --> core-5,Serial4", linkUtilization114 (65~49) <. 10000.0 | ord)
+assert("Link(edge-63,Serial1 --> aggregation-57,Serial3", linkUtilization114 (10~60) <. 10000.0 | ord)
+assert("Link(aggregation-48,Serial7 --> core-3,Serial4", linkUtilization114 (75~43) <. 10000.0 | ord)
+assert("Link(edge-52,Serial3 --> aggregation-51,Serial0", linkUtilization114 (73~58) <. 10000.0 | ord)
+assert("Link(aggregation-72,Serial1 --> edge-77,Serial0", linkUtilization114 (7~23) <. 10000.0 | ord)
+assert("Link(core-14,Serial5 --> aggregation-59,Serial6", linkUtilization114 (71~62) <. 10000.0 | ord)
+assert("Link(aggregation-75,Serial3 --> edge-79,Serial3", linkUtilization114 (14~26) <. 10000.0 | ord)
+assert("Link(aggregation-26,Serial1 --> edge-29,Serial2", linkUtilization114 (32~1) <. 10000.0 | ord)
+assert("Link(core-3,Serial6 --> aggregation-64,Serial7", linkUtilization114 (43~35) <. 10000.0 | ord)
+assert("Link(edge-53,Serial3 --> aggregation-51,Serial1", linkUtilization114 (74~58) <. 10000.0 | ord)
+assert("Link(core-14,Serial3 --> aggregation-43,Serial6", linkUtilization114 (71~79) <. 10000.0 | ord)
+assert("Link(edge-71,Serial3 --> aggregation-67,Serial3", linkUtilization114 (37~30) <. 10000.0 | ord)
+assert("Link(edge-38,Serial1 --> aggregation-33,Serial2", linkUtilization114 (21~17) <. 10000.0 | ord)
+assert("Link(aggregation-66,Serial5 --> core-9,Serial6", linkUtilization114 (38~56) <. 10000.0 | ord)
+assert("Link(aggregation-74,Serial3 --> edge-79,Serial2", linkUtilization114 (15~26) <. 10000.0 | ord)
+assert("Link(aggregation-25,Serial1 --> edge-29,Serial1", linkUtilization114 (34~1) <. 10000.0 | ord)
+assert("Link(aggregation-40,Serial6 --> core-2,Serial3", linkUtilization114 (69~46) <. 10000.0 | ord)
+assert("Link(edge-76,Serial3 --> aggregation-75,Serial0", linkUtilization114 (33~14) <. 10000.0 | ord)
+assert("Link(core-15,Serial3 --> aggregation-43,Serial7", linkUtilization114 (70~79) <. 10000.0 | ord)
+assert("Link(aggregation-40,Serial3 --> edge-47,Serial0", linkUtilization114 (69~51) <. 10000.0 | ord)
+assert("Link(aggregation-34,Serial4 --> core-8,Serial2", linkUtilization114 (11~57) <. 10000.0 | ord)
+assert("Link(aggregation-51,Serial4 --> core-12,Serial4", linkUtilization114 (58~66) <. 10000.0 | ord)
+assert("Link(edge-46,Serial1 --> aggregation-41,Serial2", linkUtilization114 (48~78) <. 10000.0 | ord)
+assert("Link(aggregation-27,Serial1 --> edge-29,Serial3", linkUtilization114 (25~1) <. 10000.0 | ord)
+assert("Link(aggregation-73,Serial3 --> edge-79,Serial1", linkUtilization114 (6~26) <. 10000.0 | ord)
+assert("Link(aggregation-48,Serial5 --> core-1,Serial4", linkUtilization114 (75~40) <. 10000.0 | ord)
+assert("Link(aggregation-32,Serial3 --> edge-39,Serial0", linkUtilization114 (19~22) <. 10000.0 | ord)
+assert("Link(aggregation-66,Serial1 --> edge-69,Serial2", linkUtilization114 (38~5) <. 10000.0 | ord)
+assert("Link(aggregation-33,Serial1 --> edge-37,Serial1", linkUtilization114 (17~20) <. 10000.0 | ord)
+assert("Link(edge-76,Serial1 --> aggregation-73,Serial0", linkUtilization114 (33~6) <. 10000.0 | ord)
+assert("Link(edge-70,Serial1 --> aggregation-65,Serial2", linkUtilization114 (36~39) <. 10000.0 | ord)
+assert("Link(core-3,Serial0 --> aggregation-16,Serial7", linkUtilization114 (43~47) <. 10000.0 | ord)
+assert("Link(edge-79,Serial1 --> aggregation-73,Serial3", linkUtilization114 (26~6) <. 10000.0 | ord)
+assert("Link(edge-45,Serial3 --> aggregation-43,Serial1", linkUtilization114 (45~79) <. 10000.0 | ord)
+assert("Link(edge-78,Serial3 --> aggregation-75,Serial2", linkUtilization114 (24~14) <. 10000.0 | ord)
+assert("Link(core-10,Serial2 --> aggregation-34,Serial6", linkUtilization114 (68~11) <. 10000.0 | ord)
+assert("Link(aggregation-17,Serial6 --> core-6,Serial0", linkUtilization114 (44~55) <. 10000.0 | ord)
+assert("Link(edge-79,Serial3 --> aggregation-75,Serial3", linkUtilization114 (26~14) <. 10000.0 | ord)
+assert("Link(aggregation-65,Serial1 --> edge-69,Serial1", linkUtilization114 (39~5) <. 10000.0 | ord)
+assert("Link(edge-44,Serial1 --> aggregation-41,Serial0", linkUtilization114 (42~78) <. 10000.0 | ord)
+assert("Link(edge-77,Serial1 --> aggregation-73,Serial1", linkUtilization114 (23~6) <. 10000.0 | ord)
+assert("Link(aggregation-57,Serial6 --> core-6,Serial5", linkUtilization114 (60~55) <. 10000.0 | ord)
+assert("Link(core-0,Serial0 --> aggregation-16,Serial4", linkUtilization114 (41~47) <. 10000.0 | ord)
+assert("Link(edge-46,Serial3 --> aggregation-43,Serial2", linkUtilization114 (48~79) <. 10000.0 | ord)
+assert("Link(aggregation-35,Serial3 --> edge-39,Serial3", linkUtilization114 (9~22) <. 10000.0 | ord)
+assert("Link(aggregation-64,Serial1 --> edge-69,Serial0", linkUtilization114 (35~5) <. 10000.0 | ord)
+assert("Link(edge-45,Serial1 --> aggregation-41,Serial1", linkUtilization114 (45~78) <. 10000.0 | ord)
+assert("Link(aggregation-74,Serial4 --> core-8,Serial7", linkUtilization114 (15~57) <. 10000.0 | ord)
+assert("Link(aggregation-32,Serial1 --> edge-37,Serial0", linkUtilization114 (19~20) <. 10000.0 | ord)
+assert("Link(aggregation-51,Serial6 --> core-14,Serial4", linkUtilization114 (58~71) <. 10000.0 | ord)
+assert("Link(edge-47,Serial3 --> aggregation-43,Serial3", linkUtilization114 (51~79) <. 10000.0 | ord)
+assert("Link(aggregation-34,Serial3 --> edge-39,Serial2", linkUtilization114 (11~22) <. 10000.0 | ord)
+assert("Link(core-1,Serial0 --> aggregation-16,Serial5", linkUtilization114 (40~47) <. 10000.0 | ord)
+assert("Link(core-12,Serial5 --> aggregation-59,Serial4", linkUtilization114 (66~62) <. 10000.0 | ord)
