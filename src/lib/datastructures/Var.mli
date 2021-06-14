@@ -29,3 +29,5 @@ val equals : t -> t -> bool
 val equal_names : t -> t -> bool
 
 val compare : t -> t -> int
+
+val printVarList : t list -> string

@@ -232,7 +232,8 @@ let transform_decl ~(name : string) (transformers : transformers)
         }
   | DSymbolic (x, ty, p) ->
       let x, ty, p = transform_symbolic (x, ty, p) in
-      DSymbolic (x, ty, p)
+      let p' = match p with Expr e -> Expr (transform_exp e) | _ -> p in
+      DSymbolic (x, ty, p')
   | DUserTy (x, ty) -> DUserTy (x, transform_ty ty)
   | DNodes _ | DEdges _ -> d
 

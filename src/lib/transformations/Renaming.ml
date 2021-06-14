@@ -107,11 +107,19 @@ let alpha_convert_declaration bmap (env : Var.t Env.t) (d : declaration) =
       let e = alpha_convert_exp env e in
       let env = Env.update env x y in
       (env, DLet (y, e, inline))
-  | DSymbolic (x, ty, p) ->
-      let y = fresh x in
-      map_back bmap y x;
-      let env = Env.update env x y in
-      (env, DSymbolic (y, ty, p))
+  | DSymbolic (xs, ty, p) ->
+      let ys, env =
+        List.fold_left
+          (fun (acc, env) x ->
+            let y = fresh x in
+            map_back bmap y x;
+            (y :: acc, Env.update env x y))
+          ([], env) xs
+      in
+      let p' =
+        match p with Expr e -> Expr (alpha_convert_exp env e) | _ -> p
+      in
+      (env, DSymbolic (List.rev ys, ty, p'))
   | DSolve { aty; var_names; init; trans; merge } ->
       let init, trans, merge =
         ( alpha_convert_exp env init,

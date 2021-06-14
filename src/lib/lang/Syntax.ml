@@ -142,6 +142,7 @@ type op =
   | ULeq of bitwidth
   | FAdd
   | FDiv
+  | FMul
   | NLess
   | NLeq
   | FLess
@@ -278,9 +279,12 @@ type forward = {
 
 type inlineLevel = Inline | NoInline
 
+(* Distributions can be either expressed in a separate language, in ProbNV's language or by default they are considered uniform *)
+type distributionExpression = DExpr of distrExpr | Expr of exp | Uniform
+
 type declaration =
   | DLet of (var * exp * inlineLevel) (* Variable name, expression, inline? *)
-  | DSymbolic of var * ty * distrExpr option
+  | DSymbolic of (var list) * ty * distributionExpression (*var list for tuples *)
   | DInfer of (string * exp * exp option)
   | DSolve of solve
   | DForward of forward
@@ -561,7 +565,7 @@ let arity op =
   | And | Or -> 2
   | Not -> 1
   | UAdd _ -> 2
-  | FAdd | FDiv -> 2
+  | FAdd | FDiv | FMul -> 2
   | Eq -> 2
   | ULess _ | ULeq _ | NLeq | NLess | ELess | ELeq | FLess | FLeq -> 2
   | MCreate -> 1

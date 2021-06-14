@@ -11,6 +11,8 @@ open Batteries
 
 let varname x = Var.to_string_delim "_" x
 
+let varnames xs = printList (fun x -> Var.to_string_delim "_" x) xs "[" ";" "]"
+
 (** Translating probNV records to OCaml records (type or values depending on f)*)
 let record_to_ocaml_record (sep : string) (f : 'a -> string)
     (map : 'a StringMap.t) : string =
@@ -106,7 +108,7 @@ let is_prefix_op op =
   | MCreate | MSet | MSize | TGet _ | MMerge ->
       true
   | And | Or | Not | UAdd _ | Eq | ULess _ | ULeq _ | NLess | NLeq | ELess
-  | FLess | FLeq | ELeq | FAdd | FDiv ->
+  | FLess | FLeq | ELeq | FAdd | FDiv | FMul ->
       false
 
 (** Translating LLL operators to OCaml operators*)
@@ -118,6 +120,7 @@ let op_to_ocaml_string op =
   | UAdd _ -> "+"
   | FAdd -> "+."
   | FDiv -> "/."
+  | FMul -> "*."
   | FLess -> "<"
   | FLeq -> "<="
   (* | USub _ -> "-" *)
@@ -339,7 +342,8 @@ let rec value_to_ocaml_string v =
       failwith
         "Total maps do not have a syntactic value and should not appear here."
 
-and exp_to_ocaml_string e =
+and exp_to_ocaml_string ?(distr = false) e =
+  let exp_to_ocaml_string = exp_to_ocaml_string ~distr in
   match e.e with
   | EVar x -> varname x
   | EVal v -> value_to_ocaml_string v
@@ -364,7 +368,8 @@ and exp_to_ocaml_string e =
         (get_fresh_type_id type_store (OCamlUtils.oget e1.ety))
         (exp_to_ocaml_string e1)
   | EToMap e1 ->
-      Printf.sprintf "(BddFunc.toMap ~value:%s)" (exp_to_ocaml_string e1)
+      Printf.sprintf "(BddFunc.toMap ~distr:%b ~value:%s)" distr
+        (exp_to_ocaml_string e1)
   | EApplyN (e1, es) -> (
       let el1 = exp_to_ocaml_string e1 in
       let esl =
@@ -390,24 +395,26 @@ and exp_to_ocaml_string e =
       | [ v1 ] ->
           Printf.sprintf
             "(Obj.magic (let %s = %s in \n\
-            \ BddFunc.apply1 ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s))" op_key_var
-            op_key op_key_var el1 v1
+            \ BddFunc.apply1 ~distr:%b ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s))"
+            op_key_var op_key distr op_key_var el1 v1
       | [ v1; v2 ] ->
           Printf.sprintf
             "(Obj.magic (let %s = %s in \n\
-            \ BddFunc.apply2 ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s ~arg2:%s))"
-            op_key_var op_key op_key_var el1 v1 v2
+            \ BddFunc.apply2 ~distr:%b ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s \
+             ~arg2:%s))"
+            op_key_var op_key distr op_key_var el1 v1 v2
       | [ v1; v2; v3 ] ->
           Printf.sprintf
             "(Obj.magic (let %s = %s in \n\
-            \ BddFunc.apply3 ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s ~arg2:%s \
-             ~arg3:%s))"
-            op_key_var op_key op_key_var el1 v1 v2 v3
+            \ BddFunc.apply3 ~distr:%b ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s \
+             ~arg2:%s ~arg3:%s))"
+            op_key_var op_key distr op_key_var el1 v1 v2 v3
       | _ ->
           let esl_array =
             Collections.printList (fun el -> el) esl "[|" "; " "|]"
           in
-          Printf.sprintf "(BddFunc.applyN ~f:%s ~args:(%s))" el1 esl_array )
+          Printf.sprintf "(BddFunc.applyN ~distr:%b ~f:%s ~args:(%s))" distr el1
+            esl_array )
   | ETuple es ->
       let n = BatList.length es in
       Collections.printListi
@@ -482,7 +489,7 @@ and prefix_op_to_ocaml_string op es ty =
       | MSet | MCreate | MMerge ->
           failwith "Wrong number of arguments to MSet/MCreate/MMerge operation"
       | Eq | UAdd _ | ULess _ | NLess | ULeq _ | NLeq | ELess | ELeq | And | Or
-      | Not | BddNot | TGet _ | FAdd | FDiv | FLess | FLeq ->
+      | Not | BddNot | TGet _ | FAdd | FDiv | FMul | FLess | FLeq ->
           failwith "not applicable" )
   | [ e1; e2; e3 ] -> (
       match op with
@@ -503,7 +510,8 @@ and prefix_op_to_ocaml_string op es ty =
             (exp_to_ocaml_string e2) (exp_to_ocaml_string e3)
       | And | Or | Not | Eq | NLess | NLeq | ELess | ELeq | MGet | MCreate
       | MSize | BddAnd | BddOr | BddNot | BddEq | UAdd _ | ULess _ | ULeq _
-      | BddAdd _ | BddLess _ | BddLeq _ | TGet _ | FAdd | FDiv | FLess | FLeq ->
+      | BddAdd _ | BddLess _ | BddLeq _ | TGet _ | FAdd | FDiv | FMul | FLess
+      | FLeq ->
           failwith "Wrong number of arguments to operation." )
   | _ -> failwith "too many arguments to operation"
 
@@ -544,11 +552,18 @@ let rec attr_ty_to_equality ty x y =
 let compile_decl decl =
   match decl with
   | DUserTy _ -> ""
-  | DSymbolic (x, ty, dist) ->
+  | DSymbolic (xs, ty, Expr exp) ->
+      let ty_id = get_fresh_type_id type_store ty in
+      let distr = exp_to_ocaml_string ~distr:true exp in
+      Printf.sprintf
+        "let distr_fun %s = %s \n\
+        \ let %s = BddFunc.create_value_expr \"%s\" distr_fun %d SIM.graph\n"
+        (varnames xs) distr (varnames xs) (varnames xs) ty_id
+  | DSymbolic (xs, ty, dist) ->
       let ty_id = get_fresh_type_id type_store ty in
       let dist_id = Collections.DistrIds.fresh_id distr_store dist in
       Printf.sprintf "let %s = BddFunc.create_value \"%s\" %d %d SIM.graph\n"
-        (varname x) (varname x) dist_id ty_id
+        (varnames xs) (varnames xs) dist_id ty_id
   | DLet (x, e, _) ->
       Printf.sprintf "let %s = %s" (varname x) (exp_to_ocaml_string e)
   | DInfer (name, e, cond) ->

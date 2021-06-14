@@ -208,10 +208,13 @@ let bnot x =
 
 (** ** Multivalue operations *)
 
-let toMap ~value = Mtbddc.cst B.mgr B.tbl (Obj.magic value)
+let toMap ?(distr = false) ~value =
+  if distr then
+    Obj.magic @@ Mtbddc.cst B.mgr B.tbl_probabilities (Obj.magic value)
+  else Obj.magic @@ Mtbddc.cst B.mgr B.tbl (Obj.magic value)
 
 (* applyN takes as argument an OCaml function over concrete OCaml values and a nu*)
-let applyN ~f ~args : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
+let applyN ?(distr = false) ~f ~args : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
   let g _ (arr : 'a Cudd.Mtbddc.unique Cudd.Vdd.t array) :
       'a Cudd.Mtbddc.unique Cudd.Vdd.t option =
     let cst = Array.for_all (fun add -> Mtbddc.is_cst add) arr in
@@ -221,7 +224,9 @@ let applyN ~f ~args : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
           (fun facc add -> Obj.magic (facc (Obj.magic (Mtbddc.dval add))))
           (Obj.magic f) arr
       in
-      Some (Mtbddc.cst B.mgr B.tbl (Obj.magic res))
+      if distr then
+        Some (Obj.magic @@ Mtbddc.cst B.mgr B.tbl_probabilities (Obj.magic res))
+      else Some (Mtbddc.cst B.mgr B.tbl (Obj.magic res))
     else None
   in
   let op =
@@ -248,8 +253,14 @@ let map_cache = Obj.magic (ref HashClosureMap.empty)
 
 (*todo add cache and modify compiler *)
 
-let apply1 ~op_key ~f ~arg1 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
-  let g v1 = f (Obj.magic (Mtbddc.get v1)) |> Mtbddc.unique B.tbl in
+let apply1 ?(distr = false) ~op_key ~f ~arg1 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t
+    =
+  let g v1 =
+    f (Obj.magic (Mtbddc.get v1))
+    |>
+    if distr then Obj.magic @@ Mtbddc.unique B.tbl_probabilities
+    else Mtbddc.unique B.tbl
+  in
   let op =
     match HashClosureMap.Exceptionless.find (Obj.magic op_key) !map_cache with
     | None ->
@@ -261,10 +272,13 @@ let apply1 ~op_key ~f ~arg1 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
   User.apply_op1 op arg1
 
 (* specialized version of applyN for two arguments*)
-let apply2 ~op_key ~f ~arg1 ~arg2 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
+let apply2 ?(distr = false) ~op_key ~f ~arg1 ~arg2 :
+    'a Cudd.Mtbddc.unique Cudd.Vdd.t =
   let g v1 v2 =
     Obj.magic (f (Obj.magic (Mtbddc.get v1))) (Mtbddc.get v2)
-    |> Mtbddc.unique B.tbl
+    |>
+    if distr then Obj.magic @@ Mtbddc.unique B.tbl_probabilities
+    else Mtbddc.unique B.tbl
   in
   let op =
     match HashClosureMap.Exceptionless.find (Obj.magic op_key) !map_cache with
@@ -281,13 +295,16 @@ let apply2 ~op_key ~f ~arg1 ~arg2 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
   in
   User.apply_op2 op arg1 arg2
 
-let apply3 ~op_key ~f ~arg1 ~arg2 ~arg3 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t =
+let apply3 ?(distr = false) ~op_key ~f ~arg1 ~arg2 ~arg3 :
+    'a Cudd.Mtbddc.unique Cudd.Vdd.t =
   let g v1 v2 v3 =
     Obj.magic
       (Obj.magic
          (Obj.magic (f (Obj.magic (Mtbddc.get v1))) (Mtbddc.get v2))
          (Mtbddc.get v3))
-    |> Mtbddc.unique B.tbl
+    |>
+    if distr then Obj.magic @@ Mtbddc.unique B.tbl_probabilities
+    else Mtbddc.unique B.tbl
   in
   let op =
     match HashClosureMap.Exceptionless.find (Obj.magic op_key) !map_cache with
@@ -424,8 +441,7 @@ let uniform_distribution (res : t) ty (g : AdjGraph.t) :
   aux ty res
 
 (* Given a type creates a BDD representing all possible values of that type*)
-let create_value (name : string) (dist : distrExpr option) (ty : ty)
-    (g : AdjGraph.t) : t =
+let create_value_aux (name : string) (ty : ty) (g : AdjGraph.t) =
   let rec aux ty =
     match ty.typ with
     | TBool -> BBool (B.freshvar ())
@@ -455,19 +471,84 @@ let create_value (name : string) (dist : distrExpr option) (ty : ty)
   (* symbolic_end = current_start + (vars_after_aux - vars_before_aux) - 1
                   = symbolic_start + vars_after_aux - symbolic_start - 1 *)
   let symbolic_end = B.getVarsNb () - 1 in
-  let distr =
-    match dist with
-    | None -> uniform_distribution res typ g
-    | Some dexpr -> computeDistr dexpr (res, typ) g
-  in
   let name =
     try fst @@ BatString.rsplit name ~by:"_" with Not_found -> name
   in
-  B.push_symbolic_vars (name, symbolic_start, symbolic_end, typ, distr);
-  res
+  (name, symbolic_start, symbolic_end, typ, res)
 
-let create_value name (dist_id : int) (ty_id : int) g : t =
+(* Removes tuples from the result - for now we do not use nested tuples so this is straightforward *)
+let flatten_result (res : t) : t list =
+  match res with Tuple ts -> ts | _ -> [ res ]
+
+let create_value (name : string) (dist : distributionExpression) (ty : ty)
+    (g : AdjGraph.t) : t list =
+  let name, symbolic_start, symbolic_end, typ, res =
+    create_value_aux name ty g
+  in
+  let distr =
+    match dist with
+    | Uniform -> uniform_distribution res typ g
+    | DExpr expr -> computeDistr expr (res, typ) g
+    | Expr _ -> Console.error "This case is handled elsewhere"
+  in
+  B.push_symbolic_vars (name, symbolic_start, symbolic_end, typ, distr);
+  flatten_result res
+
+(* create symbolic value for uniform or DExpr distributions.*)
+let create_value name (dist_id : int) (ty_id : int) g : t list =
   create_value name
     (DistrIds.get_elt distr_store dist_id)
     (TypeIds.get_elt type_store ty_id)
     g
+
+(* Set probability to 0 for invalid points in the distribution, i.e., for edge and nodes that are not valid *)
+let normalize (res : t) (distr : float Mtbddc.t) ty (g : AdjGraph.t) :
+    float Cudd.Mtbddc.unique Cudd.Vdd.t =
+  let rec aux ty res distr =
+    match (ty.typ, res) with
+    | TInt _, _ | TBool, _ ->
+        (* Nothing to do in these cases, the distribution is correct *)
+        distr
+    | TNode, res -> (
+        (* If it is a node then we need to set the probability for invalid nodes to 0 *)
+        (* If it's a node type, assign 0 probability to invalid nodes *)
+        match leq res (BInt (mk_int (AdjGraph.nb_vertex g - 1) !tnode_sz)) with
+        | BBool isValidNode ->
+            Mtbddc.ite isValidNode distr
+              (Mtbddc.cst B.mgr B.tbl_probabilities 0.0)
+        | _ -> failwith "Expected a boolean result from lt computation" )
+    | TEdge, res -> (
+        match leq res (BInt (mk_int (AdjGraph.nb_edges g - 1) !tedge_sz)) with
+        | BBool isValidEdge ->
+            Mtbddc.ite isValidEdge distr
+              (Mtbddc.cst B.mgr B.tbl_probabilities 0.0)
+        | _ -> failwith "Expected a boolean result from lt computation" )
+    | TTuple ts, Tuple rs ->
+        List.fold_left2 (fun distrAcc t r -> aux t r distrAcc) distr ts rs
+    | TOption _, _ -> failwith "todo: probability for options"
+    | TTuple _, _
+    | TVar _, _
+    | QVar _, _
+    | TArrow _, _
+    | TMap _, _
+    | TFloat, _
+    | TRecord _, _ ->
+        failwith "Impossible cases"
+  in
+  aux ty res distr
+
+let create_value_expr (name : string) (dist : t list -> float Cudd.Mtbddc.t)
+    (ty : ty) (g : AdjGraph.t) : t list =
+  let name, symbolic_start, symbolic_end, typ, res =
+    create_value_aux name ty g
+  in
+  (* Compute the distribution based on the given dist function *)
+  let res = flatten_result res in
+  let distr = dist res in
+  B.push_symbolic_vars (name, symbolic_start, symbolic_end, typ, distr);
+  res
+
+(*create value for symbolics that use a ProbNV expression for the distribution *)
+let create_value_expr name (dist : t list -> float Cudd.Mtbddc.t) (ty_id : int)
+    g : t list =
+  create_value_expr name dist (TypeIds.get_elt type_store ty_id) g

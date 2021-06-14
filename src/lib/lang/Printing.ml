@@ -16,7 +16,7 @@ let rec ty_to_size ty =
   | TOption tyo -> 1 + ty_to_size tyo
   | TNode -> ty_to_size (concrete (TInt !tnode_sz)) (* Encode as int *)
   | TEdge -> ty_to_size (concrete (TInt !tedge_sz)) (*Encode as edge id *)
-  | TArrow _ | TVar _ | QVar _ | TMap _ | TRecord _ ->
+  | TArrow _ | TVar _ | QVar _ | TMap _ | TRecord _ | TFloat ->
       failwith "internal error (ty_to_size):"
 
 let tbool_to_bool tb =
@@ -64,7 +64,7 @@ let vars_to_value_old vars ty =
         let v, i = aux (idx + 1) tyo in
         let v = if tag then voption (Some v) else voption None in
         (v, i)
-    | TArrow _ | TMap _ | TVar _ | QVar _ | TRecord _ ->
+    | TArrow _ | TMap _ | TVar _ | QVar _ | TRecord _ | TFloat ->
         failwith "internal error (bdd_to_value)"
   in
   fst (aux 0 ty)
@@ -123,7 +123,7 @@ let prec_op op =
   | And | BddAnd -> 7
   | Or | BddOr -> 7
   | Not | BddNot -> 6
-  | FDiv -> 4
+  | FDiv | FMul -> 4
   | UAdd _ | BddAdd _ | FAdd -> 4
   (* | USub _ -> 4 *)
   | Eq | BddEq -> 5
@@ -132,7 +132,7 @@ let prec_op op =
   | MSet -> 3
   | ULess _ | BddLess _ | NLess | ULeq _ | NLeq | BddLeq _ | ELess | ELeq -> 5
   | TGet _ -> 5
-  | MMerge -> 3
+  | MMerge | MSize -> 3
   | FLess | FLeq -> 5
 
 let prec_exp e =
@@ -283,6 +283,7 @@ let op_to_string op =
   | UAdd n -> "+" ^ "u" ^ string_of_int n
   | FAdd -> "+."
   | FDiv -> "/."
+  | FMul -> "*."
   (* | USub n -> "-" ^ "u" ^ (string_of_int n)
      | UAnd n -> "&" ^ "u" ^ (string_of_int n) *)
   | Eq -> "="
@@ -593,11 +594,14 @@ let rec declaration_to_string ?(show_types = false) d =
   let exp_to_string = exp_to_string ~show_types in
   match d with
   | DLet (x, e, _) -> "let " ^ Var.to_string x ^ " = " ^ exp_to_string e ^ "\n"
-  | DSymbolic (x, ty, None) ->
-      Printf.sprintf "symbolic %s : %s" (Var.to_string x) (ty_to_string ty)
-  | DSymbolic (x, ty, Some distr) ->
-      Printf.sprintf "symbolic %s : %s = %s" (Var.to_string x) (ty_to_string ty)
-        (distrExpr_to_string distr)
+  | DSymbolic (xs, ty, Uniform) ->
+      Printf.sprintf "symbolic %s : %s" (Var.printVarList xs) (ty_to_string ty)
+  | DSymbolic (xs, ty, DExpr dexp) ->
+      Printf.sprintf "symbolic %s : %s = %s" (Var.printVarList xs)
+        (ty_to_string ty) (distrExpr_to_string dexp)
+  | DSymbolic (xs, ty, Expr dexp) ->
+      Printf.sprintf "symbolic %s : %s = %s" (Var.printVarList xs)
+        (ty_to_string ty) (exp_to_string dexp)
   | DInfer (name, e, cond) ->
       let condString =
         match cond with

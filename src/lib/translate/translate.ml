@@ -73,8 +73,8 @@ let opToBddOp op =
   | ELess -> BddLess !tedge_sz
   | ELeq -> BddLeq !tedge_sz
   | BddAnd | BddAdd _ | BddOr | BddNot | BddEq | BddLess _ | BddLeq _ -> op
-  | MCreate | MGet | MSet | MMerge | MSize | TGet _ | FAdd | FDiv | FLess | FLeq
-    ->
+  | MCreate | MGet | MSet | MMerge | MSize | TGet _ | FAdd | FDiv | FMul | FLess
+  | FLeq ->
       failwith "Can't convert operation to symbolic operation"
 
 let liftBdd e1 =
@@ -184,6 +184,7 @@ let rec translate (e : exp) : exp * BddBinds.t =
       | ULeq _, _
       | FAdd, _
       | FDiv, _
+      | FMul, _
       | ELess, _
       | ELeq, _
       | FLess, _
@@ -1151,6 +1152,11 @@ let translateDecl info d =
       in
       if BddBinds.isEmpty rho then DInfer (name, e', cond')
       else DInfer (name, buildApply e' rho, cond')
+  | DSymbolic (xs, ty, Expr e) ->
+      BddBinds.clearStore ();
+      let e', r = translate e in
+      BddBinds.clearStore ();
+      DSymbolic (xs, ty, Expr (buildApply e' r))
   | DNodes _ | DEdges _ | DSymbolic _ | DUserTy _ -> d
 
 let translate_declarations info ds = List.map (translateDecl info) ds

@@ -414,6 +414,7 @@ let op_typ op =
         concrete TBool )
   | FAdd -> ([ concrete TFloat; concrete TFloat ], concrete TFloat)
   | FDiv -> ([ concrete TFloat; concrete TFloat ], concrete TFloat)
+  | FMul -> ([ concrete TFloat; concrete TFloat ], concrete TFloat)
   | NLess -> ([ concrete TNode; concrete TNode ], concrete TBool)
   | NLeq -> ([ concrete TNode; concrete TNode ], concrete TBool)
   | ELess -> ([ concrete TEdge; concrete TEdge ], concrete TBool)
@@ -625,7 +626,58 @@ and infer_declaration isHLL infer_exp i info env record_types d :
   | DLet (x, e1, inline) ->
       let e1, ty_e1 = infer_exp e1 |> textract in
       (Env.update env x ty_e1, DLet (x, texp (e1, ty_e1, e1.espan), inline))
-  | DSymbolic (x, ty, prob) -> (Env.update env x ty, DSymbolic (x, ty, prob))
+  | DSymbolic (xs, ty, prob) ->
+      let env, envTemp =
+        match xs with
+        | [ x ] -> (Env.update env x ty, Env.update Env.empty x ty)
+        | _ ->
+            List.fold_left2
+              (fun (env, envTemp) x ty ->
+                (Env.update env x ty, Env.update envTemp x ty))
+              (env, Env.empty) xs
+              ( match ty.typ with
+              | TTuple ts -> ts
+              | _ ->
+                  Console.error
+                    (Printf.sprintf "Expected a tuple type for symbolic %s"
+                       (Collections.printList
+                          (fun v -> Var.name v)
+                          xs "(" "," ")")) )
+      in
+      let distr =
+        match prob with
+        | Expr e ->
+            (* Check the type of the distribution using only the symbolics defined here -
+               EDIT: we will allow one to use any value defined in the environment so far, but
+                if another symbolic is used in the distribution then this will fail to typecheck.
+                This will only be caught when typechecking the LLL, when inling has occured.
+                In particular, the distribution expression in LLL will need to typecheck when removing any
+                other symbolic. Since expressions containing symbolics will be inlined this will work.
+            *)
+            let e' =
+              if isHLL then _infer_exp (i + 1) info env record_types e
+              else
+                _infer_exp (i + 1) info
+                  (Env.filter env (fun x ty ->
+                       get_mode ty <> Some Symbolic
+                       || Env.lookup_opt envTemp x <> None))
+                  record_types e
+            in
+            let ty = oget e'.ety in
+            let mexpr = get_mode ty in
+            unify isHLL info e ty { typ = TFloat; mode = mexpr };
+            let () =
+              match mexpr with
+              | Some Concrete | Some Multivalue -> ()
+              | _ ->
+                  Console.error_position info e.espan
+                    "Distribution should be a concrete or multivalue float \
+                     expression"
+            in
+            Expr e'
+        | _ -> prob
+      in
+      (env, DSymbolic (xs, ty, distr))
   | DInfer (name, e, cond) -> (
       let e' = infer_exp e in
       let ty = oget e'.ety in
@@ -1128,17 +1180,18 @@ module HLLTypeInf = struct
 
           let ty_res = fresh_tyvar () in
 
-          (* Printf.printf "ty_fun: %s\n\n" (Printing.ty_to_string ty_fun); *)
+          (* Printf.printf "ty_fun: %s\n\n" (Printing.ty_to_string ty_fun);
+             Printf.printf "ty_arg: %s\n\n" (Printing.ty_to_string ty_arg); *)
 
-          (* Assume concrete mode by default *)
-          let ty_fun_mode =
+          (* Assume concrete mode in return by default *)
+          let m2 =
             match (get_inner_type ty_fun).typ with
             | TArrow (_, tyret) -> get_mode tyret
             | _ -> Some Concrete
           in
 
           unify info e ty_fun
-            (mty (Some Concrete) (TArrow (ty_arg, mty ty_fun_mode ty_res)));
+            (mty (Some Concrete) (TArrow (ty_arg, mty m2 ty_res)));
 
           let fun_arg, fun_res =
             match (get_inner_type ty_fun).typ with
@@ -1148,6 +1201,9 @@ module HLLTypeInf = struct
                   (Printf.sprintf "Function must have arrow type: %s"
                      (Printing.ty_to_string ty_fun))
           in
+
+          let m1 = get_mode fun_arg in
+          let m3 = get_mode ty_arg in
 
           (* suppose for now we restricted function arguments to C, i.e. symbolics
              are not allowed, ty_arg should be Concrete or Multivalue
@@ -1162,34 +1218,40 @@ module HLLTypeInf = struct
              Printf.printf "ty_arg: %s\n\n" (Printing.ty_to_string fun_arg);
              Printf.printf "modeActual: %s\n\n"
                (Printing.mode_to_string (OCamlUtils.oget @@ fun_arg.mode)); *)
-          assert (get_mode fun_arg = Some Concrete);
-          (* If m1 is Concrete then m3 is Concrete or multi-value *)
+          (* assert (get_mode fun_arg = Some Concrete); *)
           let _ =
-            match get_mode ty_arg with
-            | None | Some Symbolic ->
+            match (m1, m3) with
+            | Some Concrete, Some Concrete | Some Concrete, Some Multivalue ->
+                (* If m1 is Concrete then m3 is Concrete or multi-value *)
+                ()
+            | Some Concrete, Some Symbolic ->
                 Console.error_position info e.espan
-                  "Argument to application must be in Concrete or Multivalue \
-                   mode"
+                  "Cannot apply a symbolic argument to a function expecting a \
+                   concrete argument"
             | _ -> ()
           in
 
           (* Check the mode of the arrow type *)
           match OCamlUtils.oget (get_mode ty_fun) with
-          | Concrete -> (
-              (* If rule App-C applies *)
-              (* according to App-C, m = m2 U m3 *)
-              match
-                join_opt
-                  (OCamlUtils.oget (get_mode fun_res))
-                  (OCamlUtils.oget (get_mode ty_arg))
-              with
-              | None -> Console.error_position info e.espan "Cannot join modes"
-              | Some res_mode ->
-                  (* set result mode to m2 U m3 *)
-                  texp
-                    ( eapp e1 e2,
-                      liftTy res_mode (mty (Some res_mode) ty_res),
-                      e.espan ) )
+          | Concrete ->
+              (* If rule App-C or App-S applies *)
+              if m1 = Some Concrete then
+                (* according to App-C, m = m2 U m3 *)
+                match join_opt (OCamlUtils.oget m2) (OCamlUtils.oget m3) with
+                | None ->
+                    Console.error_position info e.espan "Cannot join modes"
+                | Some res_mode ->
+                    (* set result mode to m2 U m3 *)
+                    texp
+                      ( eapp e1 e2,
+                        liftTy res_mode (mty (Some res_mode) ty_res),
+                        e.espan )
+              else if m1 = Some Symbolic then
+                (* according to rule App-S, m = m2 *)
+                texp (eapp e1 e2, liftTy (OCamlUtils.oget m2) fun_res, e.espan)
+              else
+                Console.error_position info e.espan
+                  "Invalid function argument mode for rule App-C/App-S"
           | Multivalue ->
               (* If rule App-M applies *)
               (* modes should not matter for unification *)

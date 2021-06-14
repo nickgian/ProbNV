@@ -20,7 +20,7 @@
 let id = ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '_' '0'-'9' '\'']*
 let symbol = ['~' '`' '!' '@' '#' '$' '%' '^' '&' '|' ':' '?' '>' '<' '[' ']' '=' '-' '.' '_' '(' ')']+
 let num = ['0'-'9']+
-let float = ['0'-'9']+['.']+['0'-'9']+
+let float = ['0'-'9']+['.']['0'-'9']+
 let prob_literal = (['0']['.']['0'-'9']+)"p" | ("1.0p")
 let width = "u"num
 let tid = ['\'']['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '_' '0'-'9']*
@@ -28,6 +28,7 @@ let node = num"n"
 let wspace = [' ' '\t']
 let filename = "\""(['a'-'z' 'A'-'Z' '0'-'9' '_' '\\' '/' '.' '-'])+"\""
 let string = "\""([^'\"'])*"\""
+let ipaddress = ['0'-'9']+['.']['0'-'9']+['.']['0'-'9']+['.']['0'-'9']+
 
 rule token = parse
   | "include" wspace* filename {token lexbuf} (* Include directives are processed separately *)
@@ -69,11 +70,13 @@ rule token = parse
   | "S"               { SYMB (position lexbuf)}
   | "M"               { MULTI (position lexbuf)}
   | "C"               { CONCRETE (position lexbuf)}
+  | ipaddress as n    { IPADDRESS (position lexbuf, n)}
   | id as s           { ID (position lexbuf, ProbNv_datastructures.Var.create s) }
   | node as s         { NODE (position lexbuf, int_of_string (String.rchop ~n:1 s)) }
-  | num width as n    { NUM (position lexbuf, ProbNv_datastructures.Integer.of_string n) }
+  | num width as n    { INT (position lexbuf, ProbNv_datastructures.Integer.of_string n) }
   | num as n          { INT (position lexbuf, ProbNv_datastructures.Integer.of_string n) }
   | prob_literal as n { PROB (position lexbuf, float_of_string (String.rchop ~n:1 n))}
+  | float as n        { FLOAT (position lexbuf, float_of_string n)}
   | string as s       { STRING (position lexbuf, s)}
   | "&&"              { AND (position lexbuf) }
   | "||"              { OR (position lexbuf) }
@@ -86,6 +89,7 @@ rule token = parse
   | "+"               { PLUS (position lexbuf, 32) }
   | "+."              { FPLUS (position lexbuf) }
   | "/."              { FDIV (position lexbuf) }
+  | "*."              { FMUL (position lexbuf) }
   | "-" width as s    { SUB (position lexbuf, int_of_string @@ String.lchop ~n:2 s) }
   | "-"               { SUB (position lexbuf, 32) }
   | "&" width as s    { UAND (position lexbuf, int_of_string @@ String.lchop ~n:2 s) }

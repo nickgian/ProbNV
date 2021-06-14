@@ -151,19 +151,6 @@ let update record_fns (vmap : 'v t) (k : 'key) (v : 'v) : 'v t =
   let leaf = Mtbddc.cst mgr tbl v in
   { vmap with bdd = Mtbddc.ite key leaf vmap.bdd }
 
-let printBdd g =
-  let rec aux g depth =
-    match Bdd.inspect g with
-    | Bool b -> Printf.printf "Bool: %b\n" b
-    | Ite (i, t, e) ->
-        Printf.printf "Var: %d: \n" i;
-        Printf.printf "%s" (depth ^ "dthen: ");
-        aux t (depth ^ "  ");
-        Printf.printf "%s" (depth ^ "delse: ");
-        aux e (depth ^ "  ")
-  in
-  aux g "  "
-
 (* Returns the number of NV values that point to a given leaf *)
 let cardinality (vmap : 'v t) (v : 'v) =
   (* i is guaranteed to be within (start, end) by construction *)

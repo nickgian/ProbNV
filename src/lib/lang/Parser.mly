@@ -40,16 +40,20 @@
     DLet (id, e, inline)
 
 
-  let ip_to_dec b1 b2 b3 b4 =
-    let b1 = ProbNv_datastructures.Integer.to_int b1 in
-    let b2 = ProbNv_datastructures.Integer.to_int b2 in
-    let b3 = ProbNv_datastructures.Integer.to_int b3 in
-    let b4 = ProbNv_datastructures.Integer.to_int b4 in
-    if (b1 > 255) || (b2 > 255) || (b3 > 255) || (b4 > 255) then
-      failwith "Invalid ip address"
-    else
-      (b1 * 16777216) + (b2 * 65536) + (b3 * 256) + b4
-      |> ProbNv_datastructures.Integer.of_int
+  let ip_to_dec bs =
+  let bs = String.split_on_char '.' bs in
+    match bs with
+    | [b1; b2; b3; b4] ->
+      let b1 = int_of_string b1 in
+      let b2 = int_of_string b2 in
+      let b3 = int_of_string b3 in
+      let b4 = int_of_string b4 in
+      if (b1 > 255) || (b2 > 255) || (b3 > 255) || (b4 > 255) then
+        failwith "Invalid ip address"
+      else
+        (b1 * 16777216) + (b2 * 65536) + (b3 * 256) + b4
+        |> ProbNv_datastructures.Integer.of_int
+    | _ -> failwith "Invalid ip address"
 
   let make_dsolve ?ty:(ty=None) x init trans merge =
     DSolve ({aty = ty; var_names = evar x; init; trans; merge})
@@ -156,7 +160,8 @@
 
 %token <ProbNv_datastructures.Span.t * ProbNv_datastructures.Var.t> ID
 %token <ProbNv_datastructures.Span.t * ProbNv_datastructures.Integer.t> INT
-%token <ProbNv_datastructures.Span.t * ProbNv_datastructures.Integer.t> NUM
+%token <ProbNv_datastructures.Span.t * string> IPADDRESS
+%token <ProbNv_datastructures.Span.t * float> FLOAT
 %token <ProbNv_datastructures.Span.t * float> PROB
 %token <ProbNv_datastructures.Span.t * int> NODE
 %token <ProbNv_datastructures.Span.t * string> STRING
@@ -168,6 +173,7 @@
 %token <ProbNv_datastructures.Span.t * int> PLUS
 %token <ProbNv_datastructures.Span.t> FPLUS
 %token <ProbNv_datastructures.Span.t> FDIV
+%token <ProbNv_datastructures.Span.t> FMUL
 %token <ProbNv_datastructures.Span.t * int> UAND
 %token <ProbNv_datastructures.Span.t> EQ
 %token <ProbNv_datastructures.Span.t * int> SUB
@@ -247,11 +253,11 @@
 %right ELSE IN     /* lowest precedence */
 %right ARROW
 %left AND OR
-%nonassoc GEQ GREATER LEQ LESS EQ NLEQ NGEQ NLESS NGREATER
-%left PLUS UAND
+%nonassoc GEQ GREATER LEQ LESS EQ NLEQ NGEQ NLESS NGREATER ELESS ELEQ EGEQ EGREATER FLEQ FLESS FGEQ
+%left PLUS UAND FPLUS
+%left FMUL FDIV
 %right NOT
 %right SOME
-%nonassoc DOT
 %left LBRACKET      /* highest precedence */
 
 %%
@@ -313,7 +319,7 @@ letvars:
 
 distPattern:
     | UNDERSCORE                          { DistrPWild }                     
-    | LBRACKET NUM COMMA NUM RBRACKET     { DistrPRange (snd $2,snd $4) }
+    | LBRACKET INT COMMA INT RBRACKET     { DistrPRange (snd $2,snd $4) }
     | NODE                                { DistrPNode (snd $1)}
     | edgenode TILDE edgenode             { DistrPEdge ($1, $3) }
     | FALSE                               { DistrPBool false }
@@ -346,8 +352,9 @@ component:
     | FORWARD LPAREN ID COMMA ID RPAREN EQ LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN     { make_dfwd (evar (snd $3)) (evar (snd $5)) $9 $11 $13 $15 $17 $19 $21 $23 }
     | LET letvars EQ expr                      { global_let Inline $2 $4 $4.espan (Span.extend $1 $4.espan) }
     | NOINLINE LET letvars EQ expr             { global_let NoInline $3 $5 $5.espan (Span.extend $2 $5.espan) }
-    | SYMBOLIC ID COLON bty                    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, None) }
-    | SYMBOLIC ID COLON bty EQ distBranches    { DSymbolic (snd $2, {typ = $4; mode=Some Symbolic}, Some $6) }
+    | SYMBOLIC ids COLON bty                    { DSymbolic (snd $2, liftSymbolicTy {typ = $4; mode=Some Symbolic}, Uniform) }
+    | SYMBOLIC ids COLON bty EQ distBranches    { DSymbolic (snd $2, liftSymbolicTy {typ = $4; mode=Some Symbolic}, DExpr $6) }
+    | SYMBOLIC ids COLON bty EQ expr            { DSymbolic (snd $2, liftSymbolicTy {typ = $4; mode=Some Symbolic}, Expr $6) }
     | ASSERT LPAREN assertion RPAREN      { DInfer ("\"\"", fst $3 , snd $3) }
     | ASSERT LPAREN STRING COMMA assertion RPAREN      { DInfer (snd $3, fst $5, snd $5) }
     | EDGES EQ LBRACE RBRACE        { DEdges [] }
@@ -356,8 +363,8 @@ component:
     | NODES EQ LPAREN INT COMMA LBRACE nodes RBRACE RPAREN  { DNodes (ProbNv_datastructures.Integer.to_int (snd $4), $7) }
     /* | LET EDGES EQ LBRACE RBRACE        { DEdges [] }
     | LET EDGES EQ LBRACE edges RBRACE  { DEdges $5 }
-    | LET NODES EQ NUM                  { DNodes (ProbNv_datastructures.Integer.to_int (snd $4), []) }
-    | LET NODES EQ LPAREN NUM COMMA LBRACE nodes RBRACE RPAREN  { DNodes (ProbNv_datastructures.Integer.to_int (snd $5), $8) } */
+    | LET NODES EQ INT                  { DNodes (ProbNv_datastructures.Integer.to_int (snd $4), []) }
+    | LET NODES EQ LPAREN INT COMMA LBRACE nodes RBRACE RPAREN  { DNodes (ProbNv_datastructures.Integer.to_int (snd $5), $8) } */
     | TYPE ID EQ ty                     { (add_user_type (snd $2) $4; DUserTy (snd $2, $4)) }
 ;
 
@@ -410,6 +417,7 @@ expr:
     | expr PLUS expr                    { exp (eop (UAdd (snd $2)) [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr FPLUS expr                   { exp (eop FAdd [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr FDIV expr                    { exp (eop FDiv [$1;$3]) (Span.extend $1.espan $3.espan) }
+    | expr FMUL expr                    { exp (eop FMul [$1;$3]) (Span.extend $1.espan $3.espan) }
     /* | expr UAND expr                    { exp (eop (UAnd (snd $2)) [$1;$3]) (Span.extend $1.espan $3.espan) } */
     | expr EQ expr                      { exp (eop Eq [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr LESS expr                    { exp (eop (ULess (snd $2)) [$1;$3]) (Span.extend $1.espan $3.espan) }
@@ -448,12 +456,12 @@ expr2:
 ;
 
 expr3:
+    | ipaddr                            { $1 }  
     | ID                                { exp (evar (snd $1)) (fst $1) }
     | ID DOT ID                         { exp (eproject (evar (snd $1)) (Var.name (snd $3))) (Span.extend (fst $1) (fst $3)) }
-    | NUM                               { to_value (vint (snd $1)) (fst $1) }
+    (*| NUM                               { to_value (vint (snd $1)) (fst $1) }*)
     | INT                               { to_value (vint (snd $1)) (fst $1) }
-    | float                             { $1 }
-    | ipaddr                            { $1 }
+    | FLOAT                             { to_value (vfloat (snd $1)) (fst $1)}
     | prefixes                          { $1 }
     | NODE                              { to_value (vnode (snd $1)) (fst $1)}
     | edge_arg TILDE edge_arg           { to_value (make_to_edge (snd $1) (snd $3)) (Span.extend (fst $1) (fst $3))}
@@ -463,11 +471,8 @@ expr3:
     | LPAREN exprs RPAREN               { tuple_it $2 (Span.extend $1 $3) }
 ;
 
-float:
-  | INT DOT INT                            { to_value (vfloat (float_of_string (Printf.sprintf "%d.%d" (Integer.to_int @@ snd $1) (Integer.to_int @@ snd $3)))) (Span.extend (fst $1) (fst $3))}
-
 ipaddr:
-  | INT DOT INT DOT INT DOT INT         { to_value (vint (ip_to_dec (snd $1) (snd $3) (snd $5) (snd $7))) (fst $1) }
+  | IPADDRESS         { to_value (vint (ip_to_dec (snd $1))) (fst $1) }
 
 prefixes:
   | ipaddr SLASH INT                    { let pre = to_value (vint (ProbNv_datastructures.Integer.create ~value:(ProbNv_datastructures.Integer.to_int (snd $3)) ~size:6)) (fst $3) in
@@ -481,6 +486,15 @@ edge_arg:
 exprs:
     | expr                              { [$1] }
     | expr COMMA exprs                  { $1 :: $3 }
+;
+
+id_rec:
+  | ID                                {(fst $1, [snd $1])}
+  | ID COMMA id_rec                   {let span = (Span.extend (fst $1) (fst $3)) in (span, (snd $1) :: (snd $3))}
+
+ids:
+    | ID                              { (fst $1, [snd $1]) }
+    | LPAREN id_rec RPAREN            { $2 }
 ;
 
 edgenode:
@@ -511,7 +525,6 @@ nodes:
     | ID                                { PVar (snd $1) }
     | TRUE                              { PBool true }
     | FALSE                             { PBool false }
-    | NUM                               { PInt (snd $1) }
     | INT                               { PInt (snd $1) }
     | INT DOT INT                       { PFloat (float_of_string @@ Printf.sprintf "%d.%d" (Integer.to_int @@ snd $1) (Integer.to_int @@ snd $3)) }
     | NODE                              { PNode (snd $1) }

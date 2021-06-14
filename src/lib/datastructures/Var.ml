@@ -1,3 +1,5 @@
+open ProbNv_utils
+
 type t = string * int [@@deriving show]
 
 (* Should be a character which the NV parser doesn't allow in identifiers *)
@@ -6,7 +8,7 @@ let delim = "~"
 let counter = ref 0
 
 let next () =
-  counter := !counter + 1 ;
+  counter := !counter + 1;
   !counter
 
 let reset () = counter := 0
@@ -29,9 +31,7 @@ let of_var_string s =
   try
     let v, i = BatString.rsplit s ~by:"~" in
     (v, int_of_string i)
-  with
-  | _ ->
-    failwith @@ Printf.sprintf "of_var_string: %s has wrong format" s
+  with _ -> failwith @@ Printf.sprintf "of_var_string: %s has wrong format" s
 
 let equal (s1, i1) (s2, i2) = s1 = s2 && i1 = i2
 
@@ -47,6 +47,9 @@ let equal_names (s1, _) (s2, _) = s1 = s2
 
 let compare (s1, i1) (s2, i2) =
   let i = compare i1 i2 in
-  if i = 0 then
-    compare s1 s2
-  else i
+  if i = 0 then compare s1 s2 else i
+
+let printVarList xs =
+  match xs with
+  | [ x ] -> name x
+  | _ -> PrimitiveCollections.printList (fun v -> name v) xs "(" "," ")"

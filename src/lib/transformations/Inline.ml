@@ -183,7 +183,10 @@ let inline_declaration (cond : ty -> bool) (env : exp Env.t) (d : declaration) =
       if cond (OCamlUtils.oget e.ety) && inline = Inline then
         (Env.update env x e, None)
       else (env, Some (DLet (x, e, inline)))
-  | DSymbolic (x, ty, p) -> (env, Some (DSymbolic (x, ty, p)))
+  | DSymbolic (x, ty, p) -> (
+      match p with
+      | Expr e -> (env, Some (DSymbolic (x, ty, Expr (inline_exp' env e))))
+      | _ -> (env, Some (DSymbolic (x, ty, p))) )
   | DInfer (name, e, None) ->
       (env, Some (DInfer (name, inline_exp' env e, None)))
   | DInfer (name, e, Some c) ->

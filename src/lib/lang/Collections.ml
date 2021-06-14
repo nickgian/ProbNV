@@ -76,12 +76,15 @@ module TypeIds = ArrayIdMake (TypeMap)
 module ExpIds = ArrayIdMake (ExpMap)
 
 module DistMap = BetterMap.Make (struct
-  type t = distrExpr option
+  type t = distributionExpression
 
   let compare e1 e2 = compare e1 e2
 
   let to_string e =
-    match e with None -> "" | Some e -> Printing.distrExpr_to_string e
+    match e with
+    | Uniform -> ""
+    | DExpr e -> Printing.distrExpr_to_string e
+    | Expr e -> Printing.exp_to_string e
 end)
 
 module DistrIds = ArrayIdMake (DistMap)
