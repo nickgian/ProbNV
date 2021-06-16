@@ -76,3 +76,5 @@ val apply3 :
   arg2:'y Cudd.Mtbddc.unique Cudd.Vdd.t ->
   arg3:'z Cudd.Mtbddc.unique Cudd.Vdd.t ->
   'a Cudd.Mtbddc.unique Cudd.Vdd.t
+
+val bddOps : float ref

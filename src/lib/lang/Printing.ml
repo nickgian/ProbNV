@@ -442,8 +442,8 @@ and value_to_string_p ~show_types prec v =
   | VNode n -> Printf.sprintf "%dn" n
   | VEdge (EdgeId e) ->
       let u, v = PrimitiveCollections.IntMap.find e !edge_mapping in
-      Printf.sprintf "%d~%d" u v
-  | VEdge (Raw (u, v)) -> Printf.sprintf "%d~%d" u v
+      Printf.sprintf "%d-%d" u v
+  | VEdge (Raw (u, v)) -> Printf.sprintf "%d-%d" u v
   | VClosure cl -> closure_to_string_p ~show_types prec cl
 
 and map_to_string ~show_types term_s m kty range =
@@ -488,7 +488,7 @@ and exp_to_string_p ~show_types prec e =
   let p = prec_exp e in
   let s =
     match e.e with
-    | EVar x -> Var.to_string x
+    | EVar x -> Var.name x
     | EVal v -> value_to_string_p prec v
     | EOp (op, es) -> op_args_to_string ~show_types prec p op es
     | EFun f -> func_to_string_p ~show_types prec f
@@ -551,7 +551,7 @@ and op_args_to_string ~show_types prec p op es =
   else
     match es with
     | [] -> op_to_string op ^ "()" (* should not happen *)
-    | [ e1 ] -> op_to_string op ^ exp_to_string_p p e1
+    | [ e1 ] -> op_to_string op ^ " " ^ exp_to_string_p p e1
     | [ e1; e2 ] ->
         exp_to_string_p p e1 ^ " " ^ op_to_string op ^ " "
         ^ exp_to_string_p prec e2
@@ -583,7 +583,7 @@ and distrPattern_to_string p =
   | DistrPRange (a, b) ->
       Printf.sprintf "[%s, %s]" (Integer.to_string a) (Integer.to_string b)
   | DistrPNode n -> Printf.sprintf "%dn" n
-  | DistrPEdge (n1, n2) -> Printf.sprintf "%d~%d" n1 n2
+  | DistrPEdge (n1, n2) -> Printf.sprintf "%d-%d" n1 n2
   | DistrPTuple ps -> "(" ^ comma_sep distrPattern_to_string ps ^ ")"
 
 and distrBranch_to_string (pat, p) =
@@ -629,7 +629,7 @@ let rec declaration_to_string ?(show_types = false) d =
   | DEdges es ->
       "let edges = {"
       ^ List.fold_right
-          (fun (u, v) s -> Printf.sprintf "%s%dn-%dn;" s u v)
+          (fun (u, v, i) s -> Printf.sprintf "%s(%dn-%dn, i);" s u v)
           es ""
       ^ "}"
   | DUserTy (name, ty) ->

@@ -155,6 +155,8 @@
     match (exp_to_value n1).v, (exp_to_value n2).v with
     | VNode n1, VNode n2 -> vedgeRaw (n1, n2)
     | _, _ -> failwith "Expected nodes"
+
+  let edge_id = ref (-1)
 %}
 
 
@@ -162,7 +164,6 @@
 %token <ProbNv_datastructures.Span.t * ProbNv_datastructures.Integer.t> INT
 %token <ProbNv_datastructures.Span.t * string> IPADDRESS
 %token <ProbNv_datastructures.Span.t * float> FLOAT
-%token <ProbNv_datastructures.Span.t * float> PROB
 %token <ProbNv_datastructures.Span.t * int> NODE
 %token <ProbNv_datastructures.Span.t * string> STRING
 %token <ProbNv_datastructures.Span.t> AND
@@ -333,7 +334,7 @@ distPattern:
 ; */
 
 distBranch:
-    | BAR distPattern ARROW PROB          { ($2, snd $4) }
+    | BAR distPattern ARROW FLOAT          { ($2, snd $4) }
 
 distBranches:
     | distBranch                          { [$1] }
@@ -361,10 +362,6 @@ component:
     | EDGES EQ LBRACE edges RBRACE  { DEdges $4 }
     | NODES EQ INT                  { DNodes (ProbNv_datastructures.Integer.to_int (snd $3), []) }
     | NODES EQ LPAREN INT COMMA LBRACE nodes RBRACE RPAREN  { DNodes (ProbNv_datastructures.Integer.to_int (snd $4), $7) }
-    /* | LET EDGES EQ LBRACE RBRACE        { DEdges [] }
-    | LET EDGES EQ LBRACE edges RBRACE  { DEdges $5 }
-    | LET NODES EQ INT                  { DNodes (ProbNv_datastructures.Integer.to_int (snd $4), []) }
-    | LET NODES EQ LPAREN INT COMMA LBRACE nodes RBRACE RPAREN  { DNodes (ProbNv_datastructures.Integer.to_int (snd $5), $8) } */
     | TYPE ID EQ ty                     { (add_user_type (snd $2) $4; DUserTy (snd $2, $4)) }
 ;
 
@@ -503,9 +500,12 @@ edgenode:
 ;
 
 edge:
-    | edgenode TILDE edgenode SEMI      { [($1, $3)] }
-    | edgenode SUB edgenode SEMI        { [($1, $3)] }
-    | edgenode EQ edgenode SEMI         { [($1, $3); ($3, $1)] }
+    | edgenode TILDE edgenode SEMI      { [($1, $3, let () = incr edge_id in !edge_id)] }
+    | edgenode SUB edgenode SEMI        { [($1, $3, let () = incr edge_id in !edge_id)] }
+    | edgenode EQ edgenode SEMI   { [($1, $3, (incr edge_id; !edge_id)); ($3, $1, (incr edge_id; !edge_id))] }
+    | LPAREN edgenode TILDE edgenode COMMA INT RPAREN SEMI      { [($2, $4, ProbNv_datastructures.Integer.to_int (snd $6))] }
+    | LPAREN edgenode SUB edgenode COMMA INT RPAREN SEMI        { [($2, $4, ProbNv_datastructures.Integer.to_int (snd $6))] }
+    | LPAREN edgenode EQ edgenode COMMA INT COMMA INT RPAREN SEMI   { [($2, $4, ProbNv_datastructures.Integer.to_int (snd $6)); ($4, $2, ProbNv_datastructures.Integer.to_int (snd $8))] }
 ;
 
 edges:

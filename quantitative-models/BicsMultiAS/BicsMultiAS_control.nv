@@ -72,7 +72,7 @@ let betterBgp multiPath b1 b2 =
   else if b2.aslen < b1.aslen then b2
   else if b1.med < b2.med then b1
   else if b1.med > b2.med then b2
-  else if multiPath then {b1 with bgpNextHop = union b1.bgpNextHop b2.bgpNextHop; bgpAs = union b1.bgpAS b2.bgpAs}
+  else if multiPath then {b1 with bgpNextHop = union b1.bgpNextHop b2.bgpNextHop}
   else b1
 
 (* Determine which of the four protocols has the best route by comparing their ADs *)
@@ -102,11 +102,11 @@ let mergeValues bgpMultiPathEnabled x y =
     selected = best c s o b}
 
 let merge node x y =
-  mergeValues true x y
+  mergeValues false x y
 
 let init d node =
   match node with
-  | 0n -> 
+  | 42n -> 
 if d = (10.0.0.102/31) then
     let c = Some 0u8 in
     let s = None in
@@ -122,7 +122,7 @@ if d = (10.0.0.102/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 1n -> 
+  | 48n -> 
 if d = (10.0.0.94/31) || d = (10.0.0.62/31) || d = (10.0.0.110/31) || d = (10.0.0.106/31) || d = (10.0.0.120/31) then
     let c = Some 0u8 in
     let s = None in
@@ -138,7 +138,7 @@ if d = (10.0.0.94/31) || d = (10.0.0.62/31) || d = (10.0.0.110/31) || d = (10.0.
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 2n -> 
+  | 40n -> 
 if d = (10.0.0.46/31) || d = (10.0.0.44/31) then
     let c = Some 0u8 in
     let s = None in
@@ -154,7 +154,7 @@ if d = (10.0.0.46/31) || d = (10.0.0.44/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 3n -> 
+  | 15n -> 
 if d = (10.0.0.126/31) || d = (10.0.0.124/31) || d = (10.0.0.22/31) || d = (10.0.0.96/31) || d = (10.0.0.80/31) then
     let c = Some 0u8 in
     let s = None in
@@ -170,7 +170,7 @@ if d = (10.0.0.126/31) || d = (10.0.0.124/31) || d = (10.0.0.22/31) || d = (10.0
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 4n -> 
+  | 8n -> 
 if d = (10.0.0.96/31) then
     let c = Some 0u8 in
     let s = None in
@@ -186,7 +186,7 @@ if d = (10.0.0.96/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 5n -> 
+  | 10n -> 
 if d = (10.0.0.62/31) || d = (10.0.0.30/31) || d = (10.0.0.56/31) || d = (10.0.0.24/31) || d = (10.0.0.4/31) || d = (10.0.0.64/31) then
     let c = Some 0u8 in
     let s = None in
@@ -202,7 +202,7 @@ if d = (10.0.0.62/31) || d = (10.0.0.30/31) || d = (10.0.0.56/31) || d = (10.0.0
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 6n -> 
+  | 29n -> 
 if d = (10.0.0.118/31) then
     let c = Some 0u8 in
     let s = None in
@@ -218,7 +218,7 @@ if d = (10.0.0.118/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 7n -> 
+  | 38n -> 
 if d = (10.0.0.122/31) || d = (10.0.0.72/31) || d = (10.0.0.112/31) then
     let c = Some 0u8 in
     let s = None in
@@ -234,7 +234,7 @@ if d = (10.0.0.122/31) || d = (10.0.0.72/31) || d = (10.0.0.112/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 8n -> 
+  | 27n -> 
 if d = (10.0.0.76/31) then
     let c = Some 0u8 in
     let s = None in
@@ -250,7 +250,7 @@ if d = (10.0.0.76/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 9n -> 
+  | 20n -> 
 if d = (10.0.0.108/31) || d = (10.0.0.120/31) || d = (10.0.0.104/31) || d = (10.0.0.54/31) || d = (10.0.0.48/31) then
     let c = Some 0u8 in
     let s = None in
@@ -266,7 +266,7 @@ if d = (10.0.0.108/31) || d = (10.0.0.120/31) || d = (10.0.0.104/31) || d = (10.
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 10n -> 
+  | 26n -> 
 if d = (10.0.0.58/31) then
     let c = Some 0u8 in
     let s = None in
@@ -282,7 +282,7 @@ if d = (10.0.0.58/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 11n -> 
+  | 32n -> 
 if d = (10.0.0.14/31) then
     let c = Some 0u8 in
     let s = None in
@@ -298,7 +298,7 @@ if d = (10.0.0.14/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 12n -> 
+  | 36n -> 
 if d = (10.0.0.54/31) then
     let c = Some 0u8 in
     let s = None in
@@ -314,7 +314,7 @@ if d = (10.0.0.54/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 13n -> 
+  | 23n -> 
 if d = (10.0.0.74/31) then
     let c = Some 0u8 in
     let s = None in
@@ -330,7 +330,7 @@ if d = (10.0.0.74/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 14n -> 
+  | 44n -> 
 if d = (10.0.0.94/31) then
     let c = Some 0u8 in
     let s = None in
@@ -346,7 +346,7 @@ if d = (10.0.0.94/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 15n -> 
+  | 31n -> 
 if d = (10.0.0.56/31) then
     let c = Some 0u8 in
     let s = None in
@@ -362,7 +362,7 @@ if d = (10.0.0.56/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 16n -> 
+  | 21n -> 
 if d = (10.0.0.24/31) || d = (10.0.0.22/31) || d = (10.0.0.20/31) || d = (10.0.0.18/31) || d = (10.0.0.0/31) then
     let c = Some 0u8 in
     let s = None in
@@ -378,7 +378,7 @@ if d = (10.0.0.24/31) || d = (10.0.0.22/31) || d = (10.0.0.20/31) || d = (10.0.0
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 17n -> 
+  | 30n -> 
 if d = (10.0.0.64/31) then
     let c = Some 0u8 in
     let s = None in
@@ -394,7 +394,7 @@ if d = (10.0.0.64/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 18n -> 
+  | 6n -> 
 if d = (10.0.0.12/31) || d = (10.0.0.90/31) || d = (10.0.0.6/31) then
     let c = Some 0u8 in
     let s = None in
@@ -410,7 +410,7 @@ if d = (10.0.0.12/31) || d = (10.0.0.90/31) || d = (10.0.0.6/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 19n -> 
+  | 33n -> 
 if d = (10.0.0.8/31) then
     let c = Some 0u8 in
     let s = None in
@@ -426,7 +426,7 @@ if d = (10.0.0.8/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 20n -> 
+  | 2n -> 
 if d = (10.0.0.74/31) || d = (10.0.0.100/31) || d = (10.0.0.98/31) then
     let c = Some 0u8 in
     let s = None in
@@ -442,7 +442,7 @@ if d = (10.0.0.74/31) || d = (10.0.0.100/31) || d = (10.0.0.98/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 21n -> 
+  | 16n -> 
 if d = (10.0.0.38/31) || d = (10.0.0.36/31) then
     let c = Some 0u8 in
     let s = None in
@@ -458,7 +458,7 @@ if d = (10.0.0.38/31) || d = (10.0.0.36/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 22n -> 
+  | 47n -> 
 if d = (10.0.0.60/31) || d = (10.0.0.66/31) then
     let c = Some 0u8 in
     let s = None in
@@ -474,7 +474,7 @@ if d = (10.0.0.60/31) || d = (10.0.0.66/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 23n -> 
+  | 45n -> 
 if d = (10.0.0.52/31) || d = (10.0.0.50/31) || d = (10.0.0.48/31) then
     let c = Some 0u8 in
     let s = None in
@@ -490,7 +490,7 @@ if d = (10.0.0.52/31) || d = (10.0.0.50/31) || d = (10.0.0.48/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 24n -> 
+  | 46n -> 
 if d = (10.0.0.122/31) || d = (10.0.0.10/31) || d = (10.0.0.116/31) then
     let c = Some 0u8 in
     let s = None in
@@ -506,7 +506,7 @@ if d = (10.0.0.122/31) || d = (10.0.0.10/31) || d = (10.0.0.116/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 25n -> 
+  | 17n -> 
 if d = (10.0.0.4/31) || d = (10.0.0.2/31) || d = (10.0.0.0/31) then
     let c = Some 0u8 in
     let s = None in
@@ -522,7 +522,7 @@ if d = (10.0.0.4/31) || d = (10.0.0.2/31) || d = (10.0.0.0/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 26n -> 
+  | 4n -> 
 if d = (10.0.0.72/31) || d = (10.0.0.70/31) || d = (10.0.0.52/31) then
     let c = Some 0u8 in
     let s = None in
@@ -538,7 +538,7 @@ if d = (10.0.0.72/31) || d = (10.0.0.70/31) || d = (10.0.0.52/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 27n -> 
+  | 43n -> 
 if d = (10.0.0.88/31) || d = (10.0.0.86/31) || d = (10.0.0.38/31) || d = (10.0.0.32/31) then
     let c = Some 0u8 in
     let s = None in
@@ -554,7 +554,7 @@ if d = (10.0.0.88/31) || d = (10.0.0.86/31) || d = (10.0.0.38/31) || d = (10.0.0
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 28n -> 
+  | 13n -> 
 if d = (10.0.0.126/31) then
     let c = Some 0u8 in
     let s = None in
@@ -570,7 +570,7 @@ if d = (10.0.0.126/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 29n -> 
+  | 39n -> 
 if d = (10.0.0.106/31) || d = (10.0.0.104/31) then
     let c = Some 0u8 in
     let s = None in
@@ -586,7 +586,7 @@ if d = (10.0.0.106/31) || d = (10.0.0.104/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 30n -> 
+  | 14n -> 
 if d = (10.0.0.60/31) then
     let c = Some 0u8 in
     let s = None in
@@ -602,7 +602,7 @@ if d = (10.0.0.60/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 31n -> 
+  | 11n -> 
 if d = (10.0.0.14/31) || d = (10.0.0.12/31) || d = (10.0.0.16/31) then
     let c = Some 0u8 in
     let s = None in
@@ -618,7 +618,7 @@ if d = (10.0.0.14/31) || d = (10.0.0.12/31) || d = (10.0.0.16/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 32n -> 
+  | 0n -> 
 if d = (10.0.0.44/31) || d = (10.0.0.124/31) || d = (10.0.0.68/31) || d = (10.0.0.114/31) || d = (10.0.0.82/31) then
     let c = Some 0u8 in
     let s = None in
@@ -634,7 +634,7 @@ if d = (10.0.0.44/31) || d = (10.0.0.124/31) || d = (10.0.0.68/31) || d = (10.0.
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 33n -> 
+  | 22n -> 
 if d = (10.0.0.68/31) then
     let c = Some 0u8 in
     let s = None in
@@ -650,7 +650,7 @@ if d = (10.0.0.68/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 34n -> 
+  | 3n -> 
 if d = (10.0.0.30/31) || d = (10.0.0.28/31) || d = (10.0.0.26/31) || d = (10.0.0.32/31) then
     let c = Some 0u8 in
     let s = None in
@@ -666,7 +666,7 @@ if d = (10.0.0.30/31) || d = (10.0.0.28/31) || d = (10.0.0.26/31) || d = (10.0.0
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 35n -> 
+  | 41n -> 
 if d = (10.0.0.92/31) || d = (10.0.0.34/31) then
     let c = Some 0u8 in
     let s = None in
@@ -682,7 +682,7 @@ if d = (10.0.0.92/31) || d = (10.0.0.34/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 36n -> 
+  | 9n -> 
 if d = (10.0.0.110/31) || d = (10.0.0.88/31) || d = (10.0.0.102/31) || d = (10.0.0.118/31) || d = (10.0.0.116/31) || d = (10.0.0.84/31) || d = (10.0.0.50/31) || d = (10.0.0.114/31) || d = (10.0.0.112/31) then
     let c = Some 0u8 in
     let s = None in
@@ -698,7 +698,7 @@ if d = (10.0.0.110/31) || d = (10.0.0.88/31) || d = (10.0.0.102/31) || d = (10.0
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 37n -> 
+  | 1n -> 
 if d = (10.0.0.34/31) || d = (10.0.0.16/31) then
     let c = Some 0u8 in
     let s = None in
@@ -714,7 +714,7 @@ if d = (10.0.0.34/31) || d = (10.0.0.16/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 38n -> 
+  | 5n -> 
 if d = (10.0.0.46/31) || d = (10.0.0.78/31) || d = (10.0.0.76/31) || d = (10.0.0.58/31) || d = (10.0.0.20/31) || d = (10.0.0.36/31) || d = (10.0.0.84/31) || d = (10.0.0.82/31) || d = (10.0.0.80/31) then
     let c = Some 0u8 in
     let s = None in
@@ -730,7 +730,7 @@ if d = (10.0.0.46/31) || d = (10.0.0.78/31) || d = (10.0.0.76/31) || d = (10.0.0
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 39n -> 
+  | 28n -> 
 if d = (10.0.0.78/31) then
     let c = Some 0u8 in
     let s = None in
@@ -746,7 +746,7 @@ if d = (10.0.0.78/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 40n -> 
+  | 19n -> 
 if d = (10.0.0.108/31) || d = (10.0.0.42/31) || d = (10.0.0.40/31) || d = (10.0.0.100/31) || d = (10.0.0.2/31) then
     let c = Some 0u8 in
     let s = None in
@@ -762,7 +762,7 @@ if d = (10.0.0.108/31) || d = (10.0.0.42/31) || d = (10.0.0.40/31) || d = (10.0.
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 41n -> 
+  | 24n -> 
 if d = (10.0.0.28/31) then
     let c = Some 0u8 in
     let s = None in
@@ -778,7 +778,7 @@ if d = (10.0.0.28/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 42n -> 
+  | 25n -> 
 if d = (10.0.0.26/31) then
     let c = Some 0u8 in
     let s = None in
@@ -794,7 +794,7 @@ if d = (10.0.0.26/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 43n -> 
+  | 7n -> 
 if d = (10.0.0.92/31) || d = (10.0.0.90/31) || d = (10.0.0.70/31) || d = (10.0.0.66/31) then
     let c = Some 0u8 in
     let s = None in
@@ -810,7 +810,7 @@ if d = (10.0.0.92/31) || d = (10.0.0.90/31) || d = (10.0.0.70/31) || d = (10.0.0
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 44n -> 
+  | 18n -> 
 if d = (10.0.0.18/31) || d = (10.0.0.98/31) then
     let c = Some 0u8 in
     let s = None in
@@ -826,7 +826,7 @@ if d = (10.0.0.18/31) || d = (10.0.0.98/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 45n -> 
+  | 37n -> 
 if d = (10.0.0.86/31) then
     let c = Some 0u8 in
     let s = None in
@@ -842,7 +842,7 @@ if d = (10.0.0.86/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 46n -> 
+  | 34n -> 
 if d = (10.0.0.40/31) then
     let c = Some 0u8 in
     let s = None in
@@ -858,7 +858,7 @@ if d = (10.0.0.40/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 47n -> 
+  | 35n -> 
 if d = (10.0.0.42/31) then
     let c = Some 0u8 in
     let s = None in
@@ -874,7 +874,7 @@ if d = (10.0.0.42/31) then
     let fib = best c s o b in
       {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
      else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
-  | 48n -> 
+  | 12n -> 
 if d = (10.0.0.10/31) || d = (10.0.0.8/31) || d = (10.0.0.6/31) then
     let c = Some 0u8 in
     let s = None in
@@ -903,7 +903,7 @@ if d = (10.0.0.10/31) || d = (10.0.0.8/31) || d = (10.0.0.6/31) then
   let (prefix, prefixLen) = d in
 let prot = x0.selected in
  match e with
-   | (0~36) ->
+   | (42~9) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -928,7 +928,7 @@ None
 None
  else
 (Some b)))
-   | (1~5) ->
+   | (48~10) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -956,7 +956,7 @@ None
 None
  else
 (Some b)))
-   | (1~9) ->
+   | (48~20) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -984,7 +984,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (1~29) ->
+   | (48~39) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1012,7 +1012,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (1~14) ->
+   | (48~44) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1037,7 +1037,7 @@ None
 None
  else
 (Some b)))
-   | (1~36) ->
+   | (48~9) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1062,7 +1062,7 @@ None
 None
  else
 (Some b)))
-   | (2~32) ->
+   | (40~0) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1087,7 +1087,7 @@ None
 None
  else
 (Some b)))
-   | (2~38) ->
+   | (40~5) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1112,7 +1112,7 @@ None
 None
  else
 (Some b)))
-   | (3~38) ->
+   | (15~5) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1137,7 +1137,7 @@ None
 None
  else
 (Some b)))
-   | (3~28) ->
+   | (15~13) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1165,7 +1165,7 @@ None
 None
  else
 (Some b)))
-   | (3~4) ->
+   | (15~8) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1193,7 +1193,7 @@ None
 None
  else
 (Some b)))
-   | (3~32) ->
+   | (15~0) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1218,7 +1218,7 @@ None
 None
  else
 (Some b)))
-   | (3~16) ->
+   | (15~21) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1246,7 +1246,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (4~3) ->
+   | (8~15) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1271,7 +1271,7 @@ None
 None
  else
 (Some b)))
-   | (5~16) ->
+   | (10~21) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1302,7 +1302,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (5~1) ->
+   | (10~48) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1333,7 +1333,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (5~34) ->
+   | (10~3) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1364,7 +1364,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (5~15) ->
+   | (10~31) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1389,7 +1389,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (5~17) ->
+   | (10~30) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1414,7 +1414,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (5~25) ->
+   | (10~17) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1442,7 +1442,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (6~36) ->
+   | (29~9) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1467,7 +1467,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553607:= true]; })))
-   | (7~36) ->
+   | (38~9) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1492,7 +1492,7 @@ None
 None
  else
 (Some b)))
-   | (7~26) ->
+   | (38~4) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1520,7 +1520,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (7~24) ->
+   | (38~46) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1548,7 +1548,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (8~38) ->
+   | (27~5) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1573,7 +1573,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553605:= true]; })))
-   | (9~1) ->
+   | (20~48) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1601,7 +1601,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (9~29) ->
+   | (20~39) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1632,7 +1632,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (9~12) ->
+   | (20~36) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1657,7 +1657,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (9~23) ->
+   | (20~45) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1682,7 +1682,7 @@ None
 None
  else
 (Some b)))
-   | (9~40) ->
+   | (20~19) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1710,7 +1710,7 @@ None
 None
  else
 (Some b)))
-   | (10~38) ->
+   | (26~5) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1735,7 +1735,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553604:= true]; })))
-   | (11~31) ->
+   | (32~11) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1760,7 +1760,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553610:= true]; })))
-   | (12~9) ->
+   | (36~20) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1785,7 +1785,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553614:= true]; })))
-   | (13~20) ->
+   | (23~2) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1810,7 +1810,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553601:= true]; })))
-   | (14~1) ->
+   | (44~48) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1835,7 +1835,7 @@ None
 None
  else
 (Some b)))
-   | (15~5) ->
+   | (31~10) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1860,7 +1860,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553609:= true]; })))
-   | (16~44) ->
+   | (21~18) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1891,7 +1891,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (16~5) ->
+   | (21~10) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1922,7 +1922,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (16~3) ->
+   | (21~15) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1950,7 +1950,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (16~38) ->
+   | (21~5) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -1981,7 +1981,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (16~25) ->
+   | (21~17) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2006,7 +2006,7 @@ None
 None
  else
 (Some b)))
-   | (17~5) ->
+   | (30~10) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2031,7 +2031,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553608:= true]; })))
-   | (18~31) ->
+   | (6~11) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2056,7 +2056,7 @@ None
 None
  else
 (Some b)))
-   | (18~43) ->
+   | (6~7) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2084,7 +2084,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (18~48) ->
+   | (6~12) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2109,7 +2109,7 @@ None
 None
  else
 (Some b)))
-   | (19~48) ->
+   | (33~12) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2134,7 +2134,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553611:= true]; })))
-   | (20~40) ->
+   | (2~19) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2162,7 +2162,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (20~13) ->
+   | (2~23) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2187,7 +2187,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (20~44) ->
+   | (2~18) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2215,7 +2215,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (21~27) ->
+   | (16~43) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2246,7 +2246,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (21~38) ->
+   | (16~5) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2271,7 +2271,7 @@ None
 None
  else
 (Some b)))
-   | (22~43) ->
+   | (47~7) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2296,7 +2296,7 @@ None
 None
  else
 (Some b)))
-   | (22~30) ->
+   | (47~14) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2321,7 +2321,7 @@ None
 None
  else
 (Some b)))
-   | (23~9) ->
+   | (45~20) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2346,7 +2346,7 @@ None
 None
  else
 (Some b)))
-   | (23~26) ->
+   | (45~4) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2371,7 +2371,7 @@ None
 None
  else
 (Some b)))
-   | (23~36) ->
+   | (45~9) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2396,7 +2396,7 @@ None
 None
  else
 (Some b)))
-   | (24~36) ->
+   | (46~9) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2424,7 +2424,7 @@ None
 None
  else
 (Some b)))
-   | (24~48) ->
+   | (46~12) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2452,7 +2452,7 @@ None
 None
  else
 (Some b)))
-   | (24~7) ->
+   | (46~38) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2480,7 +2480,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (25~5) ->
+   | (17~10) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2508,7 +2508,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (25~16) ->
+   | (17~21) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2539,7 +2539,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (25~40) ->
+   | (17~19) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2567,7 +2567,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (26~43) ->
+   | (4~7) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2595,7 +2595,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (26~7) ->
+   | (4~38) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2620,7 +2620,7 @@ None
 None
  else
 (Some b)))
-   | (26~23) ->
+   | (4~45) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2648,7 +2648,7 @@ None
 None
  else
 (Some b)))
-   | (27~45) ->
+   | (43~37) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2673,7 +2673,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (27~36) ->
+   | (43~9) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2704,7 +2704,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (27~34) ->
+   | (43~3) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2735,7 +2735,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (27~21) ->
+   | (43~16) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2760,7 +2760,7 @@ None
 None
  else
 (Some b)))
-   | (28~3) ->
+   | (13~15) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2785,7 +2785,7 @@ None
 None
  else
 (Some b)))
-   | (29~9) ->
+   | (39~20) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2810,7 +2810,7 @@ None
 None
  else
 (Some b)))
-   | (29~1) ->
+   | (39~48) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2838,7 +2838,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (30~22) ->
+   | (14~47) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2863,7 +2863,7 @@ None
 None
  else
 (Some b)))
-   | (31~18) ->
+   | (11~6) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2891,7 +2891,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (31~11) ->
+   | (11~32) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2913,7 +2913,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (31~37) ->
+   | (11~1) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2941,7 +2941,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (32~33) ->
+   | (0~22) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2966,7 +2966,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (32~2) ->
+   | (0~40) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -2994,7 +2994,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (32~36) ->
+   | (0~9) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3022,7 +3022,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (32~38) ->
+   | (0~5) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3050,7 +3050,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (32~3) ->
+   | (0~15) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3075,7 +3075,7 @@ None
 None
  else
 (Some b)))
-   | (33~32) ->
+   | (22~0) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3100,7 +3100,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553600:= true]; })))
-   | (34~42) ->
+   | (3~25) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3125,7 +3125,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (34~41) ->
+   | (3~24) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3150,7 +3150,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (34~5) ->
+   | (3~10) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3181,7 +3181,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (34~27) ->
+   | (3~43) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3212,7 +3212,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (35~43) ->
+   | (41~7) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3237,7 +3237,7 @@ None
 None
  else
 (Some b)))
-   | (35~37) ->
+   | (41~1) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3265,7 +3265,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (36~1) ->
+   | (9~48) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3290,7 +3290,7 @@ None
 None
  else
 (Some b)))
-   | (36~27) ->
+   | (9~43) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3315,7 +3315,7 @@ None
 None
  else
 (Some b)))
-   | (36~23) ->
+   | (9~45) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3343,7 +3343,7 @@ None
 None
  else
 (Some b)))
-   | (36~6) ->
+   | (9~29) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3368,7 +3368,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (36~0) ->
+   | (9~42) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3396,7 +3396,7 @@ None
 None
  else
 (Some b)))
-   | (36~24) ->
+   | (9~46) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3424,7 +3424,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (36~32) ->
+   | (9~0) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3452,7 +3452,7 @@ None
 None
  else
 (Some b)))
-   | (36~7) ->
+   | (9~38) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3480,7 +3480,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (36~38) ->
+   | (9~5) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3514,7 +3514,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (37~35) ->
+   | (1~41) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3542,7 +3542,7 @@ None
 None
  else
 (Some b)))
-   | (37~31) ->
+   | (1~11) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3567,7 +3567,7 @@ None
 None
  else
 (Some b)))
-   | (38~21) ->
+   | (5~16) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3598,7 +3598,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (38~39) ->
+   | (5~28) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3623,7 +3623,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (38~2) ->
+   | (5~40) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3651,7 +3651,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (38~10) ->
+   | (5~26) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3676,7 +3676,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (38~16) ->
+   | (5~21) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3713,7 +3713,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (38~36) ->
+   | (5~9) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3738,7 +3738,7 @@ None
 None
  else
 (Some b)))
-   | (38~8) ->
+   | (5~27) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3763,7 +3763,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (38~3) ->
+   | (5~15) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3794,7 +3794,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (38~32) ->
+   | (5~0) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3822,7 +3822,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (39~38) ->
+   | (28~5) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3847,7 +3847,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553606:= true]; })))
-   | (40~9) ->
+   | (19~20) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3878,7 +3878,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (40~47) ->
+   | (19~35) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3903,7 +3903,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (40~46) ->
+   | (19~34) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3928,7 +3928,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (40~25) ->
+   | (19~17) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3962,7 +3962,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (40~20) ->
+   | (19~2) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -3990,7 +3990,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (41~34) ->
+   | (24~3) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -4015,7 +4015,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553602:= true]; })))
-   | (42~34) ->
+   | (25~3) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -4040,7 +4040,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553603:= true]; })))
-   | (43~22) ->
+   | (7~47) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -4068,7 +4068,7 @@ None
 None
  else
 (Some b)))
-   | (43~26) ->
+   | (7~4) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -4096,7 +4096,7 @@ None
 None
  else
 (Some b)))
-   | (43~18) ->
+   | (7~6) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -4124,7 +4124,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (43~35) ->
+   | (7~41) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -4152,7 +4152,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (44~20) ->
+   | (18~2) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -4180,7 +4180,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (44~16) ->
+   | (18~21) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -4205,7 +4205,7 @@ None
 None
  else
 (Some b)))
-   | (45~27) ->
+   | (37~43) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -4230,7 +4230,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553615:= true]; })))
-   | (46~40) ->
+   | (34~19) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -4255,7 +4255,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553612:= true]; })))
-   | (47~40) ->
+   | (35~19) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -4280,7 +4280,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
            (Some {b with lp= 1; comms= b.comms[6553613:= true]; })))
-   | (48~24) ->
+   | (12~46) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -4308,7 +4308,7 @@ if ((prefixLen = 20u6) && ((prefix >= 128.0.0.0) && (prefix < 128.0.16.0))) then
 None
  else
 (Some b)))
-   | (48~19) ->
+   | (12~33) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -4330,7 +4330,7 @@ None
            let (u~v) = e in
            let b = {b with bgpAS = b.bgpAS[u := true]} in
       Some b))
-   | (48~18) ->
+   | (12~6) ->
    let b = x0.bgp in
       (match b with
       | None -> None
@@ -4366,187 +4366,187 @@ let trans d edge x =
   {connected=None; static=None; ospf=o; bgp=b; selected=None}
 
 nodes = (49, {
-  3n:"london";
-  5n:"geneva";
-  6n:"peerfrankfurt_7";
-  7n:"praha";
-  8n:"peerbrussels_5";
-  10n:"peerbrussels_4";
-  12n:"peermilan_14";
-  18n:"bucharest";
-  20n:"barcelona";
-  23n:"vienna";
-  24n:"warsaw";
-  25n:"lyon";
-  26n:"bratislava";
-  28n:"lisbon";
-  29n:"roma";
-  30n:"ljubjana";
-  31n:"istanbul";
-  32n:"amsterdam";
-  34n:"basel";
-  35n:"sofia";
-  37n:"athens";
-  38n:"brussels";
-  39n:"peerbrussels_6";
-  43n:"budapest";
-  44n:"madrid";
-  45n:"peerstrasbourg_15";
-  46n:"peermarseille_12";
-  47n:"peermarseille_13";
-  48n:"kiev";
-  0n:"stockholm";
-  1n:"zurich";
-  2n:"rotterdam";
-  4n:"dublin";
-  9n:"milan";
-  11n:"peeristanbul_10";
-  13n:"peerbarcelona_1";
-  14n:"vaduz";
-  15n:"peergeneva_9";
-  16n:"paris";
-  17n:"peergeneva_8";
-  19n:"peerkiev_11";
-  21n:"luxembourg";
-  22n:"zagreb";
-  27n:"strasbourg";
-  33n:"peeramsterdam_0";
-  36n:"frankfurt";
-  40n:"marseille";
-  41n:"peerbasel_2";
-  42n:"peerbasel_3";
+  15n:"london";
+  10n:"geneva";
+  29n:"peerfrankfurt_7";
+  38n:"praha";
+  27n:"peerbrussels_5";
+  26n:"peerbrussels_4";
+  36n:"peermilan_14";
+  6n:"bucharest";
+  2n:"barcelona";
+  45n:"vienna";
+  46n:"warsaw";
+  17n:"lyon";
+  4n:"bratislava";
+  13n:"lisbon";
+  14n:"ljubjana";
+  39n:"roma";
+  11n:"istanbul";
+  0n:"amsterdam";
+  3n:"basel";
+  41n:"sofia";
+  1n:"athens";
+  5n:"brussels";
+  28n:"peerbrussels_6";
+  7n:"budapest";
+  18n:"madrid";
+  34n:"peermarseille_12";
+  37n:"peerstrasbourg_15";
+  12n:"kiev";
+  35n:"peermarseille_13";
+  42n:"stockholm";
+  48n:"zurich";
+  8n:"dublin";
+  40n:"rotterdam";
+  20n:"milan";
+  32n:"peeristanbul_10";
+  23n:"peerbarcelona_1";
+  44n:"vaduz";
+  21n:"paris";
+  31n:"peergeneva_9";
+  30n:"peergeneva_8";
+  33n:"peerkiev_11";
+  16n:"luxembourg";
+  47n:"zagreb";
+  43n:"strasbourg";
+  22n:"peeramsterdam_0";
+  9n:"frankfurt";
+  19n:"marseille";
+  24n:"peerbasel_2";
+  25n:"peerbasel_3";
  })
 
 edges = {
-  19-48; (*peerkiev_11,FastEthernet0/0 --> kiev,FastEthernet0/1*)
-  36-23; (*frankfurt,FastEthernet3/0 --> vienna,FastEthernet0/1*)
-  30-22; (*ljubjana,FastEthernet0/0 --> zagreb,FastEthernet0/1*)
-  38-21; (*brussels,FastEthernet1/1 --> luxembourg,FastEthernet0/0*)
-  38-39; (*brussels,FastEthernet3/1 --> peerbrussels_6,FastEthernet0/0*)
-  37-35; (*athens,FastEthernet0/1 --> sofia,FastEthernet0/0*)
-  22-30; (*zagreb,FastEthernet0/1 --> ljubjana,FastEthernet0/0*)
-  40-25; (*marseille,FastEthernet0/1 --> lyon,FastEthernet0/1*)
-  10-38; (*peerbrussels_4,FastEthernet0/0 --> brussels,FastEthernet2/1*)
-  24-48; (*warsaw,FastEthernet0/1 --> kiev,FastEthernet1/0*)
-  45-27; (*peerstrasbourg_15,FastEthernet0/0 --> strasbourg,FastEthernet1/1*)
-  34-5; (*basel,FastEthernet0/0 --> geneva,FastEthernet0/0*)
-  25-16; (*lyon,FastEthernet1/0 --> paris,FastEthernet1/1*)
-  31-11; (*istanbul,FastEthernet1/0 --> peeristanbul_10,FastEthernet0/0*)
-  1-9; (*zurich,FastEthernet1/0 --> milan,FastEthernet2/0*)
-  18-43; (*bucharest,FastEthernet0/0 --> budapest,FastEthernet0/1*)
-  38-36; (*brussels,FastEthernet0/1 --> frankfurt,FastEthernet0/1*)
-  32-38; (*amsterdam,FastEthernet0/0 --> brussels,FastEthernet0/0*)
-  20-44; (*barcelona,FastEthernet0/0 --> madrid,FastEthernet0/0*)
-  43-22; (*budapest,FastEthernet1/1 --> zagreb,FastEthernet0/0*)
-  1-5; (*zurich,FastEthernet0/1 --> geneva,FastEthernet2/1*)
-  9-29; (*milan,FastEthernet1/0 --> roma,FastEthernet0/0*)
-  3-16; (*london,FastEthernet2/0 --> paris,FastEthernet1/0*)
-  23-26; (*vienna,FastEthernet0/0 --> bratislava,FastEthernet1/0*)
-  41-34; (*peerbasel_2,FastEthernet0/0 --> basel,FastEthernet0/1*)
-  5-25; (*geneva,FastEthernet0/1 --> lyon,FastEthernet0/0*)
-  48-18; (*kiev,FastEthernet0/0 --> bucharest,FastEthernet1/0*)
-  16-44; (*paris,FastEthernet2/0 --> madrid,FastEthernet0/1*)
-  1-29; (*zurich,FastEthernet1/1 --> roma,FastEthernet0/1*)
-  20-40; (*barcelona,FastEthernet0/1 --> marseille,FastEthernet0/0*)
-  34-42; (*basel,FastEthernet1/0 --> peerbasel_3,FastEthernet0/0*)
-  36-6; (*frankfurt,FastEthernet1/0 --> peerfrankfurt_7,FastEthernet0/0*)
-  18-31; (*bucharest,FastEthernet0/1 --> istanbul,FastEthernet0/1*)
-  38-10; (*brussels,FastEthernet2/1 --> peerbrussels_4,FastEthernet0/0*)
-  5-15; (*geneva,FastEthernet2/0 --> peergeneva_9,FastEthernet0/0*)
-  40-47; (*marseille,FastEthernet2/0 --> peermarseille_13,FastEthernet0/0*)
-  31-37; (*istanbul,FastEthernet0/0 --> athens,FastEthernet0/0*)
-  38-3; (*brussels,FastEthernet1/0 --> london,FastEthernet0/1*)
-  36-24; (*frankfurt,FastEthernet3/1 --> warsaw,FastEthernet0/0*)
-  48-24; (*kiev,FastEthernet1/0 --> warsaw,FastEthernet0/1*)
-  35-43; (*sofia,FastEthernet0/1 --> budapest,FastEthernet1/0*)
-  0-36; (*stockholm,FastEthernet0/0 --> frankfurt,FastEthernet2/0*)
-  32-33; (*amsterdam,FastEthernet1/1 --> peeramsterdam_0,FastEthernet0/0*)
-  14-1; (*vaduz,FastEthernet0/0 --> zurich,FastEthernet2/0*)
-  7-36; (*praha,FastEthernet0/1 --> frankfurt,FastEthernet1/1*)
-  38-8; (*brussels,FastEthernet3/0 --> peerbrussels_5,FastEthernet0/0*)
-  43-26; (*budapest,FastEthernet0/0 --> bratislava,FastEthernet0/0*)
-  16-5; (*paris,FastEthernet0/1 --> geneva,FastEthernet1/0*)
-  16-3; (*paris,FastEthernet1/0 --> london,FastEthernet2/0*)
-  36-32; (*frankfurt,FastEthernet0/0 --> amsterdam,FastEthernet0/1*)
-  7-24; (*praha,FastEthernet1/0 --> warsaw,FastEthernet1/0*)
-  40-20; (*marseille,FastEthernet0/0 --> barcelona,FastEthernet0/1*)
-  20-13; (*barcelona,FastEthernet1/0 --> peerbarcelona_1,FastEthernet0/0*)
-  38-2; (*brussels,FastEthernet4/0 --> rotterdam,FastEthernet0/1*)
-  22-43; (*zagreb,FastEthernet0/0 --> budapest,FastEthernet1/1*)
-  29-1; (*roma,FastEthernet0/1 --> zurich,FastEthernet1/1*)
-  5-1; (*geneva,FastEthernet2/1 --> zurich,FastEthernet0/1*)
-  15-5; (*peergeneva_9,FastEthernet0/0 --> geneva,FastEthernet2/0*)
-  6-36; (*peerfrankfurt_7,FastEthernet0/0 --> frankfurt,FastEthernet1/0*)
-  28-3; (*lisbon,FastEthernet0/0 --> london,FastEthernet1/1*)
-  48-19; (*kiev,FastEthernet0/1 --> peerkiev_11,FastEthernet0/0*)
-  13-20; (*peerbarcelona_1,FastEthernet0/0 --> barcelona,FastEthernet1/0*)
-  40-46; (*marseille,FastEthernet1/1 --> peermarseille_12,FastEthernet0/0*)
-  46-40; (*peermarseille_12,FastEthernet0/0 --> marseille,FastEthernet1/1*)
-  12-9; (*peermilan_14,FastEthernet0/0 --> milan,FastEthernet0/1*)
-  5-34; (*geneva,FastEthernet0/0 --> basel,FastEthernet0/0*)
-  34-41; (*basel,FastEthernet0/1 --> peerbasel_2,FastEthernet0/0*)
-  38-16; (*brussels,FastEthernet2/0 --> paris,FastEthernet0/0*)
-  2-32; (*rotterdam,FastEthernet0/0 --> amsterdam,FastEthernet2/0*)
-  33-32; (*peeramsterdam_0,FastEthernet0/0 --> amsterdam,FastEthernet1/1*)
-  36-27; (*frankfurt,FastEthernet2/1 --> strasbourg,FastEthernet0/1*)
-  16-38; (*paris,FastEthernet0/0 --> brussels,FastEthernet2/0*)
-  37-31; (*athens,FastEthernet0/0 --> istanbul,FastEthernet0/0*)
-  27-21; (*strasbourg,FastEthernet1/0 --> luxembourg,FastEthernet0/1*)
-  3-38; (*london,FastEthernet0/1 --> brussels,FastEthernet1/0*)
-  17-5; (*peergeneva_8,FastEthernet0/0 --> geneva,FastEthernet1/1*)
-  25-5; (*lyon,FastEthernet0/0 --> geneva,FastEthernet0/1*)
-  9-40; (*milan,FastEthernet0/0 --> marseille,FastEthernet1/0*)
-  32-3; (*amsterdam,FastEthernet1/0 --> london,FastEthernet0/0*)
-  32-2; (*amsterdam,FastEthernet2/0 --> rotterdam,FastEthernet0/0*)
-  26-7; (*bratislava,FastEthernet0/1 --> praha,FastEthernet0/0*)
-  44-20; (*madrid,FastEthernet0/0 --> barcelona,FastEthernet0/0*)
-  11-31; (*peeristanbul_10,FastEthernet0/0 --> istanbul,FastEthernet1/0*)
-  5-17; (*geneva,FastEthernet1/1 --> peergeneva_8,FastEthernet0/0*)
-  38-32; (*brussels,FastEthernet0/0 --> amsterdam,FastEthernet0/0*)
-  3-28; (*london,FastEthernet1/1 --> lisbon,FastEthernet0/0*)
-  5-16; (*geneva,FastEthernet1/0 --> paris,FastEthernet0/1*)
-  39-38; (*peerbrussels_6,FastEthernet0/0 --> brussels,FastEthernet3/1*)
-  23-36; (*vienna,FastEthernet0/1 --> frankfurt,FastEthernet3/0*)
-  2-38; (*rotterdam,FastEthernet0/1 --> brussels,FastEthernet4/0*)
-  24-7; (*warsaw,FastEthernet1/0 --> praha,FastEthernet1/0*)
-  36-7; (*frankfurt,FastEthernet1/1 --> praha,FastEthernet0/1*)
-  42-34; (*peerbasel_3,FastEthernet0/0 --> basel,FastEthernet1/0*)
-  4-3; (*dublin,FastEthernet0/0 --> london,FastEthernet1/0*)
-  24-36; (*warsaw,FastEthernet0/0 --> frankfurt,FastEthernet3/1*)
-  34-27; (*basel,FastEthernet1/1 --> strasbourg,FastEthernet0/0*)
-  7-26; (*praha,FastEthernet0/0 --> bratislava,FastEthernet0/1*)
-  16-25; (*paris,FastEthernet1/1 --> lyon,FastEthernet1/0*)
-  36-38; (*frankfurt,FastEthernet0/1 --> brussels,FastEthernet0/1*)
-  26-23; (*bratislava,FastEthernet1/0 --> vienna,FastEthernet0/0*)
-  43-35; (*budapest,FastEthernet1/0 --> sofia,FastEthernet0/1*)
-  21-27; (*luxembourg,FastEthernet0/1 --> strasbourg,FastEthernet1/0*)
-  26-43; (*bratislava,FastEthernet0/0 --> budapest,FastEthernet0/0*)
-  29-9; (*roma,FastEthernet0/0 --> milan,FastEthernet1/0*)
-  3-4; (*london,FastEthernet1/0 --> dublin,FastEthernet0/0*)
-  27-36; (*strasbourg,FastEthernet0/1 --> frankfurt,FastEthernet2/1*)
-  43-18; (*budapest,FastEthernet0/1 --> bucharest,FastEthernet0/0*)
-  25-40; (*lyon,FastEthernet0/1 --> marseille,FastEthernet0/1*)
-  8-38; (*peerbrussels_5,FastEthernet0/0 --> brussels,FastEthernet3/0*)
-  44-16; (*madrid,FastEthernet0/1 --> paris,FastEthernet2/0*)
-  31-18; (*istanbul,FastEthernet0/1 --> bucharest,FastEthernet0/1*)
-  27-45; (*strasbourg,FastEthernet1/1 --> peerstrasbourg_15,FastEthernet0/0*)
-  40-9; (*marseille,FastEthernet1/0 --> milan,FastEthernet0/0*)
-  18-48; (*bucharest,FastEthernet1/0 --> kiev,FastEthernet0/0*)
-  36-0; (*frankfurt,FastEthernet2/0 --> stockholm,FastEthernet0/0*)
-  1-14; (*zurich,FastEthernet2/0 --> vaduz,FastEthernet0/0*)
-  9-23; (*milan,FastEthernet1/1 --> vienna,FastEthernet1/0*)
-  32-36; (*amsterdam,FastEthernet0/1 --> frankfurt,FastEthernet0/0*)
-  27-34; (*strasbourg,FastEthernet0/0 --> basel,FastEthernet1/1*)
-  9-12; (*milan,FastEthernet0/1 --> peermilan_14,FastEthernet0/0*)
-  1-36; (*zurich,FastEthernet0/0 --> frankfurt,FastEthernet4/0*)
-  9-1; (*milan,FastEthernet2/0 --> zurich,FastEthernet1/0*)
-  35-37; (*sofia,FastEthernet0/0 --> athens,FastEthernet0/1*)
-  3-32; (*london,FastEthernet0/0 --> amsterdam,FastEthernet1/0*)
-  21-38; (*luxembourg,FastEthernet0/0 --> brussels,FastEthernet1/1*)
-  23-9; (*vienna,FastEthernet1/0 --> milan,FastEthernet1/1*)
-  36-1; (*frankfurt,FastEthernet4/0 --> zurich,FastEthernet0/0*)
-  47-40; (*peermarseille_13,FastEthernet0/0 --> marseille,FastEthernet2/0*)
+  (0-15,0); (*amsterdam,FastEthernet1/0 --> london,FastEthernet0/0*)
+  (0-22,1); (*amsterdam,FastEthernet1/1 --> peeramsterdam_0,FastEthernet0/0*)
+  (0-40,2); (*amsterdam,FastEthernet2/0 --> rotterdam,FastEthernet0/0*)
+  (0-5,3); (*amsterdam,FastEthernet0/0 --> brussels,FastEthernet0/0*)
+  (0-9,4); (*amsterdam,FastEthernet0/1 --> frankfurt,FastEthernet0/0*)
+  (10-17,5); (*geneva,FastEthernet0/1 --> lyon,FastEthernet0/0*)
+  (10-21,6); (*geneva,FastEthernet1/0 --> paris,FastEthernet0/1*)
+  (10-3,7); (*geneva,FastEthernet0/0 --> basel,FastEthernet0/0*)
+  (10-30,8); (*geneva,FastEthernet1/1 --> peergeneva_8,FastEthernet0/0*)
+  (10-31,9); (*geneva,FastEthernet2/0 --> peergeneva_9,FastEthernet0/0*)
+  (10-48,10); (*geneva,FastEthernet2/1 --> zurich,FastEthernet0/1*)
+  (11-1,11); (*istanbul,FastEthernet0/0 --> athens,FastEthernet0/0*)
+  (11-32,12); (*istanbul,FastEthernet1/0 --> peeristanbul_10,FastEthernet0/0*)
+  (11-6,13); (*istanbul,FastEthernet0/1 --> bucharest,FastEthernet0/1*)
+  (12-33,14); (*kiev,FastEthernet0/1 --> peerkiev_11,FastEthernet0/0*)
+  (12-46,15); (*kiev,FastEthernet1/0 --> warsaw,FastEthernet0/1*)
+  (12-6,16); (*kiev,FastEthernet0/0 --> bucharest,FastEthernet1/0*)
+  (13-15,17); (*lisbon,FastEthernet0/0 --> london,FastEthernet1/1*)
+  (14-47,18); (*ljubjana,FastEthernet0/0 --> zagreb,FastEthernet0/1*)
+  (15-0,19); (*london,FastEthernet0/0 --> amsterdam,FastEthernet1/0*)
+  (15-13,20); (*london,FastEthernet1/1 --> lisbon,FastEthernet0/0*)
+  (15-21,21); (*london,FastEthernet2/0 --> paris,FastEthernet1/0*)
+  (15-5,22); (*london,FastEthernet0/1 --> brussels,FastEthernet1/0*)
+  (15-8,23); (*london,FastEthernet1/0 --> dublin,FastEthernet0/0*)
+  (16-43,24); (*luxembourg,FastEthernet0/1 --> strasbourg,FastEthernet1/0*)
+  (16-5,25); (*luxembourg,FastEthernet0/0 --> brussels,FastEthernet1/1*)
+  (17-10,26); (*lyon,FastEthernet0/0 --> geneva,FastEthernet0/1*)
+  (17-19,27); (*lyon,FastEthernet0/1 --> marseille,FastEthernet0/1*)
+  (17-21,28); (*lyon,FastEthernet1/0 --> paris,FastEthernet1/1*)
+  (18-2,29); (*madrid,FastEthernet0/0 --> barcelona,FastEthernet0/0*)
+  (18-21,30); (*madrid,FastEthernet0/1 --> paris,FastEthernet2/0*)
+  (19-17,31); (*marseille,FastEthernet0/1 --> lyon,FastEthernet0/1*)
+  (19-2,32); (*marseille,FastEthernet0/0 --> barcelona,FastEthernet0/1*)
+  (19-20,33); (*marseille,FastEthernet1/0 --> milan,FastEthernet0/0*)
+  (19-34,34); (*marseille,FastEthernet1/1 --> peermarseille_12,FastEthernet0/0*)
+  (19-35,35); (*marseille,FastEthernet2/0 --> peermarseille_13,FastEthernet0/0*)
+  (1-11,36); (*athens,FastEthernet0/0 --> istanbul,FastEthernet0/0*)
+  (1-41,37); (*athens,FastEthernet0/1 --> sofia,FastEthernet0/0*)
+  (20-19,38); (*milan,FastEthernet0/0 --> marseille,FastEthernet1/0*)
+  (20-36,39); (*milan,FastEthernet0/1 --> peermilan_14,FastEthernet0/0*)
+  (20-39,40); (*milan,FastEthernet1/0 --> roma,FastEthernet0/0*)
+  (20-45,41); (*milan,FastEthernet1/1 --> vienna,FastEthernet1/0*)
+  (20-48,42); (*milan,FastEthernet2/0 --> zurich,FastEthernet1/0*)
+  (21-10,43); (*paris,FastEthernet0/1 --> geneva,FastEthernet1/0*)
+  (21-15,44); (*paris,FastEthernet1/0 --> london,FastEthernet2/0*)
+  (21-17,45); (*paris,FastEthernet1/1 --> lyon,FastEthernet1/0*)
+  (21-18,46); (*paris,FastEthernet2/0 --> madrid,FastEthernet0/1*)
+  (21-5,47); (*paris,FastEthernet0/0 --> brussels,FastEthernet2/0*)
+  (22-0,48); (*peeramsterdam_0,FastEthernet0/0 --> amsterdam,FastEthernet1/1*)
+  (23-2,49); (*peerbarcelona_1,FastEthernet0/0 --> barcelona,FastEthernet1/0*)
+  (24-3,50); (*peerbasel_2,FastEthernet0/0 --> basel,FastEthernet0/1*)
+  (25-3,51); (*peerbasel_3,FastEthernet0/0 --> basel,FastEthernet1/0*)
+  (26-5,52); (*peerbrussels_4,FastEthernet0/0 --> brussels,FastEthernet2/1*)
+  (27-5,53); (*peerbrussels_5,FastEthernet0/0 --> brussels,FastEthernet3/0*)
+  (28-5,54); (*peerbrussels_6,FastEthernet0/0 --> brussels,FastEthernet3/1*)
+  (29-9,55); (*peerfrankfurt_7,FastEthernet0/0 --> frankfurt,FastEthernet1/0*)
+  (2-18,56); (*barcelona,FastEthernet0/0 --> madrid,FastEthernet0/0*)
+  (2-19,57); (*barcelona,FastEthernet0/1 --> marseille,FastEthernet0/0*)
+  (2-23,58); (*barcelona,FastEthernet1/0 --> peerbarcelona_1,FastEthernet0/0*)
+  (30-10,59); (*peergeneva_8,FastEthernet0/0 --> geneva,FastEthernet1/1*)
+  (31-10,60); (*peergeneva_9,FastEthernet0/0 --> geneva,FastEthernet2/0*)
+  (32-11,61); (*peeristanbul_10,FastEthernet0/0 --> istanbul,FastEthernet1/0*)
+  (33-12,62); (*peerkiev_11,FastEthernet0/0 --> kiev,FastEthernet0/1*)
+  (34-19,63); (*peermarseille_12,FastEthernet0/0 --> marseille,FastEthernet1/1*)
+  (35-19,64); (*peermarseille_13,FastEthernet0/0 --> marseille,FastEthernet2/0*)
+  (36-20,65); (*peermilan_14,FastEthernet0/0 --> milan,FastEthernet0/1*)
+  (37-43,66); (*peerstrasbourg_15,FastEthernet0/0 --> strasbourg,FastEthernet1/1*)
+  (38-4,67); (*praha,FastEthernet0/0 --> bratislava,FastEthernet0/1*)
+  (38-46,68); (*praha,FastEthernet1/0 --> warsaw,FastEthernet1/0*)
+  (38-9,69); (*praha,FastEthernet0/1 --> frankfurt,FastEthernet1/1*)
+  (39-20,70); (*roma,FastEthernet0/0 --> milan,FastEthernet1/0*)
+  (39-48,71); (*roma,FastEthernet0/1 --> zurich,FastEthernet1/1*)
+  (3-10,72); (*basel,FastEthernet0/0 --> geneva,FastEthernet0/0*)
+  (3-24,73); (*basel,FastEthernet0/1 --> peerbasel_2,FastEthernet0/0*)
+  (3-25,74); (*basel,FastEthernet1/0 --> peerbasel_3,FastEthernet0/0*)
+  (3-43,75); (*basel,FastEthernet1/1 --> strasbourg,FastEthernet0/0*)
+  (40-0,76); (*rotterdam,FastEthernet0/0 --> amsterdam,FastEthernet2/0*)
+  (40-5,77); (*rotterdam,FastEthernet0/1 --> brussels,FastEthernet4/0*)
+  (41-1,78); (*sofia,FastEthernet0/0 --> athens,FastEthernet0/1*)
+  (41-7,79); (*sofia,FastEthernet0/1 --> budapest,FastEthernet1/0*)
+  (42-9,80); (*stockholm,FastEthernet0/0 --> frankfurt,FastEthernet2/0*)
+  (43-16,81); (*strasbourg,FastEthernet1/0 --> luxembourg,FastEthernet0/1*)
+  (43-3,82); (*strasbourg,FastEthernet0/0 --> basel,FastEthernet1/1*)
+  (43-37,83); (*strasbourg,FastEthernet1/1 --> peerstrasbourg_15,FastEthernet0/0*)
+  (43-9,84); (*strasbourg,FastEthernet0/1 --> frankfurt,FastEthernet2/1*)
+  (44-48,85); (*vaduz,FastEthernet0/0 --> zurich,FastEthernet2/0*)
+  (45-20,86); (*vienna,FastEthernet1/0 --> milan,FastEthernet1/1*)
+  (45-4,87); (*vienna,FastEthernet0/0 --> bratislava,FastEthernet1/0*)
+  (45-9,88); (*vienna,FastEthernet0/1 --> frankfurt,FastEthernet3/0*)
+  (46-12,89); (*warsaw,FastEthernet0/1 --> kiev,FastEthernet1/0*)
+  (46-38,90); (*warsaw,FastEthernet1/0 --> praha,FastEthernet1/0*)
+  (46-9,91); (*warsaw,FastEthernet0/0 --> frankfurt,FastEthernet3/1*)
+  (47-14,92); (*zagreb,FastEthernet0/1 --> ljubjana,FastEthernet0/0*)
+  (47-7,93); (*zagreb,FastEthernet0/0 --> budapest,FastEthernet1/1*)
+  (48-10,94); (*zurich,FastEthernet0/1 --> geneva,FastEthernet2/1*)
+  (48-20,95); (*zurich,FastEthernet1/0 --> milan,FastEthernet2/0*)
+  (48-39,96); (*zurich,FastEthernet1/1 --> roma,FastEthernet0/1*)
+  (48-44,97); (*zurich,FastEthernet2/0 --> vaduz,FastEthernet0/0*)
+  (48-9,98); (*zurich,FastEthernet0/0 --> frankfurt,FastEthernet4/0*)
+  (4-38,99); (*bratislava,FastEthernet0/1 --> praha,FastEthernet0/0*)
+  (4-45,100); (*bratislava,FastEthernet1/0 --> vienna,FastEthernet0/0*)
+  (4-7,101); (*bratislava,FastEthernet0/0 --> budapest,FastEthernet0/0*)
+  (5-0,102); (*brussels,FastEthernet0/0 --> amsterdam,FastEthernet0/0*)
+  (5-15,103); (*brussels,FastEthernet1/0 --> london,FastEthernet0/1*)
+  (5-16,104); (*brussels,FastEthernet1/1 --> luxembourg,FastEthernet0/0*)
+  (5-21,105); (*brussels,FastEthernet2/0 --> paris,FastEthernet0/0*)
+  (5-26,106); (*brussels,FastEthernet2/1 --> peerbrussels_4,FastEthernet0/0*)
+  (5-27,107); (*brussels,FastEthernet3/0 --> peerbrussels_5,FastEthernet0/0*)
+  (5-28,108); (*brussels,FastEthernet3/1 --> peerbrussels_6,FastEthernet0/0*)
+  (5-40,109); (*brussels,FastEthernet4/0 --> rotterdam,FastEthernet0/1*)
+  (5-9,110); (*brussels,FastEthernet0/1 --> frankfurt,FastEthernet0/1*)
+  (6-11,111); (*bucharest,FastEthernet0/1 --> istanbul,FastEthernet0/1*)
+  (6-12,112); (*bucharest,FastEthernet1/0 --> kiev,FastEthernet0/0*)
+  (6-7,113); (*bucharest,FastEthernet0/0 --> budapest,FastEthernet0/1*)
+  (7-4,114); (*budapest,FastEthernet0/0 --> bratislava,FastEthernet0/0*)
+  (7-41,115); (*budapest,FastEthernet1/0 --> sofia,FastEthernet0/1*)
+  (7-47,116); (*budapest,FastEthernet1/1 --> zagreb,FastEthernet0/0*)
+  (7-6,117); (*budapest,FastEthernet0/1 --> bucharest,FastEthernet0/0*)
+  (8-15,118); (*dublin,FastEthernet0/0 --> london,FastEthernet1/0*)
+  (9-0,119); (*frankfurt,FastEthernet0/0 --> amsterdam,FastEthernet0/1*)
+  (9-29,120); (*frankfurt,FastEthernet1/0 --> peerfrankfurt_7,FastEthernet0/0*)
+  (9-38,121); (*frankfurt,FastEthernet1/1 --> praha,FastEthernet0/1*)
+  (9-42,122); (*frankfurt,FastEthernet2/0 --> stockholm,FastEthernet0/0*)
+  (9-43,123); (*frankfurt,FastEthernet2/1 --> strasbourg,FastEthernet0/1*)
+  (9-45,124); (*frankfurt,FastEthernet3/0 --> vienna,FastEthernet0/1*)
+  (9-46,125); (*frankfurt,FastEthernet3/1 --> warsaw,FastEthernet0/0*)
+  (9-48,126); (*frankfurt,FastEthernet4/0 --> zurich,FastEthernet0/0*)
+  (9-5,127); (*frankfurt,FastEthernet0/1 --> brussels,FastEthernet0/1*)
 }
 
 (*
-{london=3, geneva=5, peerfrankfurt_7=6, praha=7, peerbrussels_5=8, peerbrussels_4=10, peermilan_14=12, bucharest=18, barcelona=20, vienna=23, warsaw=24, lyon=25, bratislava=26, lisbon=28, roma=29, ljubjana=30, istanbul=31, amsterdam=32, basel=34, sofia=35, athens=37, brussels=38, peerbrussels_6=39, budapest=43, madrid=44, peerstrasbourg_15=45, peermarseille_12=46, peermarseille_13=47, kiev=48, stockholm=0, zurich=1, rotterdam=2, dublin=4, milan=9, peeristanbul_10=11, peerbarcelona_1=13, vaduz=14, peergeneva_9=15, paris=16, peergeneva_8=17, peerkiev_11=19, luxembourg=21, zagreb=22, strasbourg=27, peeramsterdam_0=33, frankfurt=36, marseille=40, peerbasel_2=41, peerbasel_3=42}*)
+{london=15, geneva=10, peerfrankfurt_7=29, praha=38, peerbrussels_5=27, peerbrussels_4=26, peermilan_14=36, bucharest=6, barcelona=2, vienna=45, warsaw=46, lyon=17, bratislava=4, lisbon=13, ljubjana=14, roma=39, istanbul=11, amsterdam=0, basel=3, sofia=41, athens=1, brussels=5, peerbrussels_6=28, budapest=7, madrid=18, peermarseille_12=34, peerstrasbourg_15=37, kiev=12, peermarseille_13=35, stockholm=42, zurich=48, dublin=8, rotterdam=40, milan=20, peeristanbul_10=32, peerbarcelona_1=23, vaduz=44, paris=21, peergeneva_9=31, peergeneva_8=30, peerkiev_11=33, luxembourg=16, zagreb=47, strasbourg=43, peeramsterdam_0=22, frankfurt=9, marseille=19, peerbasel_2=24, peerbasel_3=25}*)

@@ -107,6 +107,50 @@ module type Topology = sig
   val graph : AdjGraph.t
 end
 
+module ForwardingStats = struct
+  (* Time taken to compute forwarding *)
+  let fwd_time = ref 0.0
+
+  (*Time taken to compute packet histories *)
+  let logging_time = ref 0.0
+
+  type forwardingStats = { fwdTime : float; logTime : float }
+
+  let perSimulationStats : forwardingStats PrimitiveCollections.StringMap.t ref
+      =
+    ref StringMap.empty
+
+  let clearSimulationStats () =
+    fwd_time := 0.0;
+    logging_time := 0.0
+
+  let logSimulationStats name =
+    perSimulationStats :=
+      StringMap.add name
+        { fwdTime = !fwd_time; logTime = !logging_time }
+        !perSimulationStats;
+    clearSimulationStats ()
+
+  let printSimulationStats name stats =
+    Printf.printf
+      "Forwarding Simulation Stats for %s\n---------------------------\n" name;
+    Printf.printf "Forwarding time: %f\n" stats.fwdTime;
+    Printf.printf "Logging time: %f\n" stats.logTime
+
+  let printTotalSimulationStats () =
+    let total =
+      StringMap.fold
+        (fun _ v acc ->
+          {
+            fwdTime = v.fwdTime +. acc.fwdTime;
+            logTime = v.logTime +. acc.logTime;
+          })
+        !perSimulationStats
+        { fwdTime = 0.0; logTime = 0.0 }
+    in
+    printSimulationStats "all simulations" total
+end
+
 module ForwardingSimulation (G : Topology) = struct
   type packet = unit Mtbddc.t (*placeholder *)
 
@@ -148,11 +192,6 @@ module ForwardingSimulation (G : Topology) = struct
   }
 
   type forwardSolutions = unit Solution.forwardSolutions
-
-  (* For profiling *)
-  let fwd_time = ref 0.0
-
-  let logging_time = ref 0.0
 
   (* For debugging purposes *)
   let printEdgeHistory v e =
@@ -291,19 +330,23 @@ module ForwardingSimulation (G : Topology) = struct
       (fwdIn : forwardInFunction) hinitV hinitE logV logE bot =
     let s = create_state G.graph initSwitch hinitV hinitE bot in
     let fwdOut e x =
-      Profile.time_profile_total fwd_time (fun () -> fwdOut e x)
+      Profile.time_profile_total ForwardingStats.fwd_time (fun () -> fwdOut e x)
     in
-    let fwdIn e x = Profile.time_profile_total fwd_time (fun () -> fwdIn e x) in
+    let fwdIn e x =
+      Profile.time_profile_total ForwardingStats.fwd_time (fun () -> fwdIn e x)
+    in
     let logV u p hv =
-      Profile.time_profile_total logging_time (fun () -> logV u p hv)
+      Profile.time_profile_total ForwardingStats.logging_time (fun () ->
+          logV u p hv)
     in
     let logE e p he =
-      Profile.time_profile_total logging_time (fun () -> logE e p he)
+      Profile.time_profile_total ForwardingStats.logging_time (fun () ->
+          logE e p he)
     in
     let hv, he = simulate_forward_init fwdIn fwdOut logV logE bot s in
 
-    Printf.printf "Forwarding time: %f\n" !fwd_time;
-    Printf.printf "Logging time: %f\n" !logging_time;
+    ForwardingStats.logSimulationStats (Printf.sprintf "%s/%s" hvName heName);
+
     let _, defaultV = AdjGraph.VertexMap.choose hv in
     let _, defaultE = AdjGraph.EdgeMap.choose he in
     (* Constructing a function from the solutions *)
@@ -354,7 +397,7 @@ module ForwardingSimulation (G : Topology) = struct
     (bdd_full_V, bdd_full_E)
 end
 
-(* SRP simulation statistics *)
+(* Route simulation statistics *)
 
 module RouteComputationStats = struct
   let transfer_time = ref 0.0
@@ -826,6 +869,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     let change, local' =
       AdjGraph.VertexSet.fold
         (fun v (changed, local) ->
+          (* Send message from v to u *)
           let change_bit, local' = do_neighbor changed v local in
           (change_bit || changed, local'))
         todoSet (false, local)
@@ -850,15 +894,38 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
       local' )
     else local'
 
-  (* returns the first element not satisfying pred in the set s. Returns None if no
+  (* returns the first element satisfying pred in the set s. Returns None if no
      such element exists. *)
   let rec findMin pred (s : AdjGraph.VertexSet.t) : AdjGraph.Vertex.t option =
     match try Some (AdjGraph.VertexSet.pop s) with Not_found -> None with
     | None -> None
-    | Some (x, s) -> if pred x then findMin pred s else Some x
+    | Some (x, s) -> if pred x then Some x else findMin pred s
 
-  let rec findMinLargest u wklist (s : AdjGraph.VertexSet.t) : AdjGraph.Vertex.t
-      =
+  (* Reurns all elements satisfying pred in the set s or an empty list *)
+  let rec findMinAll pred (s : AdjGraph.VertexSet.t) : AdjGraph.Vertex.t list =
+    match try Some (AdjGraph.VertexSet.pop s) with Not_found -> None with
+    | None -> []
+    | Some (x, s) ->
+        if pred x then x :: findMinAll pred s else findMinAll pred s
+
+  let rec findMinMost wklist pred (s : AdjGraph.VertexSet.t) acc :
+      AdjGraph.Vertex.t option =
+    match try Some (AdjGraph.VertexSet.pop s) with Not_found -> None with
+    | None -> acc
+    | Some (x, s) ->
+        if pred x then
+          match acc with
+          | None -> Some x
+          | Some y ->
+              if
+                AdjGraph.VertexSet.cardinal wklist.(y)
+                > AdjGraph.VertexSet.cardinal wklist.(x)
+              then Some x
+              else Some y
+        else findMinMost wklist pred s acc
+
+  (* Find the node in the worklist with the most incoming messages *)
+  let rec findMost u wklist (s : AdjGraph.VertexSet.t) : AdjGraph.Vertex.t =
     let x, _ =
       AdjGraph.VertexSet.fold
         (fun x (accx, accsz) ->
@@ -876,23 +943,43 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     let wklist = global.worklist in
     let todoSet = wklist.(next) in
 
-    (* Check that the node only depends on nodes that are not in the schedule
-           (with the exception of the node itself) *)
-    let pred v = v = next || wklist.(v) = AdjGraph.VertexSet.empty in
+    (* Predicate is true if the node v is not next, and it is not fully processed,
+       i.e., we want to find the dependency of next that needs to be processed first.*)
+    let pred v = v <> next && not (AdjGraph.VertexSet.is_empty wklist.(v)) in
+    (* Printf.printf "Next up: %d\n%!" next; *)
     (* how many steps to skip, i = 1 allows 1 skip *)
     if i = !skips then simulate_step init trans merge local global next todoSet
     else
-      (* let x = findMinLargest next wklist todoSet in
+      (* match findMinMost wklist pred todoSet None with
+         | None ->
+             (* If all elements satisfy pred, i.e. they have no outstanding deps, continue processing next *)
+             simulate_step init trans merge local global next todoSet
+         | Some x ->
+             (* If next depends on x and x needs to be processed too, then skip
+                 the queue and process x *)
+             processNode x init trans merge local global (i + 1) *)
+
+      (* let x = findMost next wklist todoSet in
          if x = next then simulate_step init trans merge local global next todoSet
          else processNode x init trans merge local global (i + 1) *)
-      match findMin pred todoSet with
-      | None ->
+      (* match findMin pred todoSet with
+         | None ->
+             (* If all elements satisfy pred, i.e. they have no outstanding deps, continue processing next *)
+             simulate_step init trans merge local global next todoSet
+         | Some x ->
+             (* If next depends on x and x needs to be processed too, then skip
+                 the queue and process x *)
+             processNode x init trans merge local global (i + 1) *)
+      match findMinAll pred todoSet with
+      | [] ->
           (* If all elements satisfy pred, i.e. they have no outstanding deps, continue processing next *)
           simulate_step init trans merge local global next todoSet
-      | Some x ->
+      | xs ->
           (* If next depends on x and x needs to be processed too, then skip
               the queue and process x *)
-          processNode x init trans merge local global (i + 1)
+          List.fold_left
+            (fun acc x -> processNode x init trans merge acc global (i + 1))
+            local xs
 
   (* simulate_init s q simulates srp starting with initial state (s,q) *)
   let rec simulate_init init trans merge global local =
@@ -925,6 +1012,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
           merge u x y)
     in
     skips := (Cmdline.get_cfg ()).sim_skip;
+
     let vals =
       simulate_init initArr trans merge global local
       |> AdjGraph.VertexMap.map (fun v -> v.labels)
@@ -947,6 +1035,9 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
         vals bdd_base
     in
 
+    (* Printf.printf "BDD operations: %f\n" !BddFunc.bddOps;
+       BddFunc.bddOps := 0.0; *)
+    Cudd.Man.flush BddUtils.mgr;
     (* Storing the AdjGraph.VertexMap in the solved list, but returning
        the total map to the ProbNV program *)
     solved :=

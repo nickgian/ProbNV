@@ -21,7 +21,6 @@ let id = ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '_' '0'-'9' '\'']*
 let symbol = ['~' '`' '!' '@' '#' '$' '%' '^' '&' '|' ':' '?' '>' '<' '[' ']' '=' '-' '.' '_' '(' ')']+
 let num = ['0'-'9']+
 let float = ['0'-'9']+['.']['0'-'9']+
-let prob_literal = (['0']['.']['0'-'9']+)"p" | ("1.0p")
 let width = "u"num
 let tid = ['\'']['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '_' '0'-'9']*
 let node = num"n"
@@ -75,7 +74,6 @@ rule token = parse
   | node as s         { NODE (position lexbuf, int_of_string (String.rchop ~n:1 s)) }
   | num width as n    { INT (position lexbuf, ProbNv_datastructures.Integer.of_string n) }
   | num as n          { INT (position lexbuf, ProbNv_datastructures.Integer.of_string n) }
-  | prob_literal as n { PROB (position lexbuf, float_of_string (String.rchop ~n:1 n))}
   | float as n        { FLOAT (position lexbuf, float_of_string n)}
   | string as s       { STRING (position lexbuf, s)}
   | "&&"              { AND (position lexbuf) }

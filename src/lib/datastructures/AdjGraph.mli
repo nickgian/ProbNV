@@ -39,7 +39,7 @@ module EdgeSet : BetterSet.S with type elt = Edge.t
 
 module EdgeMap : BetterMap.S with type key = Edge.t
 
-val create : int -> (E.vertex * E.vertex) list -> t
+val create : int -> (E.vertex * E.vertex * int) list -> t
 (** Graph creation **)
 
 (* Create graph with nodes and edges *)

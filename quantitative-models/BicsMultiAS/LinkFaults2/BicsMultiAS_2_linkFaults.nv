@@ -1,32 +1,39 @@
 (* Bounded link faults *)
 
-include "../BicsMultiAS_control.nv"
+include "../bicsMultiAS_control.nv"
 
-symbolic failures : int2 =
-  | [0u2, 0u2] -> 0.9379899865663176p
-  | [1u2, 1u2] -> 0.0600613898351553p
-  | [2u2, 2u2] -> 0.0019079030788054p
-  | _ -> 0.0p
+let failureProb (f : [S]tedge) =
+  0.0050251256281407
 
-symbolic f0 : tedge
-symbolic f1 : tedge
+symbolic (hasFailures, f1, f2) : (bool, tedge, tedge) =
+  if (hasFailures = false) then
+    0.0000321317512479
+  else
+    if (f1 <e f2) then
+      (failureProb f1) *. (failureProb f2) *. 0.5264466124450268
+    else
+    if (f1 = f2) then
+      (failureProb f1) *. 0.5264466124450268
+    else
+      0.0
 
 let mergeLinkFaults u (x : [M]attribute) (y : [M]attribute) =
   merge u x y
 
 let transLinkFaults d e (x : [M]attribute) =
-  if (failures >u2 0u2) && ((f0 = e)|| (f1 = e)) then
+  if hasFailures && ((f1 = e) || (f2 = e)) then
     {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   else trans d e x
 
 let initLinkFaults d u = init d u 
+
 
 solution rib_128_0_0_0_24 = (initLinkFaults (128.0.0.0/24), transLinkFaults (128.0.0.0/24), mergeLinkFaults)
 
 solution rib_128_0_1_0_24 = (initLinkFaults (128.0.1.0/24), transLinkFaults (128.0.1.0/24), mergeLinkFaults)
 
 solution rib_128_0_2_0_24 = (initLinkFaults (128.0.2.0/24), transLinkFaults (128.0.2.0/24), mergeLinkFaults)
-
+(*
 solution rib_128_0_3_0_24 = (initLinkFaults (128.0.3.0/24), transLinkFaults (128.0.3.0/24), mergeLinkFaults)
 
 solution rib_128_0_4_0_24 = (initLinkFaults (128.0.4.0/24), transLinkFaults (128.0.4.0/24), mergeLinkFaults)
@@ -149,5 +156,4 @@ solution rib_200_1_65_0_24 = (initLinkFaults (200.1.65.0/24), transLinkFaults (2
 
 solution rib_200_1_66_0_24 = (initLinkFaults (200.1.66.0/24), transLinkFaults (200.1.66.0/24), mergeLinkFaults)
 
-solution rib_200_1_67_0_24 = (initLinkFaults (200.1.67.0/24), transLinkFaults (200.1.67.0/24), mergeLinkFaults)
-
+solution rib_200_1_67_0_24 = (initLinkFaults (200.1.67.0/24), transLinkFaults (200.1.67.0/24), mergeLinkFaults)*)

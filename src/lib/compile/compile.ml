@@ -387,7 +387,7 @@ and exp_to_ocaml_string ?(distr = false) e =
       (*cache user op on e1 *)
       (* Get e1's hashcons and closure *)
       let op_key = getFuncCache e1 in
-      (*FIXME: this needs to be fresh, to avoid the case where it is
+      (*FIXME: this needs to be fresh, to avoid the (very unlucky) case where it is
                 used inside e1 but our separator is not OCaml friendly*)
       let op_key_var = "op_key" in
       (* special cases *)
@@ -553,6 +553,11 @@ let compile_decl decl =
   match decl with
   | DUserTy _ -> ""
   | DSymbolic (xs, ty, Expr exp) ->
+      let () =
+        match ty.typ with
+        | TTuple ts -> record_table := IntSet.add (List.length ts) !record_table
+        | _ -> ()
+      in
       let ty_id = get_fresh_type_id type_store ty in
       let distr = exp_to_ocaml_string ~distr:true exp in
       Printf.sprintf
@@ -560,6 +565,9 @@ let compile_decl decl =
         \ let %s = BddFunc.create_value_expr \"%s\" distr_fun %d SIM.graph\n"
         (varnames xs) distr (varnames xs) (varnames xs) ty_id
   | DSymbolic (xs, ty, dist) ->
+      ( match ty.typ with
+      | TTuple ts -> record_table := IntSet.add (List.length ts) !record_table
+      | _ -> () );
       let ty_id = get_fresh_type_id type_store ty in
       let dist_id = Collections.DistrIds.fresh_id distr_store dist in
       Printf.sprintf "let %s = BddFunc.create_value \"%s\" %d %d SIM.graph\n"

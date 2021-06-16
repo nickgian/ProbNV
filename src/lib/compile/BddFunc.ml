@@ -206,6 +206,20 @@ let bnot x =
   | BBool x -> BBool (Bdd.dnot x)
   | _ -> failwith "Expected a boolean"
 
+let bddOps = ref 0.0
+
+(* let wrap_mtbdd bdd =
+  Profile.time_profile_total bddOps (fun () -> wrap_mtbdd bdd)
+
+let band x y = Profile.time_profile_total bddOps (fun () -> band x y)
+
+let bor x y = Profile.time_profile_total bddOps (fun () -> bor x y)
+
+let eq x y = Profile.time_profile_total bddOps (fun () -> eq x y)
+
+let toBdd a ~(vty_id : int) (v : 'a) =
+  Profile.time_profile_total bddOps (fun () -> toBdd a ~vty_id v) *)
+
 (** ** Multivalue operations *)
 
 let toMap ?(distr = false) ~value =
@@ -251,8 +265,6 @@ end)
 
 let map_cache = Obj.magic (ref HashClosureMap.empty)
 
-(*todo add cache and modify compiler *)
-
 let apply1 ?(distr = false) ~op_key ~f ~arg1 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t
     =
   let g v1 =
@@ -294,6 +306,7 @@ let apply2 ?(distr = false) ~op_key ~f ~arg1 ~arg2 :
     | Some op -> op
   in
   User.apply_op2 op arg1 arg2
+
 
 let apply3 ?(distr = false) ~op_key ~f ~arg1 ~arg2 ~arg3 :
     'a Cudd.Mtbddc.unique Cudd.Vdd.t =

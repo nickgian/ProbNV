@@ -289,7 +289,7 @@ type declaration =
   | DSolve of solve
   | DForward of forward
   | DNodes of int * (node * string) list
-  | DEdges of (node * node) list
+  | DEdges of (node * node * int) list
   | DUserTy of var * ty
 
 (* Declaration of a record type *)

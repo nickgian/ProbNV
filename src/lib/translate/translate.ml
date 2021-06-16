@@ -376,12 +376,20 @@ let rec translate (e : exp) : exp * BddBinds.t =
             },
             BddBinds.union r1 r2 )
       | Some Concrete, Some Concrete, Some Multivalue ->
-          (* Because of solutions being functions - change this when we introduce maps it's a total hack TODO*)
           let b, r =
             BddBinds.fresh { e with ety = Some (fty (OCamlUtils.oget e.ety)) }
           in
           let eb = aexp (evar b, Some (fty resty), e1.espan) in
           (eb, BddBinds.union r (BddBinds.union r1 r2))
+      | Some Symbolic, Some Symbolic, Some Concrete ->
+          (* In this case the argument to the function is ignored so we can just treat it
+             as a concrete function *)
+          ( {
+              e with
+              e = (eapp el1 (liftBdd el2)).e;
+              ety = Some (fty (OCamlUtils.oget e.ety));
+            },
+            r1 )
       | _ -> failwith "This case cannot occur per the type system" )
   | ESome e1 -> (
       let el1, r1 = translate e1 in

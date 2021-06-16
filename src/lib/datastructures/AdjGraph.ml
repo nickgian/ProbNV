@@ -65,8 +65,7 @@ let edges (g : t) = BatList.rev (fold_edges_e List.cons g [])
 let create n edges =
   let g = fold_vertices (fun v g -> add_vertex g v) n empty in
   List.fold_left
-    (fun (i, g) (u, v) ->
+    (fun g (u, v, i) ->
       let edge = E.create u i v in
-      (i + 1, add_edge_e g edge))
-    (0, g) edges
-  |> snd
+      add_edge_e g edge)
+    g edges

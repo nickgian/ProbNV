@@ -47,8 +47,8 @@ let simulate nodeNames topology name decls =
   let finish_time = Sys.time () in
   if cfg.nostats then ()
   else (
-    Printf.printf "Native simulation took: %f\n" (finish_time -. start_time);
     RouteComputationStats.printTotalSimulationStats ();
+    ForwardingStats.printTotalSimulationStats ();
     BddUtils.get_statistics () );
   (* Get the computed solutions *)
   build_solutions
