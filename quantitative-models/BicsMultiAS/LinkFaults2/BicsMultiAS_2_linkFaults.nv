@@ -33,7 +33,7 @@ solution rib_128_0_0_0_24 = (initLinkFaults (128.0.0.0/24), transLinkFaults (128
 solution rib_128_0_1_0_24 = (initLinkFaults (128.0.1.0/24), transLinkFaults (128.0.1.0/24), mergeLinkFaults)
 
 solution rib_128_0_2_0_24 = (initLinkFaults (128.0.2.0/24), transLinkFaults (128.0.2.0/24), mergeLinkFaults)
-(*
+
 solution rib_128_0_3_0_24 = (initLinkFaults (128.0.3.0/24), transLinkFaults (128.0.3.0/24), mergeLinkFaults)
 
 solution rib_128_0_4_0_24 = (initLinkFaults (128.0.4.0/24), transLinkFaults (128.0.4.0/24), mergeLinkFaults)
@@ -156,4 +156,4 @@ solution rib_200_1_65_0_24 = (initLinkFaults (200.1.65.0/24), transLinkFaults (2
 
 solution rib_200_1_66_0_24 = (initLinkFaults (200.1.66.0/24), transLinkFaults (200.1.66.0/24), mergeLinkFaults)
 
-solution rib_200_1_67_0_24 = (initLinkFaults (200.1.67.0/24), transLinkFaults (200.1.67.0/24), mergeLinkFaults)*)
+solution rib_200_1_67_0_24 = (initLinkFaults (200.1.67.0/24), transLinkFaults (200.1.67.0/24), mergeLinkFaults)

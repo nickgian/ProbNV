@@ -16,7 +16,7 @@ let rec apply_all (s : Solution.t) fs =
   match fs with [] -> s | f :: fs -> apply_all (f s) fs
 
 (** Native simulator - compiles SRP to OCaml *)
-let run_compiled file _ _ decls topology fs =
+let run_compiled file cfg _ decls topology fs =
   let path = Filename.remove_extension file in
   let name = Filename.basename path in
   let name =
@@ -27,7 +27,10 @@ let run_compiled file _ _ decls topology fs =
   let solution =
     apply_all (Loader.simulate nodeNames topology newpath decls) fs
   in
-  Solution.print_solution solution
+  if cfg.csv then
+    Solution.toCSV (Filename.dirname file) solution
+  else
+    Solution.print_solution solution
 
 let parse_input (args : string array) =
   let cfg, rest = argparse default "probNV" args in

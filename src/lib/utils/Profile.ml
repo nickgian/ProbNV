@@ -20,3 +20,7 @@ let time_profile_total acc (f : unit -> 'a) : 'a =
   let finish_time = Sys.time () in
   acc := !acc +. (finish_time -. start_time);
   res
+
+let checkpoint p =
+  Gc.major ();
+  (* prerr_endline ("checkpoint at position " ^ p) *)

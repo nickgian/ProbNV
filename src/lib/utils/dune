@@ -6,5 +6,5 @@
     lru-cache
     integers)
   (preprocess
-    (pps ppx_deriving.std ppx_deriving_argparse))
+    (pps ppx_deriving.std))
 )

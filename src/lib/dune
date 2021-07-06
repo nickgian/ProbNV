@@ -14,7 +14,7 @@
     batteries
     zarith)
   (preprocess
-    (pps ppx_deriving.std ppx_deriving_argparse))
+    (pps ppx_deriving.std))
 )
 
 (include_subdirs no)

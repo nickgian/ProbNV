@@ -304,6 +304,7 @@ let map_back_sol ~(name : string) (map_back_transformer : map_back_transformer)
     assertions = sol.assertions;
     (* These transformations shouldn't change the truth value of the assertion *)
     solves;
+    values = sol.values;
     forwarding = sol.forwarding;
     nodes = sol.nodes;
   }

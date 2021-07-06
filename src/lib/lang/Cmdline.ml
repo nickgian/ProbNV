@@ -1,6 +1,6 @@
 type t = {
   debug : bool; [@short "-d"]  (** enable a debugging backtrace            *)
-  verbose : bool; [@short "-v"]  (** print out the srp solution              *)
+  verbose : int; [@short "-v"]  (** verbosity level, 0 prints only the assertion result(default), 1 additionally prints let-bound values annotated with "@log", 2 additionally prints SRP and forwarding solutions  *)
   bound : int option;  (** bound the number of simulation steps    *)
   memoize : bool; [@short "-z"]  (** memoizes the interpreter for reuse      *)
   no_caching : bool;  (** disables mtbdd operation caching        *)
@@ -14,6 +14,7 @@ type t = {
   counterexample : bool;
       (** generate counterexamples for non-true assertions. *)
   nostats : bool;  (** Do not print computation time statistics *)
+  csv : bool; [@short "-c"] (*generate output in CSV files instead of printing on stdout.*) 
 }
 [@@deriving
   show,
@@ -26,7 +27,7 @@ type t = {
 let default =
   {
     debug = false;
-    verbose = false;
+    verbose = 0;
     bound = None;
     memoize = false;
     no_caching = false;
@@ -37,6 +38,7 @@ let default =
     sim_skip = 1;
     counterexample = false;
     nostats = false;
+    csv = false;
   }
 
 let cfg = ref default

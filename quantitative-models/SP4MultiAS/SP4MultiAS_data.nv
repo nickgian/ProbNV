@@ -1,4 +1,4 @@
-include "LinkFaults2/sp4MultiAS_2_linkFaults.nv"
+include "LinkFaults2/SP4MultiAS_2_linkFaults.nv"
 
 type flow = {srcIp: int; dstIp: int; srcPort:int16; dstPort:int16; protocol: int8; flowSize:float }
 
@@ -46,183 +46,187 @@ let logE e fs edgeHistory =
   | Some f -> f.flowSize +. edgeHistory
 
 let initTC0 u =
-  if (u = 15n) then
-    Some ({srcIp = 70.0.15.1; dstIp = 70.0.6.1; srcPort = 37712u16; dstPort = 59314u16; protocol = 6u8; flowSize = 366.0})
+  if (u = 16n) then
+    Some ({srcIp = 70.0.18.1; dstIp = 70.0.10.1; srcPort = 14996u16; dstPort = 24558u16; protocol = 17u8; flowSize = 473.0})
+  else  if (u = 13n) then
+    Some ({srcIp = 70.0.11.1; dstIp = 70.0.10.1; srcPort = 27574u16; dstPort = 1820u16; protocol = 17u8; flowSize = 455.0})
+  else  if (u = 18n) then
+    Some ({srcIp = 70.0.6.1; dstIp = 70.0.10.1; srcPort = 10484u16; dstPort = 25427u16; protocol = 17u8; flowSize = 500.0})
+  else  if (u = 17n) then
+    Some ({srcIp = 70.0.19.1; dstIp = 70.0.10.1; srcPort = 62047u16; dstPort = 24270u16; protocol = 17u8; flowSize = 343.0})
+  else  if (u = 19n) then
+    Some ({srcIp = 70.0.7.1; dstIp = 70.0.10.1; srcPort = 48160u16; dstPort = 44346u16; protocol = 6u8; flowSize = 307.0})
+  else  if (u = 14n) then
+    Some ({srcIp = 70.0.14.1; dstIp = 70.0.10.1; srcPort = 46752u16; dstPort = 1270u16; protocol = 17u8; flowSize = 233.0})
+  else  if (u = 15n) then
+    Some ({srcIp = 70.0.15.1; dstIp = 70.0.10.1; srcPort = 57292u16; dstPort = 59565u16; protocol = 6u8; flowSize = 500.0})
   else None
 
-let fwdOutTc0 e (fs : [C]option[flow])  =
-  match fwdOut (rib_70_0_6_0_24[let (u~v) = e in u]) e fs with
+let fwdOutTc0 e (fs : [C]option[flow]) =
+  match fwdOut (rib_70_0_10_0_24[let (u~v) = e in u]) e fs with
   | Some (Some fs) -> Some fs
-  | Some None -> None
-  | None -> None
+  | _ -> None
 
 
 let initTC1 u =
-  if (u = 15n) then
-    Some ({srcIp = 70.0.15.1; dstIp = 70.0.7.1; srcPort = 32890u16; dstPort = 38139u16; protocol = 17u8; flowSize = 188.0})
+  if (u = 17n) then
+    Some ({srcIp = 70.0.19.1; dstIp = 70.0.11.1; srcPort = 20670u16; dstPort = 4938u16; protocol = 17u8; flowSize = 574.0})
+  else  if (u = 19n) then
+    Some ({srcIp = 70.0.7.1; dstIp = 70.0.11.1; srcPort = 138u16; dstPort = 60843u16; protocol = 6u8; flowSize = 513.0})
+  else  if (u = 18n) then
+    Some ({srcIp = 70.0.6.1; dstIp = 70.0.11.1; srcPort = 15469u16; dstPort = 4111u16; protocol = 17u8; flowSize = 836.0})
+  else  if (u = 12n) then
+    Some ({srcIp = 70.0.10.1; dstIp = 70.0.11.1; srcPort = 23695u16; dstPort = 5115u16; protocol = 6u8; flowSize = 455.0})
+  else  if (u = 14n) then
+    Some ({srcIp = 70.0.14.1; dstIp = 70.0.11.1; srcPort = 38750u16; dstPort = 24721u16; protocol = 17u8; flowSize = 390.0})
+  else  if (u = 15n) then
+    Some ({srcIp = 70.0.15.1; dstIp = 70.0.11.1; srcPort = 39072u16; dstPort = 20386u16; protocol = 17u8; flowSize = 836.0})
+  else  if (u = 16n) then
+    Some ({srcIp = 70.0.18.1; dstIp = 70.0.11.1; srcPort = 14585u16; dstPort = 32921u16; protocol = 6u8; flowSize = 790.0})
   else None
 
-let fwdOutTc1 e (fs : [C]option[flow])  =
-  match fwdOut (rib_70_0_7_0_24[let (u~v) = e in u]) e fs with
+let fwdOutTc1 e (fs : [C]option[flow]) =
+  match fwdOut (rib_70_0_11_0_24[let (u~v) = e in u]) e fs with
   | Some (Some fs) -> Some fs
-  | Some None -> None
-  | None -> None
+  | _ -> None
 
 
 let initTC2 u =
-  if (u = 15n) then
-    Some ({srcIp = 70.0.15.1; dstIp = 70.0.11.1; srcPort = 46585u16; dstPort = 46884u16; protocol = 17u8; flowSize = 406.0})
+  if (u = 16n) then
+    Some ({srcIp = 70.0.18.1; dstIp = 70.0.14.1; srcPort = 44820u16; dstPort = 21043u16; protocol = 6u8; flowSize = 406.0})
+  else  if (u = 13n) then
+    Some ({srcIp = 70.0.11.1; dstIp = 70.0.14.1; srcPort = 26452u16; dstPort = 55166u16; protocol = 6u8; flowSize = 390.0})
+  else  if (u = 15n) then
+    Some ({srcIp = 70.0.15.1; dstIp = 70.0.14.1; srcPort = 22989u16; dstPort = 15431u16; protocol = 6u8; flowSize = 429.0})
+  else  if (u = 17n) then
+    Some ({srcIp = 70.0.19.1; dstIp = 70.0.14.1; srcPort = 51721u16; dstPort = 50167u16; protocol = 17u8; flowSize = 295.0})
+  else  if (u = 12n) then
+    Some ({srcIp = 70.0.10.1; dstIp = 70.0.14.1; srcPort = 21055u16; dstPort = 35261u16; protocol = 6u8; flowSize = 233.0})
+  else  if (u = 19n) then
+    Some ({srcIp = 70.0.7.1; dstIp = 70.0.14.1; srcPort = 37823u16; dstPort = 48680u16; protocol = 6u8; flowSize = 264.0})
+  else  if (u = 18n) then
+    Some ({srcIp = 70.0.6.1; dstIp = 70.0.14.1; srcPort = 49831u16; dstPort = 59284u16; protocol = 6u8; flowSize = 430.0})
   else None
 
-let fwdOutTc2 e (fs : [C]option[flow])  =
-  match fwdOut (rib_70_0_11_0_24[let (u~v) = e in u]) e fs with
+let fwdOutTc2 e (fs : [C]option[flow]) =
+  match fwdOut (rib_70_0_14_0_24[let (u~v) = e in u]) e fs with
   | Some (Some fs) -> Some fs
-  | Some None -> None
-  | None -> None
+  | _ -> None
 
 
 let initTC3 u =
-  if (u = 15n) then
-    Some ({srcIp = 70.0.15.1; dstIp = 70.0.14.1; srcPort = 52731u16; dstPort = 1452u16; protocol = 6u8; flowSize = 147.0})
+  if (u = 13n) then
+    Some ({srcIp = 70.0.11.1; dstIp = 70.0.15.1; srcPort = 59949u16; dstPort = 2895u16; protocol = 6u8; flowSize = 836.0})
+  else  if (u = 18n) then
+    Some ({srcIp = 70.0.6.1; dstIp = 70.0.15.1; srcPort = 63175u16; dstPort = 63877u16; protocol = 6u8; flowSize = 920.0})
+  else  if (u = 19n) then
+    Some ({srcIp = 70.0.7.1; dstIp = 70.0.15.1; srcPort = 60112u16; dstPort = 22188u16; protocol = 17u8; flowSize = 565.0})
+  else  if (u = 14n) then
+    Some ({srcIp = 70.0.14.1; dstIp = 70.0.15.1; srcPort = 54468u16; dstPort = 36837u16; protocol = 17u8; flowSize = 429.0})
+  else  if (u = 16n) then
+    Some ({srcIp = 70.0.18.1; dstIp = 70.0.15.1; srcPort = 42805u16; dstPort = 8521u16; protocol = 6u8; flowSize = 870.0})
+  else  if (u = 17n) then
+    Some ({srcIp = 70.0.19.1; dstIp = 70.0.15.1; srcPort = 32964u16; dstPort = 63766u16; protocol = 6u8; flowSize = 631.0})
+  else  if (u = 12n) then
+    Some ({srcIp = 70.0.10.1; dstIp = 70.0.15.1; srcPort = 9256u16; dstPort = 51419u16; protocol = 17u8; flowSize = 500.0})
   else None
 
-let fwdOutTc3 e (fs : [C]option[flow])  =
-  match fwdOut (rib_70_0_14_0_24[let (u~v) = e in u]) e fs with
+let fwdOutTc3 e (fs : [C]option[flow]) =
+  match fwdOut (rib_70_0_15_0_24[let (u~v) = e in u]) e fs with
   | Some (Some fs) -> Some fs
-  | Some None -> None
-  | None -> None
+  | _ -> None
 
 
 let initTC4 u =
-  if (u = 15n) then
-    Some ({srcIp = 70.0.15.1; dstIp = 70.0.18.1; srcPort = 1035u16; dstPort = 40384u16; protocol = 17u8; flowSize = 349.0})
+  if (u = 13n) then
+    Some ({srcIp = 70.0.11.1; dstIp = 70.0.18.1; srcPort = 33658u16; dstPort = 25500u16; protocol = 6u8; flowSize = 790.0})
+  else  if (u = 18n) then
+    Some ({srcIp = 70.0.6.1; dstIp = 70.0.18.1; srcPort = 63612u16; dstPort = 43001u16; protocol = 6u8; flowSize = 870.0})
+  else  if (u = 15n) then
+    Some ({srcIp = 70.0.15.1; dstIp = 70.0.18.1; srcPort = 30787u16; dstPort = 40540u16; protocol = 6u8; flowSize = 870.0})
+  else  if (u = 19n) then
+    Some ({srcIp = 70.0.7.1; dstIp = 70.0.18.1; srcPort = 31514u16; dstPort = 31535u16; protocol = 17u8; flowSize = 534.0})
+  else  if (u = 14n) then
+    Some ({srcIp = 70.0.14.1; dstIp = 70.0.18.1; srcPort = 10259u16; dstPort = 40970u16; protocol = 6u8; flowSize = 406.0})
+  else  if (u = 12n) then
+    Some ({srcIp = 70.0.10.1; dstIp = 70.0.18.1; srcPort = 42304u16; dstPort = 8485u16; protocol = 17u8; flowSize = 473.0})
+  else  if (u = 17n) then
+    Some ({srcIp = 70.0.19.1; dstIp = 70.0.18.1; srcPort = 30832u16; dstPort = 24093u16; protocol = 6u8; flowSize = 597.0})
   else None
 
-let fwdOutTc4 e (fs : [C]option[flow])  =
+let fwdOutTc4 e (fs : [C]option[flow]) =
   match fwdOut (rib_70_0_18_0_24[let (u~v) = e in u]) e fs with
   | Some (Some fs) -> Some fs
-  | Some None -> None
-  | None -> None
+  | _ -> None
 
 
 let initTC5 u =
   if (u = 15n) then
-    Some ({srcIp = 70.0.15.1; dstIp = 70.0.19.1; srcPort = 26790u16; dstPort = 54492u16; protocol = 6u8; flowSize = 322.0})
+    Some ({srcIp = 70.0.15.1; dstIp = 70.0.19.1; srcPort = 4772u16; dstPort = 24837u16; protocol = 6u8; flowSize = 631.0})
+  else  if (u = 16n) then
+    Some ({srcIp = 70.0.18.1; dstIp = 70.0.19.1; srcPort = 53073u16; dstPort = 37597u16; protocol = 6u8; flowSize = 597.0})
+  else  if (u = 18n) then
+    Some ({srcIp = 70.0.6.1; dstIp = 70.0.19.1; srcPort = 8696u16; dstPort = 41047u16; protocol = 17u8; flowSize = 632.0})
+  else  if (u = 12n) then
+    Some ({srcIp = 70.0.10.1; dstIp = 70.0.19.1; srcPort = 21366u16; dstPort = 23701u16; protocol = 6u8; flowSize = 343.0})
+  else  if (u = 19n) then
+    Some ({srcIp = 70.0.7.1; dstIp = 70.0.19.1; srcPort = 51951u16; dstPort = 22897u16; protocol = 6u8; flowSize = 388.0})
+  else  if (u = 14n) then
+    Some ({srcIp = 70.0.14.1; dstIp = 70.0.19.1; srcPort = 56086u16; dstPort = 11928u16; protocol = 17u8; flowSize = 295.0})
+  else  if (u = 13n) then
+    Some ({srcIp = 70.0.11.1; dstIp = 70.0.19.1; srcPort = 65509u16; dstPort = 58585u16; protocol = 6u8; flowSize = 574.0})
   else None
 
-let fwdOutTc5 e (fs : [C]option[flow])  =
+let fwdOutTc5 e (fs : [C]option[flow]) =
   match fwdOut (rib_70_0_19_0_24[let (u~v) = e in u]) e fs with
   | Some (Some fs) -> Some fs
-  | Some None -> None
-  | None -> None
+  | _ -> None
 
 
 let initTC6 u =
-  if (u = 16n) then
-    Some ({srcIp = 70.0.18.1; dstIp = 70.0.6.1; srcPort = 39726u16; dstPort = 40294u16; protocol = 17u8; flowSize = 28.0})
+  if (u = 15n) then
+    Some ({srcIp = 70.0.15.1; dstIp = 70.0.6.1; srcPort = 21217u16; dstPort = 2617u16; protocol = 17u8; flowSize = 920.0})
+  else  if (u = 17n) then
+    Some ({srcIp = 70.0.19.1; dstIp = 70.0.6.1; srcPort = 60687u16; dstPort = 1351u16; protocol = 17u8; flowSize = 632.0})
+  else  if (u = 16n) then
+    Some ({srcIp = 70.0.18.1; dstIp = 70.0.6.1; srcPort = 51925u16; dstPort = 57280u16; protocol = 17u8; flowSize = 870.0})
+  else  if (u = 19n) then
+    Some ({srcIp = 70.0.7.1; dstIp = 70.0.6.1; srcPort = 47533u16; dstPort = 56045u16; protocol = 6u8; flowSize = 565.0})
+  else  if (u = 14n) then
+    Some ({srcIp = 70.0.14.1; dstIp = 70.0.6.1; srcPort = 14211u16; dstPort = 46873u16; protocol = 6u8; flowSize = 430.0})
+  else  if (u = 13n) then
+    Some ({srcIp = 70.0.11.1; dstIp = 70.0.6.1; srcPort = 19911u16; dstPort = 29803u16; protocol = 17u8; flowSize = 836.0})
+  else  if (u = 12n) then
+    Some ({srcIp = 70.0.10.1; dstIp = 70.0.6.1; srcPort = 61242u16; dstPort = 4928u16; protocol = 17u8; flowSize = 500.0})
   else None
 
-let fwdOutTc6 e (fs : [C]option[flow])  =
+let fwdOutTc6 e (fs : [C]option[flow]) =
   match fwdOut (rib_70_0_6_0_24[let (u~v) = e in u]) e fs with
   | Some (Some fs) -> Some fs
-  | Some None -> None
-  | None -> None
+  | _ -> None
 
 
 let initTC7 u =
-  if (u = 16n) then
-    Some ({srcIp = 70.0.18.1; dstIp = 70.0.7.1; srcPort = 35891u16; dstPort = 8476u16; protocol = 17u8; flowSize = 435.0})
+  if (u = 12n) then
+    Some ({srcIp = 70.0.10.1; dstIp = 70.0.7.1; srcPort = 15719u16; dstPort = 25787u16; protocol = 6u8; flowSize = 307.0})
+  else  if (u = 15n) then
+    Some ({srcIp = 70.0.15.1; dstIp = 70.0.7.1; srcPort = 195u16; dstPort = 19682u16; protocol = 17u8; flowSize = 565.0})
+  else  if (u = 14n) then
+    Some ({srcIp = 70.0.14.1; dstIp = 70.0.7.1; srcPort = 56232u16; dstPort = 1171u16; protocol = 6u8; flowSize = 264.0})
+  else  if (u = 18n) then
+    Some ({srcIp = 70.0.6.1; dstIp = 70.0.7.1; srcPort = 65250u16; dstPort = 17350u16; protocol = 17u8; flowSize = 565.0})
+  else  if (u = 13n) then
+    Some ({srcIp = 70.0.11.1; dstIp = 70.0.7.1; srcPort = 26115u16; dstPort = 34192u16; protocol = 6u8; flowSize = 513.0})
+  else  if (u = 16n) then
+    Some ({srcIp = 70.0.18.1; dstIp = 70.0.7.1; srcPort = 35903u16; dstPort = 21856u16; protocol = 6u8; flowSize = 534.0})
+  else  if (u = 17n) then
+    Some ({srcIp = 70.0.19.1; dstIp = 70.0.7.1; srcPort = 7139u16; dstPort = 46670u16; protocol = 6u8; flowSize = 388.0})
   else None
 
-let fwdOutTc7 e (fs : [C]option[flow])  =
+let fwdOutTc7 e (fs : [C]option[flow]) =
   match fwdOut (rib_70_0_7_0_24[let (u~v) = e in u]) e fs with
   | Some (Some fs) -> Some fs
-  | Some None -> None
-  | None -> None
-
-
-let initTC8 u =
-  if (u = 16n) then
-    Some ({srcIp = 70.0.18.1; dstIp = 70.0.10.1; srcPort = 4282u16; dstPort = 28755u16; protocol = 17u8; flowSize = 163.0})
-  else None
-
-let fwdOutTc8 e (fs : [C]option[flow])  =
-  match fwdOut (rib_70_0_10_0_24[let (u~v) = e in u]) e fs with
-  | Some (Some fs) -> Some fs
-  | Some None -> None
-  | None -> None
-
-
-let initTC9 u =
-  if (u = 16n) then
-    Some ({srcIp = 70.0.18.1; dstIp = 70.0.11.1; srcPort = 19187u16; dstPort = 3939u16; protocol = 17u8; flowSize = 459.0})
-  else None
-
-let fwdOutTc9 e (fs : [C]option[flow])  =
-  match fwdOut (rib_70_0_11_0_24[let (u~v) = e in u]) e fs with
-  | Some (Some fs) -> Some fs
-  | Some None -> None
-  | None -> None
-
-
-let initTC10 u =
-  if (u = 16n) then
-    Some ({srcIp = 70.0.18.1; dstIp = 70.0.15.1; srcPort = 58806u16; dstPort = 54630u16; protocol = 6u8; flowSize = 317.0})
-  else None
-
-let fwdOutTc10 e (fs : [C]option[flow])  =
-  match fwdOut (rib_70_0_15_0_24[let (u~v) = e in u]) e fs with
-  | Some (Some fs) -> Some fs
-  | Some None -> None
-  | None -> None
-
-
-let initTC11 u =
-  if (u = 14n) then
-    Some ({srcIp = 70.0.14.1; dstIp = 70.0.11.1; srcPort = 25421u16; dstPort = 50464u16; protocol = 6u8; flowSize = 216.0})
-  else None
-
-let fwdOutTc11 e (fs : [C]option[flow])  =
-  match fwdOut (rib_70_0_11_0_24[let (u~v) = e in u]) e fs with
-  | Some (Some fs) -> Some fs
-  | Some None -> None
-  | None -> None
-
-
-let initTC12 u =
-  if (u = 12n) then
-    Some ({srcIp = 70.0.10.1; dstIp = 70.0.6.1; srcPort = 28020u16; dstPort = 35034u16; protocol = 17u8; flowSize = 165.0})
-  else None
-
-let fwdOutTc12 e (fs : [C]option[flow])  =
-  match fwdOut (rib_70_0_6_0_24[let (u~v) = e in u]) e fs with
-  | Some (Some fs) -> Some fs
-  | Some None -> None
-  | None -> None
-
-
-let initTC13 u =
-  if (u = 12n) then
-    Some ({srcIp = 70.0.10.1; dstIp = 70.0.15.1; srcPort = 7527u16; dstPort = 33819u16; protocol = 17u8; flowSize = 353.0})
-  else None
-
-let fwdOutTc13 e (fs : [C]option[flow])  =
-  match fwdOut (rib_70_0_15_0_24[let (u~v) = e in u]) e fs with
-  | Some (Some fs) -> Some fs
-  | Some None -> None
-  | None -> None
-
-
-let initTC14 u =
-  if (u = 12n) then
-    Some ({srcIp = 70.0.10.1; dstIp = 70.0.18.1; srcPort = 42484u16; dstPort = 47899u16; protocol = 6u8; flowSize = 295.0})
-  else None
-
-let fwdOutTc14 e (fs : [C]option[flow])  =
-  match fwdOut (rib_70_0_18_0_24[let (u~v) = e in u]) e fs with
-  | Some (Some fs) -> Some fs
-  | Some None -> None
-  | None -> None
+  | _ -> None
 
 
 forward (hVTc0,hETc0) = (initTC0, fwdOutTc0, fwdIn, hinitV, hinitE, logV, logE, None)
@@ -233,13 +237,7 @@ forward (hVTc4,hETc4) = (initTC4, fwdOutTc4, fwdIn, hinitV, hinitE, logV, logE, 
 forward (hVTc5,hETc5) = (initTC5, fwdOutTc5, fwdIn, hinitV, hinitE, logV, logE, None)
 forward (hVTc6,hETc6) = (initTC6, fwdOutTc6, fwdIn, hinitV, hinitE, logV, logE, None)
 forward (hVTc7,hETc7) = (initTC7, fwdOutTc7, fwdIn, hinitV, hinitE, logV, logE, None)
-forward (hVTc8,hETc8) = (initTC8, fwdOutTc8, fwdIn, hinitV, hinitE, logV, logE, None)
-forward (hVTc9,hETc9) = (initTC9, fwdOutTc9, fwdIn, hinitV, hinitE, logV, logE, None)
-forward (hVTc10,hETc10) = (initTC10, fwdOutTc10, fwdIn, hinitV, hinitE, logV, logE, None)
-forward (hVTc11,hETc11) = (initTC11, fwdOutTc11, fwdIn, hinitV, hinitE, logV, logE, None)
-forward (hVTc12,hETc12) = (initTC12, fwdOutTc12, fwdIn, hinitV, hinitE, logV, logE, None)
-forward (hVTc13,hETc13) = (initTC13, fwdOutTc13, fwdIn, hinitV, hinitE, logV, logE, None)
-forward (hVTc14,hETc14) = (initTC14, fwdOutTc14, fwdIn, hinitV, hinitE, logV, logE, None)
+
 
 @noinline let linkUtilization0 e = hETc0[e] +. hETc1[e]
 
@@ -255,81 +253,79 @@ forward (hVTc14,hETc14) = (initTC14, fwdOutTc14, fwdIn, hinitV, hinitE, logV, lo
 
 @noinline let linkUtilization6 e = (linkUtilization5 e) +. hETc7[e]
 
-@noinline let linkUtilization7 e = (linkUtilization6 e) +. hETc8[e]
+(*
+@noinline let linkUtilization1 e = hETc0[e] +. hETc1[e] +. hETc2[e]
+@noinline let linkUtilization2 e = hETc5[e] +. hETc6[e] +. hETc7[e]
+@noinline let linkUtilization3 e = hETc4[e] +. hETc3[e]
+@noinline let linkUtilization4 e = (linkUtilization1 e) +. (linkUtilization2 e)
+@noinline let linkUtilization6 e = (linkUtilization3 e) +. (linkUtilization4 e)*)
 
-@noinline let linkUtilization8 e = (linkUtilization7 e) +. hETc9[e]
+(*@noinline let linkUtilization1 e = hETc0[e] +. hETc1[e] +. hETc2[e]
+@noinline let linkUtilization2 e = hETc5[e] +. hETc6[e] +. hETc7[e]
+@noinline let linkUtilization3 e = hETc4[e] +. hETc3[e] +. (linkUtilization1 e)
+@noinline let linkUtilization6 e = (linkUtilization2 e) +. (linkUtilization3 e)*)
 
-@noinline let linkUtilization9 e = (linkUtilization8 e) +. hETc10[e]
-
-@noinline let linkUtilization10 e = (linkUtilization9 e) +. hETc11[e]
-
-@noinline let linkUtilization11 e = (linkUtilization10 e) +. hETc12[e]
-
-@noinline let linkUtilization12 e = (linkUtilization11 e) +. hETc13[e]
-
-@noinline let linkUtilization13 e = (linkUtilization12 e) +. hETc14[e]
-
-assert("Link(edge-19,Serial1 --> aggregation-17,Serial1", linkUtilization13 (17~3) <. 10000.0)
-assert("Link(core-1,Serial3 --> aggregation-16,Serial3", linkUtilization13 (9~2) <. 10000.0)
-assert("Link(aggregation-17,Serial1 --> edge-19,Serial1", linkUtilization13 (3~17) <. 10000.0)
-assert("Link(edge-11,Serial1 --> aggregation-9,Serial1", linkUtilization13 (13~7) <. 10000.0)
-assert("Link(aggregation-5,Serial0 --> edge-6,Serial1", linkUtilization13 (5~18) <. 10000.0)
-assert("Link(aggregation-13,Serial1 --> edge-15,Serial1", linkUtilization13 (1~15) <. 10000.0)
-assert("Link(aggregation-16,Serial0 --> edge-18,Serial0", linkUtilization13 (2~16) <. 10000.0)
-assert("Link(edge-10,Serial0 --> aggregation-8,Serial0", linkUtilization13 (12~6) <. 10000.0)
-assert("Link(aggregation-5,Serial3 --> core-3,Serial0", linkUtilization13 (5~11) <. 10000.0)
-assert("Link(aggregation-4,Serial2 --> core-0,Serial0", linkUtilization13 (4~8) <. 10000.0)
-assert("Link(edge-14,Serial0 --> aggregation-12,Serial0", linkUtilization13 (14~0) <. 10000.0)
-assert("Link(aggregation-9,Serial0 --> edge-10,Serial1", linkUtilization13 (7~12) <. 10000.0)
-assert("Link(edge-15,Serial1 --> aggregation-13,Serial1", linkUtilization13 (15~1) <. 10000.0)
-assert("Link(edge-18,Serial0 --> aggregation-16,Serial0", linkUtilization13 (16~2) <. 10000.0)
-assert("Link(aggregation-8,Serial3 --> core-1,Serial1", linkUtilization13 (6~9) <. 10000.0)
-assert("Link(core-3,Serial3 --> aggregation-17,Serial3", linkUtilization13 (11~3) <. 10000.0)
-assert("Link(aggregation-17,Serial2 --> core-2,Serial3", linkUtilization13 (3~10) <. 10000.0)
-assert("Link(aggregation-4,Serial1 --> edge-7,Serial0", linkUtilization13 (4~19) <. 10000.0)
-assert("Link(aggregation-4,Serial3 --> core-1,Serial0", linkUtilization13 (4~9) <. 10000.0)
-assert("Link(core-2,Serial0 --> aggregation-5,Serial2", linkUtilization13 (10~5) <. 10000.0)
-assert("Link(aggregation-13,Serial2 --> core-2,Serial2", linkUtilization13 (1~10) <. 10000.0)
-assert("Link(core-0,Serial0 --> aggregation-4,Serial2", linkUtilization13 (8~4) <. 10000.0)
-assert("Link(edge-14,Serial1 --> aggregation-13,Serial0", linkUtilization13 (14~1) <. 10000.0)
-assert("Link(edge-18,Serial1 --> aggregation-17,Serial0", linkUtilization13 (16~3) <. 10000.0)
-assert("Link(aggregation-5,Serial1 --> edge-7,Serial1", linkUtilization13 (5~19) <. 10000.0)
-assert("Link(aggregation-9,Serial3 --> core-3,Serial1", linkUtilization13 (7~11) <. 10000.0)
-assert("Link(aggregation-4,Serial0 --> edge-6,Serial0", linkUtilization13 (4~18) <. 10000.0)
-assert("Link(aggregation-8,Serial2 --> core-0,Serial1", linkUtilization13 (6~8) <. 10000.0)
-assert("Link(aggregation-12,Serial2 --> core-0,Serial2", linkUtilization13 (0~8) <. 10000.0)
-assert("Link(core-0,Serial2 --> aggregation-12,Serial2", linkUtilization13 (8~0) <. 10000.0)
-assert("Link(core-2,Serial2 --> aggregation-13,Serial2", linkUtilization13 (10~1) <. 10000.0)
-assert("Link(aggregation-17,Serial3 --> core-3,Serial3", linkUtilization13 (3~11) <. 10000.0)
-assert("Link(edge-7,Serial0 --> aggregation-4,Serial1", linkUtilization13 (19~4) <. 10000.0)
-assert("Link(aggregation-16,Serial1 --> edge-19,Serial0", linkUtilization13 (2~17) <. 10000.0)
-assert("Link(aggregation-12,Serial1 --> edge-15,Serial0", linkUtilization13 (0~15) <. 10000.0)
-assert("Link(aggregation-9,Serial2 --> core-2,Serial1", linkUtilization13 (7~10) <. 10000.0)
-assert("Link(aggregation-13,Serial3 --> core-3,Serial2", linkUtilization13 (1~11) <. 10000.0)
-assert("Link(edge-11,Serial0 --> aggregation-8,Serial1", linkUtilization13 (13~6) <. 10000.0)
-assert("Link(edge-15,Serial0 --> aggregation-12,Serial1", linkUtilization13 (15~0) <. 10000.0)
-assert("Link(core-3,Serial0 --> aggregation-5,Serial3", linkUtilization13 (11~5) <. 10000.0)
-assert("Link(edge-19,Serial0 --> aggregation-16,Serial1", linkUtilization13 (17~2) <. 10000.0)
-assert("Link(core-1,Serial0 --> aggregation-4,Serial3", linkUtilization13 (9~4) <. 10000.0)
-assert("Link(core-3,Serial1 --> aggregation-9,Serial3", linkUtilization13 (11~7) <. 10000.0)
-assert("Link(aggregation-8,Serial0 --> edge-10,Serial0", linkUtilization13 (6~12) <. 10000.0)
-assert("Link(edge-7,Serial1 --> aggregation-5,Serial1", linkUtilization13 (19~5) <. 10000.0)
-assert("Link(aggregation-5,Serial2 --> core-2,Serial0", linkUtilization13 (5~10) <. 10000.0)
-assert("Link(core-1,Serial1 --> aggregation-8,Serial3", linkUtilization13 (9~6) <. 10000.0)
-assert("Link(aggregation-9,Serial1 --> edge-11,Serial1", linkUtilization13 (7~13) <. 10000.0)
-assert("Link(edge-6,Serial0 --> aggregation-4,Serial0", linkUtilization13 (18~4) <. 10000.0)
-assert("Link(aggregation-17,Serial0 --> edge-18,Serial1", linkUtilization13 (3~16) <. 10000.0)
-assert("Link(aggregation-13,Serial0 --> edge-14,Serial1", linkUtilization13 (1~14) <. 10000.0)
-assert("Link(core-2,Serial3 --> aggregation-17,Serial2", linkUtilization13 (10~3) <. 10000.0)
-assert("Link(core-0,Serial3 --> aggregation-16,Serial2", linkUtilization13 (8~2) <. 10000.0)
-assert("Link(aggregation-16,Serial3 --> core-1,Serial3", linkUtilization13 (2~9) <. 10000.0)
-assert("Link(core-1,Serial2 --> aggregation-12,Serial3", linkUtilization13 (9~0) <. 10000.0)
-assert("Link(core-3,Serial2 --> aggregation-13,Serial3", linkUtilization13 (11~1) <. 10000.0)
-assert("Link(aggregation-16,Serial2 --> core-0,Serial3", linkUtilization13 (2~8) <. 10000.0)
-assert("Link(edge-10,Serial1 --> aggregation-9,Serial0", linkUtilization13 (12~7) <. 10000.0)
-assert("Link(core-2,Serial1 --> aggregation-9,Serial2", linkUtilization13 (10~7) <. 10000.0)
-assert("Link(aggregation-8,Serial1 --> edge-11,Serial0", linkUtilization13 (6~13) <. 10000.0)
-assert("Link(core-0,Serial1 --> aggregation-8,Serial2", linkUtilization13 (8~6) <. 10000.0)
-assert("Link(aggregation-12,Serial0 --> edge-14,Serial0", linkUtilization13 (0~14) <. 10000.0)
-assert("Link(aggregation-12,Serial3 --> core-1,Serial2", linkUtilization13 (0~9) <. 10000.0)
-assert("Link(edge-6,Serial1 --> aggregation-5,Serial0", linkUtilization13 (18~5) <. 10000.0)
+assert("Link(edge-19,Serial1 --> aggregation-17,Serial1", linkUtilization6 (17~3) <. 40000.0)
+assert("Link(core-1,Serial3 --> aggregation-16,Serial3", linkUtilization6 (9~2) <. 40000.0)
+assert("Link(aggregation-17,Serial1 --> edge-19,Serial1", linkUtilization6 (3~17) <. 40000.0)
+assert("Link(edge-11,Serial1 --> aggregation-9,Serial1", linkUtilization6 (13~7) <. 40000.0)
+assert("Link(aggregation-5,Serial0 --> edge-6,Serial1", linkUtilization6 (5~18) <. 40000.0)
+assert("Link(aggregation-13,Serial1 --> edge-15,Serial1", linkUtilization6 (1~15) <. 40000.0)
+assert("Link(aggregation-16,Serial0 --> edge-18,Serial0", linkUtilization6 (2~16) <. 40000.0)
+assert("Link(edge-10,Serial0 --> aggregation-8,Serial0", linkUtilization6 (12~6) <. 40000.0)
+assert("Link(aggregation-5,Serial3 --> core-3,Serial0", linkUtilization6 (5~11) <. 40000.0)
+assert("Link(aggregation-4,Serial2 --> core-0,Serial0", linkUtilization6 (4~8) <. 40000.0)
+assert("Link(edge-14,Serial0 --> aggregation-12,Serial0", linkUtilization6 (14~0) <. 40000.0)
+assert("Link(aggregation-9,Serial0 --> edge-10,Serial1", linkUtilization6 (7~12) <. 40000.0)
+assert("Link(edge-15,Serial1 --> aggregation-13,Serial1", linkUtilization6 (15~1) <. 40000.0)
+assert("Link(edge-18,Serial0 --> aggregation-16,Serial0", linkUtilization6 (16~2) <. 40000.0)
+assert("Link(aggregation-8,Serial3 --> core-1,Serial1", linkUtilization6 (6~9) <. 40000.0)
+assert("Link(core-3,Serial3 --> aggregation-17,Serial3", linkUtilization6 (11~3) <. 40000.0)
+assert("Link(aggregation-17,Serial2 --> core-2,Serial3", linkUtilization6 (3~10) <. 40000.0)
+assert("Link(aggregation-4,Serial1 --> edge-7,Serial0", linkUtilization6 (4~19) <. 40000.0)
+assert("Link(aggregation-4,Serial3 --> core-1,Serial0", linkUtilization6 (4~9) <. 40000.0)
+assert("Link(core-2,Serial0 --> aggregation-5,Serial2", linkUtilization6 (10~5) <. 40000.0)
+assert("Link(aggregation-13,Serial2 --> core-2,Serial2", linkUtilization6 (1~10) <. 40000.0)
+assert("Link(core-0,Serial0 --> aggregation-4,Serial2", linkUtilization6 (8~4) <. 40000.0)
+assert("Link(edge-14,Serial1 --> aggregation-13,Serial0", linkUtilization6 (14~1) <. 40000.0)
+assert("Link(edge-18,Serial1 --> aggregation-17,Serial0", linkUtilization6 (16~3) <. 40000.0)
+assert("Link(aggregation-5,Serial1 --> edge-7,Serial1", linkUtilization6 (5~19) <. 40000.0)
+assert("Link(aggregation-9,Serial3 --> core-3,Serial1", linkUtilization6 (7~11) <. 40000.0)
+assert("Link(aggregation-4,Serial0 --> edge-6,Serial0", linkUtilization6 (4~18) <. 40000.0)
+assert("Link(aggregation-8,Serial2 --> core-0,Serial1", linkUtilization6 (6~8) <. 40000.0)
+assert("Link(aggregation-12,Serial2 --> core-0,Serial2", linkUtilization6 (0~8) <. 40000.0)
+assert("Link(core-0,Serial2 --> aggregation-12,Serial2", linkUtilization6 (8~0) <. 40000.0)
+assert("Link(core-2,Serial2 --> aggregation-13,Serial2", linkUtilization6 (10~1) <. 40000.0)
+assert("Link(aggregation-17,Serial3 --> core-3,Serial3", linkUtilization6 (3~11) <. 40000.0)
+assert("Link(edge-7,Serial0 --> aggregation-4,Serial1", linkUtilization6 (19~4) <. 40000.0)
+assert("Link(aggregation-16,Serial1 --> edge-19,Serial0", linkUtilization6 (2~17) <. 40000.0)
+assert("Link(aggregation-12,Serial1 --> edge-15,Serial0", linkUtilization6 (0~15) <. 40000.0)
+assert("Link(aggregation-9,Serial2 --> core-2,Serial1", linkUtilization6 (7~10) <. 40000.0)
+assert("Link(aggregation-13,Serial3 --> core-3,Serial2", linkUtilization6 (1~11) <. 40000.0)
+assert("Link(edge-11,Serial0 --> aggregation-8,Serial1", linkUtilization6 (13~6) <. 40000.0)
+assert("Link(edge-15,Serial0 --> aggregation-12,Serial1", linkUtilization6 (15~0) <. 40000.0)
+assert("Link(core-3,Serial0 --> aggregation-5,Serial3", linkUtilization6 (11~5) <. 40000.0)
+assert("Link(edge-19,Serial0 --> aggregation-16,Serial1", linkUtilization6 (17~2) <. 40000.0)
+assert("Link(core-1,Serial0 --> aggregation-4,Serial3", linkUtilization6 (9~4) <. 40000.0)
+assert("Link(core-3,Serial1 --> aggregation-9,Serial3", linkUtilization6 (11~7) <. 40000.0)
+assert("Link(aggregation-8,Serial0 --> edge-10,Serial0", linkUtilization6 (6~12) <. 40000.0)
+assert("Link(edge-7,Serial1 --> aggregation-5,Serial1", linkUtilization6 (19~5) <. 40000.0)
+assert("Link(aggregation-5,Serial2 --> core-2,Serial0", linkUtilization6 (5~10) <. 40000.0)
+assert("Link(core-1,Serial1 --> aggregation-8,Serial3", linkUtilization6 (9~6) <. 40000.0)
+assert("Link(aggregation-9,Serial1 --> edge-11,Serial1", linkUtilization6 (7~13) <. 40000.0)
+assert("Link(edge-6,Serial0 --> aggregation-4,Serial0", linkUtilization6 (18~4) <. 40000.0)
+assert("Link(aggregation-17,Serial0 --> edge-18,Serial1", linkUtilization6 (3~16) <. 40000.0)
+assert("Link(aggregation-13,Serial0 --> edge-14,Serial1", linkUtilization6 (1~14) <. 40000.0)
+assert("Link(core-2,Serial3 --> aggregation-17,Serial2", linkUtilization6 (10~3) <. 40000.0)
+assert("Link(core-0,Serial3 --> aggregation-16,Serial2", linkUtilization6 (8~2) <. 40000.0)
+assert("Link(aggregation-16,Serial3 --> core-1,Serial3", linkUtilization6 (2~9) <. 40000.0)
+assert("Link(core-1,Serial2 --> aggregation-12,Serial3", linkUtilization6 (9~0) <. 40000.0)
+assert("Link(core-3,Serial2 --> aggregation-13,Serial3", linkUtilization6 (11~1) <. 40000.0)
+assert("Link(aggregation-16,Serial2 --> core-0,Serial3", linkUtilization6 (2~8) <. 40000.0)
+assert("Link(edge-10,Serial1 --> aggregation-9,Serial0", linkUtilization6 (12~7) <. 40000.0)
+assert("Link(core-2,Serial1 --> aggregation-9,Serial2", linkUtilization6 (10~7) <. 40000.0)
+assert("Link(aggregation-8,Serial1 --> edge-11,Serial0", linkUtilization6 (6~13) <. 40000.0)
+assert("Link(core-0,Serial1 --> aggregation-8,Serial2", linkUtilization6 (8~6) <. 40000.0)
+assert("Link(aggregation-12,Serial0 --> edge-14,Serial0", linkUtilization6 (0~14) <. 40000.0)
+assert("Link(aggregation-12,Serial3 --> core-1,Serial2", linkUtilization6 (0~9) <. 40000.0)
+assert("Link(edge-6,Serial1 --> aggregation-5,Serial0", linkUtilization6 (18~5) <. 40000.0)

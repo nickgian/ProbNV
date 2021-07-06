@@ -284,7 +284,7 @@ let apply1 ?(distr = false) ~op_key ~f ~arg1 : 'a Cudd.Mtbddc.unique Cudd.Vdd.t
   User.apply_op1 op arg1
 
 (* specialized version of applyN for two arguments*)
-let apply2 ?(distr = false) ~op_key ~f ~arg1 ~arg2 :
+let apply2 ?(isLogE=false) ?(comm = false) ?(distr = false) ~op_key ~f ~arg1 ~arg2 :
     'a Cudd.Mtbddc.unique Cudd.Vdd.t =
   let g v1 v2 =
     Obj.magic (f (Obj.magic (Mtbddc.get v1))) (Mtbddc.get v2)
@@ -292,13 +292,25 @@ let apply2 ?(distr = false) ~op_key ~f ~arg1 ~arg2 :
     if distr then Obj.magic @@ Mtbddc.unique B.tbl_probabilities
     else Mtbddc.unique B.tbl
   in
+  let addition bdd1 bdd2 = 
+    if Cudd.Mtbddc.is_cst bdd1 && Obj.magic (Cudd.Mtbddc.get @@ Cudd.Vdd.dval bdd1) = 0.0 then Some (Obj.magic bdd2)
+    else if Cudd.Mtbddc.is_cst bdd2 && Obj.magic (Cudd.Mtbddc.get @@ Cudd.Vdd.dval bdd2) = 0.0 then Some (Obj.magic bdd1)
+    else None
+  in
+  let logE bdd1 bdd2 =
+    if Cudd.Mtbddc.is_cst bdd1 && (Obj.magic (Cudd.Mtbddc.get @@ Cudd.Vdd.dval bdd1) = None) then Some (Obj.magic bdd2)
+    else None
+  in
   let op =
     match HashClosureMap.Exceptionless.find (Obj.magic op_key) !map_cache with
     | None ->
         let o =
-          User.make_op2 ~memo:Cudd.Memo.Global
-            (* Cudd.(Cache (Cache.create2 ~size:134217728 ~maxsize:134217728 ())) *)
-            (* Cudd.(Hash (Hash.create ~size:16777216 2)) *)
+          User.make_op2
+          ~special:(if comm then addition else if isLogE then logE else fun _ _ -> None)
+           ~memo:Cudd.Memo.Global
+            (* ~memo:Cudd.(Cache (Cache.create2 ~size:1024 ~maxsize:16384 ())) *)
+            (* ~memo:Cudd.(Hash (Hash.create ~size:16777216 2)) *)
+            ~commutative:comm
             g
         in
         map_cache := HashClosureMap.add (Obj.magic op_key) o !map_cache;
@@ -306,7 +318,6 @@ let apply2 ?(distr = false) ~op_key ~f ~arg1 ~arg2 :
     | Some op -> op
   in
   User.apply_op2 op arg1 arg2
-
 
 let apply3 ?(distr = false) ~op_key ~f ~arg1 ~arg2 ~arg3 :
     'a Cudd.Mtbddc.unique Cudd.Vdd.t =
@@ -323,8 +334,10 @@ let apply3 ?(distr = false) ~op_key ~f ~arg1 ~arg2 ~arg3 :
     match HashClosureMap.Exceptionless.find (Obj.magic op_key) !map_cache with
     | None ->
         let o =
-          User.make_op3 (* ~memo:Cudd.(Hash (Hash.create ~size:16777216 3)) *)
-            ~memo:Cudd.(Cache (Cache.create3 ~size:1398101 ~maxsize:5592404 ()))
+        (* 16777216 *)
+          User.make_op3
+          (* ~memo:Cudd.(Hash (Hash.create ~size:1024 3))  *)
+            ~memo:Cudd.(Cache (Cache.create3 ~size:1024 ~maxsize:16384 ()))
             g
         in
         map_cache := HashClosureMap.add (Obj.magic op_key) o !map_cache;
@@ -556,10 +569,12 @@ let create_value_expr (name : string) (dist : t list -> float Cudd.Mtbddc.t)
     create_value_aux name ty g
   in
   (* Compute the distribution based on the given dist function *)
-  let res = flatten_result res in
-  let distr = dist res in
-  B.push_symbolic_vars (name, symbolic_start, symbolic_end, typ, distr);
-  res
+  let flat_res = flatten_result res in
+  let distr = dist flat_res in
+  let normalized_distr = normalize res distr ty g in
+  B.push_symbolic_vars
+    (name, symbolic_start, symbolic_end, typ, normalized_distr);
+  flat_res
 
 (*create value for symbolics that use a ProbNV expression for the distribution *)
 let create_value_expr name (dist : t list -> float Cudd.Mtbddc.t) (ty_id : int)

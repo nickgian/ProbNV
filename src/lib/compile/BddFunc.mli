@@ -61,6 +61,8 @@ val apply1 :
   'd Cudd.Mtbddc.unique Cudd.Vdd.t
 
 val apply2 :
+  ?isLogE:bool ->
+  ?comm:bool ->
   ?distr:bool ->
   op_key:int * 'f ->
   f:('c -> 'd) ->

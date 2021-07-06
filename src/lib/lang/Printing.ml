@@ -426,7 +426,7 @@ and value_to_string_p ~show_types prec v =
   | VBool true -> "true"
   | VBool false -> "false"
   | VInt i -> Integer.to_string i
-  | VFloat f -> string_of_float f
+  | VFloat f -> Printf.sprintf "%.10f" f
   | VTotalMap (m, meta) -> (
       match meta with
       | None -> multivalue_to_string ~show_types "\n" m
@@ -629,7 +629,7 @@ let rec declaration_to_string ?(show_types = false) d =
   | DEdges es ->
       "let edges = {"
       ^ List.fold_right
-          (fun (u, v, i) s -> Printf.sprintf "%s(%dn-%dn, i);" s u v)
+          (fun (u, v, i) s -> Printf.sprintf "%s(%dn-%dn, %d);" s u v i)
           es ""
       ^ "}"
   | DUserTy (name, ty) ->
@@ -643,7 +643,7 @@ let rec declarations_to_string ?(show_types = false) ds =
       ^ "\n"
       ^ declarations_to_string ~show_types ds
 
-let printSvalue sv =
+let rec printSvalue sv =
   match sv with
   | SBool FullSet | SNode FullSet | SEdge FullSet | SInt FullSet -> "*"
   | SBool (Subset b) -> Printf.sprintf "%b" b
@@ -659,3 +659,5 @@ let printSvalue sv =
         es
         (Printf.sprintf "%d:{" (List.length es))
         "," "}"
+  | STuple svs ->
+      PrimitiveCollections.printList (fun sv -> printSvalue sv) svs "(" "," ")"

@@ -11,22 +11,44 @@ type symbolic_var = string * int * int * ProbNv_lang.Syntax.ty * distribution
 
 let mgr = Man.make_v ()
 
+(* optimal so far is 1.20, 600k *)
+let reorder_factor = ref 1.5
+let reorder_limit = ref 3000000.0
+
 let set_reordering reorder =
   match reorder with
   | None -> ()
-  | Some i -> (
-      Cudd.Man.set_next_autodyn mgr 10000000;
+  | Some i when Cudd.Man.get_node_count mgr > (int_of_float !reorder_limit) -> (
+      (* reorder_limit := !reorder_limit *. !reorder_factor;
+      Cudd.Man.set_next_autodyn mgr (int_of_float !reorder_limit); *)
       match i with
       | 0 -> Cudd.Man.enable_autodyn mgr REORDER_WINDOW2
       | 1 -> Cudd.Man.enable_autodyn mgr REORDER_WINDOW2_CONV
       | 2 -> Cudd.Man.enable_autodyn mgr REORDER_WINDOW3
       | 3 -> Cudd.Man.enable_autodyn mgr REORDER_WINDOW3_CONV
       | 4 -> Cudd.Man.enable_autodyn mgr REORDER_WINDOW4
-      | 5 -> Cudd.Man.enable_autodyn mgr REORDER_SIFT
+      | 5 ->
+        (* Cudd.Man.set_max_growth mgr 1.05; *)
+        Cudd.Man.set_sift_max_swap mgr 1000;
+        Cudd.Man.set_sift_max_var mgr 30;
+        Cudd.Man.enable_autodyn mgr REORDER_SIFT
       | 6 -> Cudd.Man.enable_autodyn mgr REORDER_SIFT_CONVERGE
+      | 7 -> Cudd.Man.enable_autodyn mgr REORDER_RANDOM
+      | 8 -> 
+        (* Cudd.Man.set_max_growth mgr 1.05; *)
+        Cudd.Man.set_sift_max_swap mgr 30;
+        Cudd.Man.set_sift_max_var mgr 20;
+        Cudd.Man.enable_autodyn mgr REORDER_GROUP_SIFT
+      | 9 -> 
+        (* Cudd.Man.set_max_growth mgr 1.05; *)
+        Cudd.Man.set_sift_max_swap mgr 500;
+        Cudd.Man.set_sift_max_var mgr 30;
+        Cudd.Man.enable_autodyn mgr REORDER_SYMM_SIFT
       | _ -> () )
+    | _ -> ()
 
 let () = Cudd.Man.set_max_cache_hard mgr 134217728
+
 
 let bdd_of_bool b = if b then Bdd.dtrue mgr else Bdd.dfalse mgr
 
@@ -121,8 +143,9 @@ let vars_to_int size (vars : Man.tbool list) =
   in
   aux 0 vars
 
-(* Convert a list of BDD variables to an NV value based on the given type *)
-let vars_to_svalue (vars, ty) =
+(* Convert a list of BDD variables to an NV value based on the given type. The topology
+   is used to determine the number of nodes and edges. *)
+let rec vars_to_svalue topology (vars, ty) =
   match ty.typ with
   | TBool ->
       let b = List.hd vars in
@@ -136,22 +159,40 @@ let vars_to_svalue (vars, ty) =
   | TNode ->
       (* Was encoded as int, so decode same way *)
       if List.exists (fun p -> not (p = Man.Top)) vars then
-        SNode (Subset (List.map Integer.to_int (vars_to_int !tnode_sz vars)))
+        SNode (Subset (
+          BatList.filter_map
+          (fun v ->
+            let v = Integer.to_int @@ v in 
+            if (v >= AdjGraph.nb_vertex topology) then
+              None
+            else
+              Some v) (vars_to_int !tnode_sz vars)))
       else SNode FullSet
   | TEdge ->
       if List.exists (fun p -> not (p = Man.Top)) vars then
         SEdge
-          (Subset
-             (List.map
+          (Subset (             
+             BatList.filter_map
                 (fun v ->
                   let e = Integer.to_int @@ v in
-                  let u, v = PrimitiveCollections.IntMap.find e !edge_mapping in
-                  (* Printf.printf "%d = (%d, %d)\n" e u v; *)
-                  (u, v))
+                  (* We need to drop invalid edges when generating a concrete value from a symbolic edge *)
+                  if (e >= AdjGraph.nb_edges topology)
+                  then None
+                  else Some (PrimitiveCollections.IntMap.find e !edge_mapping))
                 (vars_to_int !tedge_sz vars)))
       else SEdge FullSet
-  | TOption _ | TTuple _ | TRecord _ | TArrow _ | TMap _ | TVar _ | QVar _
-  | TFloat ->
+  | TTuple ts ->
+      let ls =
+        List.rev @@ fst
+        @@ List.fold_left
+             (fun (svalues, acc) ty ->
+               let sz = ty_to_size ty in
+               let l1, l2 = BatList.split_at sz acc in
+               (vars_to_svalue topology (l1, ty) :: svalues, l2))
+             ([], vars) ts
+      in
+      STuple ls
+  | TOption _ | TRecord _ | TArrow _ | TMap _ | TVar _ | QVar _ | TFloat ->
       failwith "internal error (unsupported types for symbolics)"
 
 (* For debugging purposes *)
@@ -200,16 +241,16 @@ let printCube cube =
     cube
 
 (* Memoizing vars_to_value *)
-let vars_to_svalue =
+(* let vars_to_svalue topology =
   let tbl = Hashtbl.create 10000 in
   fun x ->
     try Hashtbl.find tbl x
     with Not_found ->
-      let res = vars_to_svalue x in
+      let res = vars_to_svalue topology x in
       Hashtbl.add tbl x res;
-      res
+      res *)
 
-let arrSubList arr start fin =
+(* let arrSubList arr start fin =
   let rec aux arr i fin =
     if i > fin then [] else arr.(i) :: aux arr (i + 1) fin
   in
@@ -230,12 +271,12 @@ let rec splitCube arr bounds =
            subCube;
          Printf.printf ","; *)
       (* let subCube = Array.sub arr start (fin - start) |> Array.to_list in *)
-      (name, vars_to_svalue (subCube, ty)) :: splitCube arr bounds
+      (name, vars_to_svalue (subCube, ty)) :: splitCube arr bounds *)
 
 (* Given an assertion returns an assignment to symbolics that generated a counter-example (false property) *)
-let rec generateSat (assertion : Cudd.Man.v Cudd.Bdd.t) bounds =
+(* let rec generateSat (assertion : Cudd.Man.v Cudd.Bdd.t) bounds =
   let cubes = ref [] in
-  (* NOTE: iter_cube might be a bit slow *)
+  (* NOTE: iter_cube might be slow *)
   Bdd.iter_cube
     (fun arr ->
       (* printCube arr; *)
@@ -243,7 +284,7 @@ let rec generateSat (assertion : Cudd.Man.v Cudd.Bdd.t) bounds =
       let cube = splitCube arr bounds in
       cubes := cube :: !cubes)
     assertion;
-  !cubes
+  !cubes *)
 
 type symbolicAssignment = (Man.tbool list * ty) Collections.StringMap.t
 
@@ -294,7 +335,7 @@ let generateAllSymbolicsMemoized :
   ref None
 
 (* TODO: generateSatFast should compute a set of assignments to symbolic values. *)
-let generateSatFast (phi : Cudd.Man.v Cudd.Bdd.t) bounds =
+let generateSatFast (phi : Cudd.Man.v Cudd.Bdd.t) (bounds: symbolic_var BatMap.Int.t) =
   (* Compute the assignments for the full BDD *)
   let generateAllSymbolics self generateOneSymbolic
       ((m, phi) : symbolicAssignment * Cudd.Man.v Cudd.Bdd.t) :
@@ -382,9 +423,9 @@ let generateSatFast (phi : Cudd.Man.v Cudd.Bdd.t) bounds =
   in
   generateAllSymbolics (Collections.StringMap.empty, phi)
 
-let symbolicAssignmentsToSvalues sassgn =
+let symbolicAssignmentsToSvalues topology sassgn =
   List.map
-    (fun m -> Collections.StringMap.map (fun v -> vars_to_svalue v) m)
+    (fun m -> Collections.StringMap.map (fun v -> vars_to_svalue topology v) m)
     sassgn
 
 (** * Probability computation functions *)
@@ -424,8 +465,96 @@ let isNextSymbolic dd end_var =
 let computeTrueProbMemoized : (Cudd.Man.v Cudd.Bdd.t -> float) option ref =
   ref None
 
+let multOp = 
+  User.make_op2 ~memo:Cudd.Memo.Global 
+  ~commutative:true
+  ~special:(fun v1 v2 -> 
+      if Mtbddc.is_cst v1 then
+          if Mtbddc.get (Cudd.Vdd.dval v1) = 0.0 then Some (Mtbddc.cst mgr tbl_probabilities 0.0)
+          else if (Mtbddc.get (Cudd.Vdd.dval v1) = 1.0) then Some v2
+          else None
+      else 
+        if Mtbddc.is_cst v2 then
+          if Mtbddc.get (Cudd.Vdd.dval v2) = 0.0 then Some (Mtbddc.cst mgr tbl_probabilities 0.0)
+          else if Mtbddc.get (Cudd.Vdd.dval v2) = 1.0 then Some v1
+          else None
+        else None
+        )
+  (fun v1 v2 -> (Mtbddc.get v1) *. (Mtbddc.get v2) |> Mtbddc.unique tbl_probabilities)
+
+let iteOp =
+  User.make_op3
+    ~memo:Cudd.(Cache (Cache.create3 ~size:1024 ~maxsize:16384 ()))
+    ~special:(fun bdd1 bdd2 bdd3 ->
+      if Mtbddc.is_cst bdd1
+      then Some(if Mtbddc.get @@ Vdd.dval bdd1 (* = true *) then bdd2 else bdd3)
+      else None
+    )
+    (fun b1 b2 b3 -> if (Mtbddc.get b1) then b2 else b3)
+
+let gtOp = 
+  User.make_op1 ~memo:(Cache (Cudd.Cache.create 1)) 
+    (fun v -> (Mtbddc.get v) > 0.0 |> Mtbddc.unique tbl)
+
+(* TODO: An alternative probability computation algorithm is the following:
+  For the BDD of the assertion a and the distributions of the symbolics, say d1, d2.. dn
+  we compute the following ADDs:
+    p1 = if a then d1 else 0.0
+    p2 = p1 * d2
+    ...
+    p = p(n-1) * dn
+
+    The non-zero leaves then have the probability that a is true for a group of symbolic values.
+    All we have to do is to count the cardinality of this set and multiply. 
+    *)
+
+(* NOTE: For counter-example generation we are interested in the cases that lead
+to the false leaf of the assertion but do not have a 0.0 probability of happening.
+In other words, we are interested in:
+(not a) /\ d1 > 0.0 /\ d2 > 0.0...
+
+The key question is can we somehow compute both the assertion and the counter-example doing minimal duplicated work?
+counter = (not a) /\ d > 0.0 (the true leaves of this)
+a' = Mtbdd.ite a then 1.0 else 0.0
+p = a' * d
+
+or simple, p = ite a dist 0.0
+
+For the counterexample we compute:
+c = (not a) /\ (d > 0)
+c = (neg a') * d
+c = 
+*)
+
+(* Function to generate counterexamples based on the above explanation. *)
+let generateCounterExamples topology assertion (distrs: symbolic_var BatMap.Int.t) cond =
+    let support = Collections.IntSet.of_list (Cudd.Bdd.list_of_support (Bdd.support assertion)) in
+    let distributionsUsed = fst @@ BatMap.Int.fold (fun _ d (acc, seen) ->
+      let (_, start_var, _, _, distr) = d in
+      if (Collections.IntSet.mem start_var support) && (not (Collections.IntSet.mem start_var seen)) then
+        (distr :: acc, Collections.IntSet.add start_var seen)
+      else (acc, seen)) distrs ([], Collections.IntSet.empty)
+    in
+
+    let distributions = 
+      match distributionsUsed with
+      | [] -> failwith "Empty distributions, cannot generate counterexample"
+      | x :: xs ->
+        List.fold_left (fun distr acc -> User.apply_op2 multOp distr acc) x xs 
+    in
+    let positiveDistr = User.apply_op1 gtOp distributions in
+    let a = 
+      match cond with
+      | None ->
+        Bdd.dand (Bdd.dnot assertion) (Vdd.guard_of_leaf positiveDistr (Mtbddc.unique tbl true))
+      | Some c ->
+        Bdd.dand ((Bdd.dand c (Bdd.dnot assertion))) (Vdd.guard_of_leaf positiveDistr (Mtbddc.unique tbl true))
+    in
+    symbolicAssignmentsToSvalues topology @@ generateSatFast a distrs
+    
+
 (* Algorithm currently used to compute probability of an assertion being true *)
-let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds distrs cond
+let computeTrueProbability topology (assertion : bool Cudd.Mtbddc.t) (distrs: symbolic_var BatMap.Int.t) cond
     counterexample =
   (* Compute the probability of the full BDD *)
   let rec computeProb _ probSymbolic guard =
@@ -527,8 +656,7 @@ let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds distrs cond
          Printf.printf "%!"; *)
       ( cprob,
         if counterexample && cprob < 1.0 then
-          symbolicAssignmentsToSvalues
-          @@ generateSatFast (Bdd.dnot trueBdd) distrs
+          generateCounterExamples topology trueBdd distrs cond
         else [] )
   | Some c ->
       let intersection = Bdd.dand trueBdd c in
@@ -538,8 +666,7 @@ let computeTrueProbability (assertion : bool Cudd.Mtbddc.t) bounds distrs cond
       ( intersectionProb /. cprob,
         if counterexample && cprob < 1.0 then
           (* generateSat (Bdd.dand c (Bdd.dnot trueBdd)) bounds; *)
-          symbolicAssignmentsToSvalues
-          @@ generateSatFast (Bdd.dand c (Bdd.dnot trueBdd)) distrs
+          generateCounterExamples topology trueBdd distrs cond
         else [] )
 
 let get_statistics () = Man.print_info mgr

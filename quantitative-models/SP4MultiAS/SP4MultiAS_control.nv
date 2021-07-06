@@ -107,241 +107,193 @@ let merge node x y =
 let init d node =
   match node with
   | 15n -> 
-if d = (70.0.15.2/31) || d = (70.0.15.0/32) || d = (10.0.11.0/31) || d = (10.0.9.0/31) || d = (70.0.15.0/31) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else if d = (70.0.15.0/24) then
-    let c = None in
-    let s = Some 1u8 in
-    let o = None in
-    let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (70.0.15.2/31) || d = (70.0.15.0/32) || d = (10.0.11.0/31) || d = (10.0.9.0/31) || d = (70.0.15.0/31) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+    if d = (70.0.15.0/24) then
+      let s = Some 1u8 in
+      let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
+      let fib = best None s None b in
+      {connected= None; static = s; ospf = None; bgp = b; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 9n -> 
-if d = (10.0.23.0/31) || d = (10.0.22.0/31) || d = (10.0.21.0/31) || d = (10.0.20.0/31) || d = (70.0.1.0/32) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (10.0.23.0/31) || d = (10.0.22.0/31) || d = (10.0.21.0/31) || d = (10.0.20.0/31) || d = (70.0.1.0/32) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 16n -> 
-if d = (70.0.18.0/31) || d = (70.0.18.0/32) || d = (70.0.18.2/31) || d = (10.0.14.0/31) || d = (10.0.12.0/31) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else if d = (70.0.18.0/24) then
-    let c = None in
-    let s = Some 1u8 in
-    let o = None in
-    let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (70.0.18.0/31) || d = (70.0.18.0/32) || d = (70.0.18.2/31) || d = (10.0.14.0/31) || d = (10.0.12.0/31) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+    if d = (70.0.18.0/24) then
+      let s = Some 1u8 in
+      let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
+      let fib = best None s None b in
+      {connected= None; static = s; ospf = None; bgp = b; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 8n -> 
-if d = (10.0.19.0/31) || d = (10.0.18.0/31) || d = (10.0.17.0/31) || d = (10.0.16.0/31) || d = (70.0.0.0/32) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (10.0.19.0/31) || d = (10.0.18.0/31) || d = (10.0.17.0/31) || d = (10.0.16.0/31) || d = (70.0.0.0/32) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 11n -> 
-if d = (10.0.31.0/31) || d = (10.0.30.0/31) || d = (10.0.29.0/31) || d = (10.0.28.0/31) || d = (70.0.3.0/32) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (10.0.31.0/31) || d = (10.0.30.0/31) || d = (10.0.29.0/31) || d = (10.0.28.0/31) || d = (70.0.3.0/32) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 13n -> 
-if d = (70.0.11.2/31) || d = (10.0.7.0/31) || d = (10.0.5.0/31) || d = (70.0.11.0/32) || d = (70.0.11.0/31) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else if d = (70.0.11.0/24) then
-    let c = None in
-    let s = Some 1u8 in
-    let o = None in
-    let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (70.0.11.2/31) || d = (10.0.7.0/31) || d = (10.0.5.0/31) || d = (70.0.11.0/32) || d = (70.0.11.0/31) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+    if d = (70.0.11.0/24) then
+      let s = Some 1u8 in
+      let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
+      let fib = best None s None b in
+      {connected= None; static = s; ospf = None; bgp = b; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 3n -> 
-if d = (10.0.31.0/31) || d = (10.0.27.0/31) || d = (70.0.17.0/32) || d = (10.0.15.0/31) || d = (10.0.14.0/31) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (10.0.31.0/31) || d = (10.0.27.0/31) || d = (70.0.17.0/32) || d = (10.0.15.0/31) || d = (10.0.14.0/31) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 10n -> 
-if d = (10.0.24.0/31) || d = (10.0.27.0/31) || d = (10.0.26.0/31) || d = (10.0.25.0/31) || d = (70.0.2.0/32) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (10.0.24.0/31) || d = (10.0.27.0/31) || d = (10.0.26.0/31) || d = (10.0.25.0/31) || d = (70.0.2.0/32) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 2n -> 
-if d = (10.0.23.0/31) || d = (10.0.19.0/31) || d = (70.0.16.0/32) || d = (10.0.13.0/31) || d = (10.0.12.0/31) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (10.0.23.0/31) || d = (10.0.19.0/31) || d = (70.0.16.0/32) || d = (10.0.13.0/31) || d = (10.0.12.0/31) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 14n -> 
-if d = (70.0.14.2/31) || d = (10.0.8.0/31) || d = (70.0.14.0/32) || d = (10.0.10.0/31) || d = (70.0.14.0/31) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else if d = (70.0.14.0/24) then
-    let c = None in
-    let s = Some 1u8 in
-    let o = None in
-    let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (70.0.14.2/31) || d = (10.0.8.0/31) || d = (70.0.14.0/32) || d = (10.0.10.0/31) || d = (70.0.14.0/31) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+    if d = (70.0.14.0/24) then
+      let s = Some 1u8 in
+      let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
+      let fib = best None s None b in
+      {connected= None; static = s; ospf = None; bgp = b; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 17n -> 
-if d = (70.0.19.0/31) || d = (70.0.19.0/32) || d = (70.0.19.2/31) || d = (10.0.15.0/31) || d = (10.0.13.0/31) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else if d = (70.0.19.0/24) then
-    let c = None in
-    let s = Some 1u8 in
-    let o = None in
-    let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (70.0.19.0/31) || d = (70.0.19.0/32) || d = (70.0.19.2/31) || d = (10.0.15.0/31) || d = (10.0.13.0/31) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+    if d = (70.0.19.0/24) then
+      let s = Some 1u8 in
+      let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
+      let fib = best None s None b in
+      {connected= None; static = s; ospf = None; bgp = b; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 18n -> 
-if d = (70.0.6.2/31) || d = (10.0.2.0/31) || d = (10.0.0.0/31) || d = (70.0.6.0/31) || d = (70.0.6.0/32) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else if d = (70.0.6.0/24) then
-    let c = None in
-    let s = Some 1u8 in
-    let o = None in
-    let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (70.0.6.2/31) || d = (10.0.2.0/31) || d = (10.0.0.0/31) || d = (70.0.6.0/31) || d = (70.0.6.0/32) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+    if d = (70.0.6.0/24) then
+      let s = Some 1u8 in
+      let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
+      let fib = best None s None b in
+      {connected= None; static = s; ospf = None; bgp = b; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 19n -> 
-if d = (70.0.7.2/31) || d = (10.0.3.0/31) || d = (10.0.1.0/31) || d = (70.0.7.0/31) || d = (70.0.7.0/32) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else if d = (70.0.7.0/24) then
-    let c = None in
-    let s = Some 1u8 in
-    let o = None in
-    let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (70.0.7.2/31) || d = (10.0.3.0/31) || d = (10.0.1.0/31) || d = (70.0.7.0/31) || d = (70.0.7.0/32) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+    if d = (70.0.7.0/24) then
+      let s = Some 1u8 in
+      let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
+      let fib = best None s None b in
+      {connected= None; static = s; ospf = None; bgp = b; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 5n -> 
-if d = (10.0.24.0/31) || d = (10.0.28.0/31) || d = (10.0.3.0/31) || d = (10.0.2.0/31) || d = (70.0.5.0/32) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (10.0.24.0/31) || d = (10.0.28.0/31) || d = (10.0.3.0/31) || d = (10.0.2.0/31) || d = (70.0.5.0/32) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 4n -> 
-if d = (10.0.20.0/31) || d = (10.0.1.0/31) || d = (10.0.0.0/31) || d = (10.0.16.0/31) || d = (70.0.4.0/32) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (10.0.20.0/31) || d = (10.0.1.0/31) || d = (10.0.0.0/31) || d = (10.0.16.0/31) || d = (70.0.4.0/32) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 7n -> 
-if d = (10.0.29.0/31) || d = (10.0.25.0/31) || d = (10.0.7.0/31) || d = (10.0.6.0/31) || d = (70.0.9.0/32) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (10.0.29.0/31) || d = (10.0.25.0/31) || d = (10.0.7.0/31) || d = (10.0.6.0/31) || d = (70.0.9.0/32) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 6n -> 
-if d = (10.0.21.0/31) || d = (10.0.17.0/31) || d = (10.0.5.0/31) || d = (10.0.4.0/31) || d = (70.0.8.0/32) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (10.0.21.0/31) || d = (10.0.17.0/31) || d = (10.0.5.0/31) || d = (10.0.4.0/31) || d = (70.0.8.0/32) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 1n -> 
-if d = (10.0.30.0/31) || d = (10.0.26.0/31) || d = (70.0.13.0/32) || d = (10.0.11.0/31) || d = (10.0.10.0/31) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (10.0.30.0/31) || d = (10.0.26.0/31) || d = (70.0.13.0/32) || d = (10.0.11.0/31) || d = (10.0.10.0/31) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 0n -> 
-if d = (10.0.22.0/31) || d = (10.0.18.0/31) || d = (10.0.8.0/31) || d = (70.0.12.0/32) || d = (10.0.9.0/31) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (10.0.22.0/31) || d = (10.0.18.0/31) || d = (10.0.8.0/31) || d = (70.0.12.0/32) || d = (10.0.9.0/31) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | 12n -> 
-if d = (70.0.10.2/31) || d = (10.0.6.0/31) || d = (10.0.4.0/31) || d = (70.0.10.0/32) || d = (70.0.10.0/31) then
-    let c = Some 0u8 in
-    let s = None in
-    let o = None in
-    let b = None in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else if d = (70.0.10.0/24) then
-    let c = None in
-    let s = Some 1u8 in
-    let o = None in
-    let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
-    let fib = best c s o b in
-      {connected=c; static=s; ospf=o; bgp=b; selected=fib;}
-     else {connected=None; static=None; ospf=None; bgp=None; selected=None;}
+    if d = (70.0.10.2/31) || d = (10.0.6.0/31) || d = (10.0.4.0/31) || d = (70.0.10.0/32) || d = (70.0.10.0/31) then
+      let c = Some 0u8 in
+      let fib = best c None None None in
+      {connected= c; static = None; ospf = None; bgp = None; selected=fib;}
+    else
+    if d = (70.0.10.0/24) then
+      let s = Some 1u8 in
+      let b = Some {bgpAd=20u8; lp=100; aslen=0; med=80; comms={}; bgpNextHop={}; bgpAS={}} in
+      let fib = best None s None b in
+      {connected= None; static = s; ospf = None; bgp = b; selected=fib;}
+    else
+  {connected=None; static=None; ospf=None; bgp=None; selected=None;}
   | _ -> {connected=None; static=None; ospf=None; bgp=None; selected=None;}
 
  let transferOspf edge o =
@@ -351,1275 +303,207 @@ if d = (70.0.10.2/31) || d = (10.0.6.0/31) || d = (10.0.4.0/31) || d = (70.0.10.
      match edge with
      | _ -> None)
 
- let transferBgp d e x0 =
+let bgpExportPol0 e prefix prefixLen prot b =
+      match b with
+      | None -> None
+      | Some b ->
+        if (let (u~v) = e in b.bgpAS[v]) then None else
+        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
+if ((prefixLen = 24u6) && ((prefix >= 70.0.15.0) && (prefix < 70.0.16.0))) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+if (isProtocol prot p_BGP) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+None
+
+let bgpImportPol0 e prefix prefixLen b =
+  match b with
+  | None -> None
+  | Some b ->
+    let (u~v) = e in
+    let b = {b with bgpAS = b.bgpAS[u := true]} in
+       Some b
+
+
+let bgpExportPol1 e prefix prefixLen prot b =
+      match b with
+      | None -> None
+      | Some b ->
+        if (let (u~v) = e in b.bgpAS[v]) then None else
+        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
+if (isProtocol prot p_BGP) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+None
+
+let bgpExportPol2 e prefix prefixLen prot b =
+      match b with
+      | None -> None
+      | Some b ->
+        if (let (u~v) = e in b.bgpAS[v]) then None else
+        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
+if ((prefixLen = 24u6) && ((prefix >= 70.0.18.0) && (prefix < 70.0.19.0))) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+if (isProtocol prot p_BGP) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+None
+
+let bgpExportPol3 e prefix prefixLen prot b =
+      match b with
+      | None -> None
+      | Some b ->
+        if (let (u~v) = e in b.bgpAS[v]) then None else
+        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
+if ((prefixLen = 24u6) && ((prefix >= 70.0.11.0) && (prefix < 70.0.12.0))) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+if (isProtocol prot p_BGP) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+None
+
+let bgpExportPol4 e prefix prefixLen prot b =
+      match b with
+      | None -> None
+      | Some b ->
+        if (let (u~v) = e in b.bgpAS[v]) then None else
+        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
+if ((prefixLen = 24u6) && ((prefix >= 70.0.14.0) && (prefix < 70.0.15.0))) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+if (isProtocol prot p_BGP) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+None
+
+let bgpExportPol5 e prefix prefixLen prot b =
+      match b with
+      | None -> None
+      | Some b ->
+        if (let (u~v) = e in b.bgpAS[v]) then None else
+        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
+if ((prefixLen = 24u6) && ((prefix >= 70.0.19.0) && (prefix < 70.0.20.0))) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+if (isProtocol prot p_BGP) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+None
+
+let bgpExportPol6 e prefix prefixLen prot b =
+      match b with
+      | None -> None
+      | Some b ->
+        if (let (u~v) = e in b.bgpAS[v]) then None else
+        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
+if ((prefixLen = 24u6) && ((prefix >= 70.0.6.0) && (prefix < 70.0.7.0))) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+if (isProtocol prot p_BGP) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+None
+
+let bgpExportPol7 e prefix prefixLen prot b =
+      match b with
+      | None -> None
+      | Some b ->
+        if (let (u~v) = e in b.bgpAS[v]) then None else
+        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
+if ((prefixLen = 24u6) && ((prefix >= 70.0.7.0) && (prefix < 70.0.8.0))) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+if (isProtocol prot p_BGP) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+None
+
+let bgpExportPol8 e prefix prefixLen prot b =
+      match b with
+      | None -> None
+      | Some b ->
+        if (let (u~v) = e in b.bgpAS[v]) then None else
+        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
+if ((prefixLen = 24u6) && ((prefix >= 70.0.10.0) && (prefix < 70.0.11.0))) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+if (isProtocol prot p_BGP) then
+(Some {b with lp= 100; aslen= b.aslen + 1; })
+ else
+None
+
+
+let transferBgp d e x0 =
   let (prefix, prefixLen) = d in
-let prot = x0.selected in
+  let prot = x0.selected in
  match e with
-   | (15~0) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.15.0) && (prefix < 70.0.16.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (15~1) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.15.0) && (prefix < 70.0.16.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (9~0) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (9~2) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (9~6) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (9~4) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (16~3) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.18.0) && (prefix < 70.0.19.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (16~2) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.18.0) && (prefix < 70.0.19.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (8~0) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (8~6) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (8~2) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (8~4) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (11~7) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (11~1) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (11~3) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (11~5) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (13~7) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.11.0) && (prefix < 70.0.12.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (13~6) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.11.0) && (prefix < 70.0.12.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (3~17) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (3~16) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (3~11) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (3~10) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (10~1) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (10~7) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (10~3) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (10~5) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (2~17) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (2~8) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (2~16) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (2~9) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (14~1) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.14.0) && (prefix < 70.0.15.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (14~0) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.14.0) && (prefix < 70.0.15.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (17~3) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.19.0) && (prefix < 70.0.20.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (17~2) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.19.0) && (prefix < 70.0.20.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (18~4) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.6.0) && (prefix < 70.0.7.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (18~5) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.6.0) && (prefix < 70.0.7.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (19~4) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.7.0) && (prefix < 70.0.8.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (19~5) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.7.0) && (prefix < 70.0.8.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (5~19) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (5~18) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (5~10) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (5~11) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (4~19) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (4~9) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (4~18) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (4~8) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (7~11) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (7~13) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (7~10) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (7~12) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (6~12) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (6~9) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (6~13) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (6~8) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (1~15) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (1~14) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (1~11) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (1~10) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (0~8) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (0~15) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (0~14) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (0~9) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (12~7) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.10.0) && (prefix < 70.0.11.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | (12~6) ->
-   let b = x0.bgp in
-      (match b with
-      | None -> None
-      | Some b ->
-        if (let (u~v) = e in b.bgpAS[v]) then None else
-        let b = {b with bgpNextHop = match flipEdge e with | None -> {} | Some fe -> {fe}} in
-     let b = 
-           if ((prefixLen = 24u6) && ((prefix >= 70.0.10.0) && (prefix < 70.0.11.0))) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-if (isProtocol prot p_BGP) then
-(Some {b with lp= 100; aslen= b.aslen + 1; })
- else
-None
-     in
-         (match b with
-         | None -> None
-         | Some b ->
-           let (u~v) = e in
-           let b = {b with bgpAS = b.bgpAS[u := true]} in
-      Some b))
-   | _ -> None
+   | (15~0) -> bgpImportPol0 e prefix prefixLen (bgpExportPol0 e prefix prefixLen prot x0.bgp)
+   | (15~1) -> bgpImportPol0 e prefix prefixLen (bgpExportPol0 e prefix prefixLen prot x0.bgp)
+   | (9~0) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (9~2) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (9~6) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (9~4) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (16~3) -> bgpImportPol0 e prefix prefixLen (bgpExportPol2 e prefix prefixLen prot x0.bgp)
+   | (16~2) -> bgpImportPol0 e prefix prefixLen (bgpExportPol2 e prefix prefixLen prot x0.bgp)
+   | (8~0) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (8~6) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (8~2) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (8~4) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (11~7) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (11~1) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (11~3) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (11~5) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (13~7) -> bgpImportPol0 e prefix prefixLen (bgpExportPol3 e prefix prefixLen prot x0.bgp)
+   | (13~6) -> bgpImportPol0 e prefix prefixLen (bgpExportPol3 e prefix prefixLen prot x0.bgp)
+   | (3~17) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (3~16) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (3~11) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (3~10) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (10~1) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (10~7) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (10~3) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (10~5) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (2~17) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (2~8) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (2~16) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (2~9) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (14~1) -> bgpImportPol0 e prefix prefixLen (bgpExportPol4 e prefix prefixLen prot x0.bgp)
+   | (14~0) -> bgpImportPol0 e prefix prefixLen (bgpExportPol4 e prefix prefixLen prot x0.bgp)
+   | (17~3) -> bgpImportPol0 e prefix prefixLen (bgpExportPol5 e prefix prefixLen prot x0.bgp)
+   | (17~2) -> bgpImportPol0 e prefix prefixLen (bgpExportPol5 e prefix prefixLen prot x0.bgp)
+   | (18~4) -> bgpImportPol0 e prefix prefixLen (bgpExportPol6 e prefix prefixLen prot x0.bgp)
+   | (18~5) -> bgpImportPol0 e prefix prefixLen (bgpExportPol6 e prefix prefixLen prot x0.bgp)
+   | (19~4) -> bgpImportPol0 e prefix prefixLen (bgpExportPol7 e prefix prefixLen prot x0.bgp)
+   | (19~5) -> bgpImportPol0 e prefix prefixLen (bgpExportPol7 e prefix prefixLen prot x0.bgp)
+   | (5~19) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (5~18) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (5~10) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (5~11) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (4~19) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (4~9) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (4~18) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (4~8) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (7~11) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (7~13) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (7~10) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (7~12) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (6~12) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (6~9) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (6~13) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (6~8) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (1~15) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (1~14) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (1~11) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (1~10) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (0~8) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (0~15) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (0~14) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (0~9) -> bgpImportPol0 e prefix prefixLen (bgpExportPol1 e prefix prefixLen prot x0.bgp)
+   | (12~7) -> bgpImportPol0 e prefix prefixLen (bgpExportPol8 e prefix prefixLen prot x0.bgp)
+   | (12~6) -> bgpImportPol0 e prefix prefixLen (bgpExportPol8 e prefix prefixLen prot x0.bgp)
 
 
 let trans d edge x = 

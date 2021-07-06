@@ -13,6 +13,8 @@ let varname x = Var.to_string_delim "_" x
 
 let varnames xs = printList (fun x -> Var.to_string_delim "_" x) xs "[" ";" "]"
 
+let varnamesPretty xs = printList (fun x -> Var.name x) xs "(" ", " ")"
+
 (** Translating probNV records to OCaml records (type or values depending on f)*)
 let record_to_ocaml_record (sep : string) (f : 'a -> string)
     (map : 'a StringMap.t) : string =
@@ -110,6 +112,27 @@ let is_prefix_op op =
   | And | Or | Not | UAdd _ | Eq | ULess _ | ULeq _ | NLess | NLeq | ELess
   | FLess | FLeq | ELeq | FAdd | FDiv | FMul ->
       false
+
+let is_commutative_op op =
+  match op with
+  | And | Or | UAdd _ | Eq | FAdd | FMul -> true
+  | _ -> false
+
+let rec is_commutative_expr exp =
+  let rec aux e =
+    match e.e with
+    | EOp (op, es) ->
+      (is_commutative_op op) && (List.for_all aux es)
+    | EFun f -> aux f.body
+    | EApp (e1, e2) -> aux e1 && aux e2
+    | EVar _ -> true
+    | _ -> false (*for now we ignore the rest of the expressions but this can be extended *)
+  in
+  match exp.e with
+  | EOp (op, es) ->
+  (is_commutative_op op) && (List.for_all aux es)
+  | EFun b -> is_commutative_expr b.body
+  | _ -> false 
 
 (** Translating LLL operators to OCaml operators*)
 let op_to_ocaml_string op =
@@ -210,12 +233,6 @@ let rec pattern_vars p =
   | POption (Some p) -> pattern_vars p
   | PRecord _ -> failwith "Records should have been unrolled"
 
-(* | PRecord map ->
-    StringMap.fold
-      (fun _ p set -> BatSet.PSet.union set (pattern_vars p))
-      map
-      (PSet.create Var.compare) *)
-
 let rec free (seen : Var.t BatSet.PSet.t) (e : exp) : Var.t BatSet.PSet.t =
   match e.e with
   | EVar v ->
@@ -260,9 +277,38 @@ let rec free (seen : Var.t BatSet.PSet.t) (e : exp) : Var.t BatSet.PSet.t =
 (** Returns an OCaml string that contains the hashconsed int of the function
    body and a tuple with the free variables that appear in the function. Used
    for caching BDD operations.
-    NOTE: In general this is sound only if you inline, because we do not capture the environment
+    NOTE: In general this is sound only if you inline function calls that capture free (global) variables, because we do not capture the environment
     of any function that is called and may have free variables.
 *)
+
+let rec mask e maskVars = 
+  match e.e with
+  | EVar v ->
+      if List.mem v maskVars then (evar (Var.create "placeholder"))
+      else e
+  | EVal v -> e_val (value v.v)
+  | EOp (op, es) ->
+    eop op (List.map (fun e -> mask e maskVars) es)
+  | ETuple es ->
+    etuple (List.map (fun e -> mask e maskVars) es)
+  | EFun f -> 
+    efun {f with body = mask f.body maskVars}
+  | EApp (e1, e2) -> eapp (mask e1 maskVars) (mask e2 maskVars)
+  | EIf (e1, e2, e3) ->
+      eif (mask e1 maskVars) (mask e2 maskVars) (mask e3 maskVars)
+  | ELet (x, e1, e2) ->
+      elet x (mask e1 maskVars) (mask e2 maskVars)
+  | ESome e -> esome (mask e maskVars)
+  | EMatch (e, bs) ->
+     ematch (mask e maskVars) (mapBranches (fun (p, e) -> (p, mask e maskVars)) bs)
+  | ERecord _ | EProject _ -> failwith "records should have been unrolled"
+  | EBddIf _ | EToBdd _ | EToMap _ | EApplyN _ ->
+      failwith "Does not apply to non-concrete expressions"
+
+let rec funcArgs e = 
+  match e.e with
+  | EFun f -> f.arg :: (funcArgs f.body)
+  | _ -> []
 
 let getFuncCache (e : exp) : string =
   match e.e with
@@ -273,8 +319,11 @@ let getFuncCache (e : exp) : string =
       let closure =
         Collections.printList (fun x -> varname x) freeList "(" "," ")"
       in
-      Printf.sprintf "(%d, %s)"
-        (Collections.ExpIds.fresh_id exp_store f.body)
+      (* Used to remove the free variables from the body of - this expression is now only good for hashing,
+         do not directly interpret *)
+      let seenVars = funcArgs f.body in
+      let maskedBody = mask f.body (f.arg :: seenVars) in
+      Printf.sprintf "(%d, %s)" (Collections.ExpIds.fresh_id exp_store maskedBody)
         closure
   | _ ->
       (*assume there are no free variables, but this needs to be fixed: always inline*)
@@ -317,6 +366,8 @@ and track_tuples_pattern p =
   | POption None | PWild | PVar _ | PUnit | PBool _ | PInt _ | PRecord _ | PNode _ | PEdge _ -> () *)
 
 let magic s = Printf.sprintf "(Obj.magic %s)" s
+
+let isLogE = ref false
 
 (** Translating values and expressions to OCaml*)
 let rec value_to_ocaml_string v =
@@ -398,11 +449,12 @@ and exp_to_ocaml_string ?(distr = false) e =
             \ BddFunc.apply1 ~distr:%b ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s))"
             op_key_var op_key distr op_key_var el1 v1
       | [ v1; v2 ] ->
+          let comm = is_commutative_expr e1 in
           Printf.sprintf
             "(Obj.magic (let %s = %s in \n\
-            \ BddFunc.apply2 ~distr:%b ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s \
+            \ BddFunc.apply2 ~isLogE:%b ~comm:%b ~distr:%b ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s \
              ~arg2:%s))"
-            op_key_var op_key distr op_key_var el1 v1 v2
+            op_key_var op_key !isLogE comm distr op_key_var el1 v1 v2
       | [ v1; v2; v3 ] ->
           Printf.sprintf
             "(Obj.magic (let %s = %s in \n\
@@ -548,7 +600,9 @@ let rec attr_ty_to_equality ty x y =
          | _, _ -> false)" x y recEq
   | TArrow _ | TRecord _ -> failwith "Cannot be in attribute type"
 
-(** Translate a declaration to an OCaml program*)
+let doCollect = ref 0
+
+(* Translate a declaration to an OCaml program *)
 let compile_decl decl =
   match decl with
   | DUserTy _ -> ""
@@ -563,7 +617,7 @@ let compile_decl decl =
       Printf.sprintf
         "let distr_fun %s = %s \n\
         \ let %s = BddFunc.create_value_expr \"%s\" distr_fun %d SIM.graph\n"
-        (varnames xs) distr (varnames xs) (varnames xs) ty_id
+        (varnames xs) distr (varnames xs) (varnamesPretty xs) ty_id
   | DSymbolic (xs, ty, dist) ->
       ( match ty.typ with
       | TTuple ts -> record_table := IntSet.add (List.length ts) !record_table
@@ -572,16 +626,26 @@ let compile_decl decl =
       let dist_id = Collections.DistrIds.fresh_id distr_store dist in
       Printf.sprintf "let %s = BddFunc.create_value \"%s\" %d %d SIM.graph\n"
         (varnames xs) (varnames xs) dist_id ty_id
-  | DLet (x, e, _) ->
-      Printf.sprintf "let %s = %s" (varname x) (exp_to_ocaml_string e)
+  | DLet (x, e, options) ->
+      let dlet = Printf.sprintf "let %s = %s" (varname x) (exp_to_ocaml_string e) in
+      if hasOption "log" options then (
+        let ty_id = get_fresh_type_id type_store (OCamlUtils.oget e.ety) in
+        let s = Printf.sprintf "let () = SIM.pushLetVal \"%s\" (Obj.magic %s) %d" (Var.name x) (varname x) ty_id in
+          Printf.sprintf "%s\n%s" dlet s
+      )
+      else
+        dlet
   | DInfer (name, e, cond) ->
       let cond' =
         match cond with
         | None -> "None"
         | Some c -> Printf.sprintf "Some (%s)" (exp_to_ocaml_string c)
       in
+      (* let flush = "" in *)
+      let flush = if !doCollect = 1 then " Gc.full_major (); Cudd.Man.flush BddUtils.mgr;  " else "" in
+      doCollect := 2;
       Printf.sprintf
-        "let () = SIM.assertions := (%s, %s, %s) :: !SIM.assertions\n" name
+        "let () = %s SIM.assertions := (%s, Profile.time_profile_total SIM.assertionTime (fun () -> %s), %s) :: !SIM.assertions\n" flush name
         (exp_to_ocaml_string e) cond'
   | DSolve solve -> (
       match solve.var_names.e with
@@ -630,9 +694,14 @@ let compile_decl decl =
               ignore (get_fresh_type_id type_store (concrete TEdge));
               let hvty_id = get_fresh_type_id type_store hvty in
               let hety_id = get_fresh_type_id type_store hety in
+              isLogE := true;
+              let logE' = (magic @@ exp_to_ocaml_string logE) in
+              isLogE := false;
+              let flush = if !doCollect = 0 then " let _ = Gc.full_major (); Cudd.Man.flush BddUtils.mgr " else "" in
+              doCollect := 1;
               Printf.sprintf
-                "let (%s, %s) = SIM.simulate_forwarding record_fns (\"%s\") \
-                 (\"%s\") (%d) (%d) (%s) (%s) (%s) (%s) (%s) (%s) (%s) (%s)"
+                "%s\n\nlet (%s, %s) = SIM.simulate_forwarding record_fns (\"%s\") \
+                 (\"%s\") (%d) (%d) (%s) (%s) (%s) (%s) (%s) (%s) (%s) (%s)" flush
                 (varname v) (varname e) (Var.name v) (Var.name e) hvty_id
                 hety_id
                 (magic @@ exp_to_ocaml_string fwdInit)
@@ -641,7 +710,7 @@ let compile_decl decl =
                 (magic @@ exp_to_ocaml_string hinitV)
                 (magic @@ exp_to_ocaml_string hinitE)
                 (magic @@ exp_to_ocaml_string logV)
-                (magic @@ exp_to_ocaml_string logE)
+                logE'
                 (magic @@ exp_to_ocaml_string bot)
           | _, _, _ -> failwith "cannot simulate forwarding without types" )
       | _, _ -> failwith "Expected variables" )
@@ -668,6 +737,7 @@ let generate_ocaml (name : string) decls =
   let header =
     Printf.sprintf
       "open ProbNv_datastructures\n\
+      open ProbNv_utils\n\
       \ open ProbNv_lang\n\
        open Syntax\n\
        open ProbNv_compile\n\n\

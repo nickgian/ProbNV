@@ -1073,14 +1073,14 @@ let translateThree info func pty hty =
 
 let translateDecl info d =
   match d with
-  | DLet (x, e, inline) ->
+  | DLet (x, e, options) ->
       BddBinds.clearStore ();
       let e', r = translate e in
       let fv = free e in
 
       let rho = BddBinds.union r fv in
-      if BddBinds.isEmpty rho then DLet (x, e', inline)
-      else DLet (x, buildApply e' rho, inline)
+      if BddBinds.isEmpty rho then DLet (x, e', options)
+      else DLet (x, buildApply e' rho, options)
   | DSolve { aty; var_names; init; trans; merge } ->
       let route_ty = OCamlUtils.oget aty in
       BddBinds.clearStore ();

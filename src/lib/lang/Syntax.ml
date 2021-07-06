@@ -277,13 +277,13 @@ type forward = {
   bot : exp;
 }
 
-type inlineLevel = Inline | NoInline
+type declOptions = string list
 
 (* Distributions can be either expressed in a separate language, in ProbNV's language or by default they are considered uniform *)
 type distributionExpression = DExpr of distrExpr | Expr of exp | Uniform
 
 type declaration =
-  | DLet of (var * exp * inlineLevel) (* Variable name, expression, inline? *)
+  | DLet of (var * exp * declOptions) (* Variable name, expression, inline? *)
   | DSymbolic of (var list) * ty * distributionExpression (*var list for tuples *)
   | DInfer of (string * exp * exp option)
   | DSolve of solve
@@ -292,9 +292,10 @@ type declaration =
   | DEdges of (node * node * int) list
   | DUserTy of var * ty
 
-(* Declaration of a record type *)
-
 type declarations = declaration list
+
+let hasOption opt optionList =
+  List.exists (fun o -> opt = o) optionList
 
 (** * Handling branches *)
 
@@ -953,7 +954,6 @@ let create_topology_mapping nodes topology =
   edge_mapping :=
     AdjGraph.fold_edges_e
       (fun e acc ->
-        Printf.printf "%d -> %s\n" (AdjGraph.E.label e) (AdjGraph.Edge.to_string e);
         IntMap.add (AdjGraph.E.label e) (AdjGraph.E.src e, AdjGraph.E.dst e) acc)
       topology IntMap.empty;
   node_mapping :=
@@ -1036,3 +1036,4 @@ type svalue =
 | SInt of Integer.t list valueSet
 | SNode of node list valueSet
 | SEdge of (node * node) list valueSet
+| STuple of svalue list

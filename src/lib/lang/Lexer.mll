@@ -35,7 +35,7 @@ rule token = parse
   | "false"           { FALSE (position lexbuf) }
   | "true"            { TRUE (position lexbuf) }
   | "let"             { LET (position lexbuf) }
-  | "@noinline"       { NOINLINE (position lexbuf) }
+  | "@"               { AT (position lexbuf) }
   | "in"              { IN (position lexbuf) }
   | "if"              { IF (position lexbuf) }
   | "then"            { THEN (position lexbuf) }

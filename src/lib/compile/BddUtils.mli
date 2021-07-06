@@ -51,8 +51,8 @@ type symbolicAssignment = (Man.tbool list * Syntax.ty) Collections.StringMap.t
 type symbolicAssignments = symbolicAssignment list
 
 val computeTrueProbability :
+  AdjGraph.t ->
   bool Cudd.Mtbddc.t ->
-  symbolic_var list ->
   symbolic_var BatMap.Int.t ->
   Cudd.Man.v Cudd.Bdd.t option ->
   bool ->

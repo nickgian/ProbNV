@@ -42,17 +42,19 @@ let simulate nodeNames topology name decls =
   (* Doing the time profiling manually because I don't know how to make it work with modules *)
   let cfg = Cmdline.get_cfg () in
 
-  let start_time = Sys.time () in
+  (* let start_time = Sys.time () in *)
   let module Srp = (val (module CompleteSRP (SrpSimulator)) : NATIVE_SRP) in
-  let finish_time = Sys.time () in
+  (* let finish_time = Sys.time () in *)
   if cfg.nostats then ()
   else (
     RouteComputationStats.printTotalSimulationStats ();
     ForwardingStats.printTotalSimulationStats ();
+    Printf.printf "Time to compute the assertions: %f\n" !SrpSimulator.assertionTime;
     BddUtils.get_statistics () );
   (* Get the computed solutions *)
   build_solutions
-    (AdjGraph.nb_vertex topology, nodeNames)
+    nodeNames
+    topology
     Srp.record_fns
     !SrpSimulator.forwarding_solutions
-    !SrpSimulator.solved !SrpSimulator.assertions
+    !SrpSimulator.solved !SrpSimulator.assertions !SrpSimulator.letValues

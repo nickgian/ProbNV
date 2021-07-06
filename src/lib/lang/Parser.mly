@@ -34,10 +34,10 @@
   let local_let (id,params) body body_span span =
     (id, make_fun params body body_span span)
 
-  let global_let inline (id,params) body body_span span =
+  let global_let options (id,params) body body_span span =
     let e = make_fun params body body_span span in
     (* Printf.printf "%s, %s\n" (Var.to_string id) (Printing.exp_to_string e); *)
-    DLet (id, e, inline)
+    DLet (id, e, options)
 
 
   let ip_to_dec bs =
@@ -166,6 +166,7 @@
 %token <ProbNv_datastructures.Span.t * float> FLOAT
 %token <ProbNv_datastructures.Span.t * int> NODE
 %token <ProbNv_datastructures.Span.t * string> STRING
+%token <ProbNv_datastructures.Span.t> AT
 %token <ProbNv_datastructures.Span.t> AND
 %token <ProbNv_datastructures.Span.t> OR
 %token <ProbNv_datastructures.Span.t> NOT
@@ -195,7 +196,6 @@
 %token <ProbNv_datastructures.Span.t> FGEQ
 %token <ProbNv_datastructures.Span.t> FLEQ
 %token <ProbNv_datastructures.Span.t> LET
-%token <ProbNv_datastructures.Span.t> NOINLINE
 %token <ProbNv_datastructures.Span.t> IN
 %token <ProbNv_datastructures.Span.t> IF
 %token <ProbNv_datastructures.Span.t> THEN
@@ -351,8 +351,8 @@ component:
     | LET LPAREN ID COMMA ID RPAREN EQ FORWARD LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN     { make_dfwd (evar (snd $3)) (evar (snd $5)) $10 $12 $14 $16 $18 $20 $22 $24 } */
     | SOLUTION ID EQ LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (snd $2) $5 $7 $9 }
     | FORWARD LPAREN ID COMMA ID RPAREN EQ LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN     { make_dfwd (evar (snd $3)) (evar (snd $5)) $9 $11 $13 $15 $17 $19 $21 $23 }
-    | LET letvars EQ expr                      { global_let Inline $2 $4 $4.espan (Span.extend $1 $4.espan) }
-    | NOINLINE LET letvars EQ expr             { global_let NoInline $3 $5 $5.espan (Span.extend $2 $5.espan) }
+    | LET letvars EQ expr                      { global_let [] $2 $4 $4.espan (Span.extend $1 $4.espan) }
+    | options LET letvars EQ expr              { global_let $1 $3 $5 $5.espan (Span.extend $2 $5.espan) }
     | SYMBOLIC ids COLON bty                    { DSymbolic (snd $2, liftSymbolicTy {typ = $4; mode=Some Symbolic}, Uniform) }
     | SYMBOLIC ids COLON bty EQ distBranches    { DSymbolic (snd $2, liftSymbolicTy {typ = $4; mode=Some Symbolic}, DExpr $6) }
     | SYMBOLIC ids COLON bty EQ expr            { DSymbolic (snd $2, liftSymbolicTy {typ = $4; mode=Some Symbolic}, Expr $6) }
@@ -370,6 +370,14 @@ components:
     | component components              { $1 :: $2 }
 ;
 
+option:
+    | AT ID                              { Var.name (snd $2)}
+;
+
+options:
+    | option                         { [$1] }
+    | option options                 { $1 :: $2 }
+;
 
 record_entry_expr:
   | ID EQ expr                       { snd $1, $3 }

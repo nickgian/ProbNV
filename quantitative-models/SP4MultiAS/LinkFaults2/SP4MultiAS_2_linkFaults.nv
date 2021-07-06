@@ -1,6 +1,6 @@
 (* Bounded link faults *)
 
-include "../sp4MultiAS_control.nv"
+include "../SP4MultiAS_control.nv"
 
 let failureProb (f : [S]tedge) =
   0.0050251256281407
