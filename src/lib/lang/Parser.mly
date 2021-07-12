@@ -348,7 +348,6 @@ assertion:
 component:
     /* | LET letvars EQ SOLUTION expr      { make_dsolve (fst $2) $5 } */
     /* | LET ID EQ SOLUTION LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (snd $2) $6 $8 $10 }
-    | LET LPAREN ID COMMA ID RPAREN EQ FORWARD LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN     { make_dfwd (evar (snd $3)) (evar (snd $5)) $10 $12 $14 $16 $18 $20 $22 $24 } */
     | SOLUTION ID EQ LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (snd $2) $5 $7 $9 }
     | FORWARD LPAREN ID COMMA ID RPAREN EQ LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN     { make_dfwd (evar (snd $3)) (evar (snd $5)) $9 $11 $13 $15 $17 $19 $21 $23 }
     | LET letvars EQ expr                      { global_let [] $2 $4 $4.espan (Span.extend $1 $4.espan) }

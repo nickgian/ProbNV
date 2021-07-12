@@ -390,7 +390,7 @@ let rec translate (e : exp) : exp * BddBinds.t =
               ety = Some (fty (OCamlUtils.oget e.ety));
             },
             r1 )
-      | _ -> failwith "This case cannot occur per the type system" )
+      | _ -> failwith (Printf.sprintf "This case cannot occur per the type system: %s" (Printing.exp_to_string e)))
   | ESome e1 -> (
       let el1, r1 = translate e1 in
       match get_mode (OCamlUtils.oget e.ety) with
@@ -1074,13 +1074,16 @@ let translateThree info func pty hty =
 let translateDecl info d =
   match d with
   | DLet (x, e, options) ->
-      BddBinds.clearStore ();
-      let e', r = translate e in
-      let fv = free e in
+      if hasOption "verbatim" options then
+        d
+      else (
+        BddBinds.clearStore ();
+        let e', r = translate e in
+        let fv = free e in
 
-      let rho = BddBinds.union r fv in
-      if BddBinds.isEmpty rho then DLet (x, e', options)
-      else DLet (x, buildApply e' rho, options)
+        let rho = BddBinds.union r fv in
+        if BddBinds.isEmpty rho then DLet (x, e', options)
+        else DLet (x, buildApply e' rho, options))
   | DSolve { aty; var_names; init; trans; merge } ->
       let route_ty = OCamlUtils.oget aty in
       BddBinds.clearStore ();

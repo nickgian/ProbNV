@@ -33,7 +33,7 @@ end)
 module ExpMap = BetterMap.Make (struct
   type t = exp
 
-  let compare e1 e2 = compare e1 e2
+  let compare = compare_es
 
   let to_string = Printing.exp_to_string ~show_types:false
 end)

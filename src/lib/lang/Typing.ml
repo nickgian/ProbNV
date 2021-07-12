@@ -14,6 +14,76 @@ let debug = true
 
 let if_debug s = if debug then print_endline s else ()
 
+let rec join_ty ty1 ty2 =
+  match (ty1.typ, ty2.typ) with
+  | TInt sz1, TInt sz2 when sz1 = sz2 ->
+      { ty1 with mode = join_opts ty1.mode ty2.mode }
+  | TFloat, TFloat ->
+      let m = join_opts ty1.mode ty2.mode in
+      if (not (m = Some Symbolic)) then
+        { ty1 with mode = m}
+      else failwith "Float cannot be of symbolic mode"
+  | TBool, TBool | TNode, TNode | TEdge, TEdge ->
+      { ty1 with mode = join_opts ty1.mode ty2.mode }
+  | TOption tyo1, TOption tyo2 ->
+      let tyo = join_ty tyo1 tyo2 in
+      { typ = TOption tyo; mode = join_opts ty1.mode ty2.mode }
+  | TTuple ts1, TTuple ts2 ->
+      {
+        typ = TTuple (List.map2 (fun ty1 ty2 -> join_ty ty1 ty2) ts1 ts2);
+        mode = join_opts ty1.mode ty2.mode;
+      }
+  | TRecord ts1, TRecord ts2 ->
+      {
+        typ =
+          TRecord
+            (StringMap.merge
+               (fun _ ty1 ty2 ->
+                 match (ty1, ty2) with
+                 | Some ty1, Some ty2 -> Some (join_ty ty1 ty2)
+                 | _, _ ->
+                     failwith "Unable to join records with different fields")
+               ts1 ts2);
+        mode = join_opts ty1.mode ty2.mode;
+      }
+  | TArrow _, TArrow _ ->
+      if equal_base_tys ty1.typ ty2.typ then ty1 else failwith "cannot join unequal arrow types"
+  | TMap (kty1, vty1), TMap (kty2, vty2) ->
+      if equal_base_tys kty1.typ kty2.typ && get_mode vty1 = get_mode vty2 then
+        if get_mode vty1 = Some Concrete then
+          {
+            typ = TMap (join_ty kty1 kty2, join_ty vty1 vty2);
+            mode = join_opts ty1.mode ty2.mode;
+          }
+        else
+          {
+            typ = TMap (join_ty kty1 kty2, join_ty vty1 vty2);
+            mode = Some Concrete;
+          }
+      else failwith "Failed to join map types"
+  | TVar { contents = Link ty3 }, _ ->
+      join_ty { ty3 with mode = join_opts ty1.mode ty3.mode } ty2
+  | _, TVar { contents = Link ty3 } ->
+      join_ty ty1 { ty3 with mode = join_opts ty2.mode ty3.mode }
+  | QVar x, QVar y when x = y -> { ty1 with mode = join_opts ty1.mode ty2.mode }
+  | TVar { contents = Unbound (x1, x2) }, TVar { contents = Unbound (y1, y2) }
+    when x1 = y1 && x2 = y2 ->
+      { ty1 with mode = join_opts ty1.mode ty2.mode }
+  | TVar _, _
+  | QVar _, _
+  | TBool, _
+  | TInt _, _
+  | TArrow _, _
+  | TTuple _, _
+  | TMap _, _
+  | TOption _, _
+  | TRecord _, _
+  | TEdge, _
+  | TFloat, _
+  | TNode, _ ->
+      failwith "Cannot join the given types"
+
+
 let node_ty = TNode
 
 let edge_ty = TEdge
@@ -290,7 +360,6 @@ let rec unify isHLL info e t1 t2 : unit =
       Printf.sprintf "unable to unify types: %s and\n %s" (ty_to_string t1)
         (ty_to_string t2)
     in
-    Printf.printf "%s\n" msg;
     Console.error_position info e.espan msg
 
 and unifies isHLL info (e : exp) ts1 ts2 =
@@ -1339,9 +1408,6 @@ module HLLTypeInf = struct
           texp (esome e, { typ = TOption t; mode = t.mode }, e.espan)
       | EMatch (e1, branches) -> (
           let e1, tmatch = infer_exp e1 |> textract in
-          (* Printf.printf "e1: %s, tmatch: %s\n"
-             (Printing.exp_to_string e1)
-             (Printing.ty_to_string tmatch); *)
           let branches, t =
             infer_branches (i + 1) info env record_types e1 tmatch branches
           in

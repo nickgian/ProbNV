@@ -397,6 +397,14 @@ let rec equal_base_tys ty1 ty2 =
   | TTuple ts1, TTuple ts2 -> List.for_all2 equal_tys ts1 ts2
   | TRecord map1, TRecord map2 -> StringMap.equal equal_tys map1 map2
   | TMap (t1, t2), TMap (s1, s2) -> equal_tys t1 s1 && equal_tys t2 s2
+  | TVar t1, _ -> 
+    (match !t1 with
+    | Unbound _ -> false
+    | Link t1 -> equal_base_tys t1.typ ty2)
+  | _, TVar t2 -> 
+    (match !t2 with
+    | Unbound _ -> false
+    | Link t2 -> equal_base_tys ty1 t2.typ)
   | ( ( TBool | TNode | TEdge | TInt _ | TArrow _ | TVar _ | QVar _ | TTuple _
       | TMap _ | TOption _ | TRecord _ | TFloat ),
       _ ) ->
@@ -854,75 +862,6 @@ let get_symbolics ds =
 
 let get_solves ds =
   List.filter_map (fun d -> match d with DSolve a -> Some a | _ -> None) ds
-
-let rec join_ty ty1 ty2 =
-  match (ty1.typ, ty2.typ) with
-  | TInt sz1, TInt sz2 when sz1 = sz2 ->
-      { ty1 with mode = join_opts ty1.mode ty2.mode }
-  | TFloat, TFloat ->
-      let m = join_opts ty1.mode ty2.mode in
-      if (not (m = Some Symbolic)) then
-        { ty1 with mode = m}
-      else failwith "Float cannot be of symbolic mode"
-  | TBool, TBool | TNode, TNode | TEdge, TEdge ->
-      { ty1 with mode = join_opts ty1.mode ty2.mode }
-  | TOption tyo1, TOption tyo2 ->
-      let tyo = join_ty tyo1 tyo2 in
-      { typ = TOption tyo; mode = join_opts ty1.mode ty2.mode }
-  | TTuple ts1, TTuple ts2 ->
-      {
-        typ = TTuple (List.map2 (fun ty1 ty2 -> join_ty ty1 ty2) ts1 ts2);
-        mode = join_opts ty1.mode ty2.mode;
-      }
-  | TRecord ts1, TRecord ts2 ->
-      {
-        typ =
-          TRecord
-            (StringMap.merge
-               (fun _ ty1 ty2 ->
-                 match (ty1, ty2) with
-                 | Some ty1, Some ty2 -> Some (join_ty ty1 ty2)
-                 | _, _ ->
-                     failwith "Unable to join records with different fields")
-               ts1 ts2);
-        mode = join_opts ty1.mode ty2.mode;
-      }
-  | TArrow _, TArrow _ ->
-      if ty1 = ty2 then ty1 else failwith "cannot join unequal arrow types"
-  | TMap (kty1, vty1), TMap (kty2, vty2) ->
-      if equal_base_tys kty1.typ kty2.typ && get_mode vty1 = get_mode vty2 then
-        if get_mode vty1 = Some Concrete then
-          {
-            typ = TMap (join_ty kty1 kty2, join_ty vty1 vty2);
-            mode = join_opts ty1.mode ty2.mode;
-          }
-        else
-          {
-            typ = TMap (join_ty kty1 kty2, join_ty vty1 vty2);
-            mode = Some Concrete;
-          }
-      else failwith "Failed to join map types"
-  | TVar { contents = Link ty3 }, _ ->
-      join_ty { ty3 with mode = join_opts ty1.mode ty3.mode } ty2
-  | _, TVar { contents = Link ty3 } ->
-      join_ty ty1 { ty3 with mode = join_opts ty2.mode ty3.mode }
-  | QVar x, QVar y when x = y -> { ty1 with mode = join_opts ty1.mode ty2.mode }
-  | TVar { contents = Unbound (x1, x2) }, TVar { contents = Unbound (y1, y2) }
-    when x1 = y1 && x2 = y2 ->
-      { ty1 with mode = join_opts ty1.mode ty2.mode }
-  | TVar _, _
-  | QVar _, _
-  | TBool, _
-  | TInt _, _
-  | TArrow _, _
-  | TTuple _, _
-  | TMap _, _
-  | TOption _, _
-  | TRecord _, _
-  | TEdge, _
-  | TFloat, _
-  | TNode, _ ->
-      failwith "Cannot join the given types"
 
 let rec get_inner_type t : ty =
   match t.typ with TVar { contents = Link t } -> get_inner_type t | _ -> t
