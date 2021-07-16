@@ -140,6 +140,7 @@ type op =
   | UAdd of bitwidth
   | ULess of bitwidth
   | ULeq of bitwidth
+  | UAnd of bitwidth
   | FAdd
   | FDiv
   | FMul
@@ -161,6 +162,7 @@ type op =
   | BddNot
   | BddEq
   | BddAdd of bitwidth
+  | BddUAnd of bitwidth
   | BddLess of bitwidth
   | BddLeq of bitwidth
 [@@deriving ord, eq, show]
@@ -405,7 +407,7 @@ let rec equal_base_tys ty1 ty2 =
     (match !t2 with
     | Unbound _ -> false
     | Link t2 -> equal_base_tys ty1 t2.typ)
-  | ( ( TBool | TNode | TEdge | TInt _ | TArrow _ | TVar _ | QVar _ | TTuple _
+  | ( ( TBool | TNode | TEdge | TInt _ | TArrow _ | QVar _ | TTuple _
       | TMap _ | TOption _ | TRecord _ | TFloat ),
       _ ) ->
       false
@@ -573,7 +575,7 @@ let arity op =
   match op with
   | And | Or -> 2
   | Not -> 1
-  | UAdd _ -> 2
+  | UAdd _ | UAnd _ -> 2
   | FAdd | FDiv | FMul -> 2
   | Eq -> 2
   | ULess _ | ULeq _ | NLeq | NLess | ELess | ELeq | FLess | FLeq -> 2
@@ -583,7 +585,7 @@ let arity op =
   | MSize -> 2
   | MMerge -> 3
   | TGet _ -> 1
-  | BddAdd _ | BddAnd | BddOr | BddEq | BddLess _ | BddLeq _ -> 2
+  | BddAdd _ | BddUAnd _ | BddAnd | BddOr | BddEq | BddLess _ | BddLeq _ -> 2
   | BddNot -> 1
 
 (* Useful constructors *)

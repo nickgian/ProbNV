@@ -42,11 +42,10 @@ let simulate nodeNames topology name decls =
   (* Doing the time profiling manually because I don't know how to make it work with modules *)
   let cfg = Cmdline.get_cfg () in
 
-  (* let start_time = Sys.time () in *)
   let module Srp = (val (module CompleteSRP (SrpSimulator)) : NATIVE_SRP) in
-  (* let finish_time = Sys.time () in *)
   if cfg.nostats then ()
   else (
+    Printf.printf "Number of nodes/edges in topology: %d/%d\n\n" (AdjGraph.nb_vertex G.graph) (AdjGraph.nb_edges G.graph);
     RouteComputationStats.printTotalSimulationStats ();
     ForwardingStats.printTotalSimulationStats ();
     Printf.printf "Time to compute the assertions: %f\n" !SrpSimulator.assertionTime;

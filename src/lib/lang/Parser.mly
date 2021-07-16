@@ -346,8 +346,6 @@ assertion:
 | expr                      { ($1, None)}
 
 component:
-    /* | LET letvars EQ SOLUTION expr      { make_dsolve (fst $2) $5 } */
-    /* | LET ID EQ SOLUTION LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (snd $2) $6 $8 $10 }
     | SOLUTION ID EQ LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (snd $2) $5 $7 $9 }
     | FORWARD LPAREN ID COMMA ID RPAREN EQ LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN     { make_dfwd (evar (snd $3)) (evar (snd $5)) $9 $11 $13 $15 $17 $19 $21 $23 }
     | LET letvars EQ expr                      { global_let [] $2 $4 $4.espan (Span.extend $1 $4.espan) }
@@ -387,6 +385,7 @@ record_entry_exprs:
   | record_entry_expr SEMI                    { [$1] }
   | record_entry_expr SEMI record_entry_exprs { $1::$3 }
 
+
 expreof:
     expr EOF    { $1 }
 ;
@@ -422,7 +421,7 @@ expr:
     | expr FPLUS expr                   { exp (eop FAdd [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr FDIV expr                    { exp (eop FDiv [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr FMUL expr                    { exp (eop FMul [$1;$3]) (Span.extend $1.espan $3.espan) }
-    /* | expr UAND expr                    { exp (eop (UAnd (snd $2)) [$1;$3]) (Span.extend $1.espan $3.espan) } */
+    | expr UAND expr                    { exp (eop (UAnd (snd $2)) [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr EQ expr                      { exp (eop Eq [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr LESS expr                    { exp (eop (ULess (snd $2)) [$1;$3]) (Span.extend $1.espan $3.espan) }
     | expr GREATER expr                 { exp (eop (ULess (snd $2)) [$3;$1]) (Span.extend $1.espan $3.espan) }
@@ -481,7 +480,6 @@ ipaddr:
 prefixes:
   | ipaddr SLASH INT                    { let pre = to_value (vint (ProbNv_datastructures.Integer.create ~value:(ProbNv_datastructures.Integer.to_int (snd $3)) ~size:6)) (fst $3) in
                                           etuple [$1; pre]}
-
 
 edge_arg:
   | INT                                 { (fst $1), to_value (vnode (ProbNv_datastructures.Integer.to_int (snd $1))) (fst $1) }

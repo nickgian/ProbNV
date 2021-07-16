@@ -37,11 +37,13 @@ let print_fun_node nodes sol_val =
   let numNodes = fst nodes in
   let nodeNames = snd nodes in
   for i = numNodes - 1 downto 0 do
-    let v = AdjGraph.VertexMap.find i sol_val in
-    let istr =
-      match IntMap.find_opt i nodeNames with None -> "" | Some str -> str
-    in
-    solString := (i, istr, f v) :: !solString
+      match AdjGraph.VertexMap.find_opt i sol_val with
+      | None -> ()
+      | Some v -> 
+        let istr =
+          match IntMap.find_opt i nodeNames with None -> "" | Some str -> str
+        in
+        solString := (i, istr, f v) :: !solString
   done;
   PrimitiveCollections.printList
     (fun (u, ustr, s) -> Printf.sprintf "Node %s (%d)\n---------\n%s" ustr u s)
@@ -202,7 +204,7 @@ let toCSV dir (solution : t) =
            asns "" "\n" "\n")
 
 (* TODO: extracting counterexamples (should be easy but I can improve presentation and performance)
-  How to get routes? large maps difficult to print them completely.
+  How to get routes? large maps are difficult to print in their entirety.
   Can we instead have a small query language that runs in an interactive mode and returns results
   as requested?
   

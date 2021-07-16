@@ -106,16 +106,16 @@ let build_constructors () =
 
 let is_prefix_op op =
   match op with
-  | BddAnd | BddOr | BddAdd _ | BddNot | BddLess _ | BddLeq _ | BddEq | MGet
+  | BddAnd | BddOr | BddAdd _ | BddUAnd _ | BddNot | BddLess _ | BddLeq _ | BddEq | MGet
   | MCreate | MSet | MSize | TGet _ | MMerge ->
       true
-  | And | Or | Not | UAdd _ | Eq | ULess _ | ULeq _ | NLess | NLeq | ELess
+  | And | Or | Not | UAdd _ | UAnd _ | Eq | ULess _ | ULeq _ | NLess | NLeq | ELess
   | FLess | FLeq | ELeq | FAdd | FDiv | FMul ->
       false
 
 let is_commutative_op op =
   match op with
-  | And | Or | UAdd _ | Eq | FAdd | FMul -> true
+  | And | Or | UAdd _ | UAnd _ | Eq | FAdd | FMul -> true
   | _ -> false
 
 let rec is_commutative_expr exp =
@@ -141,19 +141,18 @@ let op_to_ocaml_string op =
   | Or -> "||"
   | Not -> "not"
   | UAdd _ -> "+"
+  | UAnd _ -> "land"
   | FAdd -> "+."
   | FDiv -> "/."
   | FMul -> "*."
   | FLess -> "<"
   | FLeq -> "<="
-  (* | USub _ -> "-" *)
-  (* | UAnd _ -> "land" *)
   | Eq -> "="
   | ULess _ -> "<"
   | ULeq _ -> "<="
   | NLess | ELess -> "<"
   | NLeq | ELeq -> "<="
-  | BddAnd | BddOr | BddNot | BddEq | BddAdd _ | BddLess _ | BddLeq _ | MGet
+  | BddAnd | BddOr | BddNot | BddEq | BddAdd _ | BddUAnd _ | BddLess _ | BddLeq _ | MGet
   | MSet | MCreate | TGet _ | MMerge | MSize ->
       failwith
         ( "Operation: " ^ Printing.op_to_string op
@@ -521,6 +520,9 @@ and prefix_op_to_ocaml_string op es ty =
       | BddAdd _ ->
           Printf.sprintf "(BddFunc.add (%s) (%s))" (exp_to_ocaml_string e1)
             (exp_to_ocaml_string e2)
+      | BddUAnd _ ->
+          Printf.sprintf "(BddFunc.uand (%s) (%s))" (exp_to_ocaml_string e1)
+            (exp_to_ocaml_string e2)
       | BddLess _ ->
           Printf.sprintf "(BddFunc.lt (%s) (%s))" (exp_to_ocaml_string e1)
             (exp_to_ocaml_string e2)
@@ -540,7 +542,7 @@ and prefix_op_to_ocaml_string op es ty =
             (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
       | MSet | MCreate | MMerge ->
           failwith "Wrong number of arguments to MSet/MCreate/MMerge operation"
-      | Eq | UAdd _ | ULess _ | NLess | ULeq _ | NLeq | ELess | ELeq | And | Or
+      | Eq | UAdd _ | UAnd _ | ULess _ | NLess | ULeq _ | NLeq | ELess | ELeq | And | Or
       | Not | BddNot | TGet _ | FAdd | FDiv | FMul | FLess | FLeq ->
           failwith "not applicable" )
   | [ e1; e2; e3 ] -> (
@@ -561,8 +563,8 @@ and prefix_op_to_ocaml_string op es ty =
             op_key_var op_key op_key_var (exp_to_ocaml_string e1)
             (exp_to_ocaml_string e2) (exp_to_ocaml_string e3)
       | And | Or | Not | Eq | NLess | NLeq | ELess | ELeq | MGet | MCreate
-      | MSize | BddAnd | BddOr | BddNot | BddEq | UAdd _ | ULess _ | ULeq _
-      | BddAdd _ | BddLess _ | BddLeq _ | TGet _ | FAdd | FDiv | FMul | FLess
+      | MSize | BddAnd | BddOr | BddNot | BddEq | UAdd _ | UAnd _ | ULess _ | ULeq _
+      | BddAdd _ | BddLess _ | BddLeq _ | BddUAnd _ | TGet _ | FAdd | FDiv | FMul | FLess 
       | FLeq ->
           failwith "Wrong number of arguments to operation." )
   | _ -> failwith "too many arguments to operation"
@@ -642,7 +644,7 @@ let compile_decl decl =
         | Some c -> Printf.sprintf "Some (%s)" (exp_to_ocaml_string c)
       in
       (* let flush = "" in *)
-      let flush = if !doCollect = 1 then " Gc.full_major (); Cudd.Man.flush BddUtils.mgr;  " else "" in
+      let flush = if !doCollect = 1 then " Cudd.Man.flush BddUtils.mgr; Gc.full_major (); " else "" in
       doCollect := 2;
       Printf.sprintf
         "let () = %s SIM.assertions := (%s, Profile.time_profile_total SIM.assertionTime (fun () -> %s), %s) :: !SIM.assertions\n" flush name

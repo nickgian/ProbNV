@@ -66,13 +66,14 @@ let opToBddOp op =
   | Not -> BddNot
   | Eq -> BddEq
   | UAdd n -> BddAdd n
+  | UAnd n -> BddUAnd n
   | ULess n -> BddLess n
   | ULeq n -> BddLeq n
   | NLess -> BddLess !tnode_sz
   | NLeq -> BddLeq !tnode_sz
   | ELess -> BddLess !tedge_sz
   | ELeq -> BddLeq !tedge_sz
-  | BddAnd | BddAdd _ | BddOr | BddNot | BddEq | BddLess _ | BddLeq _ -> op
+  | BddAnd | BddAdd _ | BddUAnd _ | BddOr | BddNot | BddEq | BddLess _ | BddLeq _ -> op
   | MCreate | MGet | MSet | MMerge | MSize | TGet _ | FAdd | FDiv | FMul | FLess
   | FLeq ->
       failwith "Can't convert operation to symbolic operation"
@@ -180,6 +181,7 @@ let rec translate (e : exp) : exp * BddBinds.t =
       | Not, _
       | Eq, _
       | UAdd _, _
+      | UAnd _, _
       | ULess _, _
       | ULeq _, _
       | FAdd, _

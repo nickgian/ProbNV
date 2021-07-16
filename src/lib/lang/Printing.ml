@@ -124,7 +124,7 @@ let prec_op op =
   | Or | BddOr -> 7
   | Not | BddNot -> 6
   | FDiv | FMul -> 4
-  | UAdd _ | BddAdd _ | FAdd -> 4
+  | UAdd _ | UAnd _ | BddUAnd _ | BddAdd _ | FAdd -> 4
   (* | USub _ -> 4 *)
   | Eq | BddEq -> 5
   | MCreate -> 5
@@ -284,11 +284,13 @@ let op_to_string op =
   | FAdd -> "+."
   | FDiv -> "/."
   | FMul -> "*."
+  | UAnd n -> "&" ^ "u" ^ (string_of_int n)
   (* | USub n -> "-" ^ "u" ^ (string_of_int n)
-     | UAnd n -> "&" ^ "u" ^ (string_of_int n) *)
+      *)
   | Eq -> "="
   | ULess n -> "<" ^ "u" ^ string_of_int n
   | BddAnd -> "&&b"
+  | BddUAnd _ -> "&b"
   | BddOr -> "||b"
   | BddAdd _ -> "+b"
   | BddNot -> "!b"
@@ -429,7 +431,7 @@ and value_to_string_p ~show_types prec v =
   | VFloat f -> Printf.sprintf "%.10f" f
   | VTotalMap (m, meta) -> (
       match meta with
-      | None -> multivalue_to_string ~show_types "\n" m
+      | None -> multivalue_to_string ~show_types "," m
       | Some (kty, range) -> map_to_string ~show_types ", " m kty range )
   | VTuple vs ->
       if List.is_empty vs then "VEmptyTuple"
@@ -466,7 +468,7 @@ and map_to_string ~show_types term_s m kty range =
 and multivalue_to_string ~show_types term_s m =
   let bs = Array.to_list @@ Mtbddc.leaves m in
   term term_s
-    (fun v -> Printf.sprintf "  %s" (value_to_string_p ~show_types max_prec v))
+    (fun v -> Printf.sprintf " %s" (value_to_string_p ~show_types max_prec v))
     bs
 
 (* and multivalue_to_string ~show_types term_s m =
@@ -656,8 +658,6 @@ let rec printSvalue sv =
   | SEdge (Subset es) ->
       PrimitiveCollections.printList
         (fun (u, v) -> Printf.sprintf "%d~%d" u v)
-        es
-        (Printf.sprintf "%d:{" (List.length es))
-        "," "}"
+        es "{" "," "}"
   | STuple svs ->
       PrimitiveCollections.printList (fun sv -> printSvalue sv) svs "(" "," ")"

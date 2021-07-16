@@ -470,11 +470,9 @@ let op_typ op =
   | Or -> ([ concrete TBool; concrete TBool ], concrete TBool)
   | Not -> ([ concrete TBool ], concrete TBool)
   (* Integer operators *)
-  | UAdd size ->
+  | UAdd size | UAnd size ->
       ( [ concrete @@ tint_of_size size; concrete @@ tint_of_size size ],
         concrete @@ tint_of_size size )
-  (* | USub size -> [tint_of_size size; tint_of_size size], tint_of_size size
-     | UAnd size -> [tint_of_size size; tint_of_size size], tint_of_size size *)
   | ULess size ->
       ( [ concrete @@ tint_of_size size; concrete @@ tint_of_size size ],
         concrete TBool )
@@ -503,6 +501,9 @@ let op_typ op =
   | BddAdd n ->
       let t = symbolic @@ tint_of_size n in
       ([ t; t ], t)
+  | BddUAnd n ->
+      let t = symbolic @@ tint_of_size n in
+      ([ t; t ], symbolic @@ TBool)
   | BddLess n ->
       let t = symbolic @@ tint_of_size n in
       ([ t; t ], symbolic TBool)

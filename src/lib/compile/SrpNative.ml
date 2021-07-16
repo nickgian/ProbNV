@@ -33,8 +33,8 @@ module type SrpSimulationSig = sig
     (* merge function *)
     'a CompileBDDs.t
   (** Takes as input record_fns, the attribute type id, the name of the
-     variable storing the solutions, the init trans and merge functions and
-     computes the solutions.*)
+      variable storing the solutions, the init trans and merge functions and
+      computes the solutions.*)
 
   type packet
 
@@ -80,8 +80,8 @@ module type SrpSimulationSig = sig
 
   val forwarding_solutions : forwardSolutions list ref
   (** List of dataplane solutions, each entry is the name of the the history
-    variables, a map from nodes to node histories, a map from edges to edge
-    histories and the types of histories *)
+      variables, a map from nodes to node histories, a map from edges to edge
+      histories and the types of histories *)
 
   val assertions : (string * bool Mtbddc.t * BddFunc.t option) list ref
   (** List of assertions. We compute the probability they hold. *)
@@ -123,20 +123,23 @@ module ForwardingStats = struct
   (*Time taken to compute packet histories *)
   let logging_time = ref 0.0
 
-  type forwardingStats = { fwdTime : float; logTime : float }
+  let dataplane_computation_time = ref 0.0
+
+  type forwardingStats = { fwdTime : float; logTime : float; dataplaneComputationTime : float }
 
   let perSimulationStats : forwardingStats PrimitiveCollections.StringMap.t ref
-      =
+    =
     ref StringMap.empty
 
   let clearSimulationStats () =
     fwd_time := 0.0;
-    logging_time := 0.0
+    logging_time := 0.0;
+    dataplane_computation_time := 0.0
 
   let logSimulationStats name =
     perSimulationStats :=
       StringMap.add name
-        { fwdTime = !fwd_time; logTime = !logging_time }
+        { fwdTime = !fwd_time; logTime = !logging_time; dataplaneComputationTime = !dataplane_computation_time }
         !perSimulationStats;
     clearSimulationStats ()
 
@@ -144,20 +147,23 @@ module ForwardingStats = struct
     Printf.printf
       "Forwarding Simulation Stats for %s\n---------------------------\n" name;
     Printf.printf "Forwarding time: %f\n" stats.fwdTime;
-    Printf.printf "Logging time: %f\n" stats.logTime
+    Printf.printf "Logging time: %f\n" stats.logTime;
+    Printf.printf "Dataplane computation time: %f\n" stats.dataplaneComputationTime
 
   let printTotalSimulationStats () =
     let total =
       StringMap.fold
         (fun _ v acc ->
-          {
-            fwdTime = v.fwdTime +. acc.fwdTime;
-            logTime = v.logTime +. acc.logTime;
-          })
+           {
+             fwdTime = v.fwdTime +. acc.fwdTime;
+             logTime = v.logTime +. acc.logTime;
+             dataplaneComputationTime = v.dataplaneComputationTime +. acc.dataplaneComputationTime;
+           })
         !perSimulationStats
-        { fwdTime = 0.0; logTime = 0.0 }
+        { fwdTime = 0.0; logTime = 0.0; dataplaneComputationTime = 0.0 }
     in
     printSimulationStats "all simulations" total
+
 end
 
 module ForwardingSimulation (G : Topology) = struct
@@ -214,8 +220,8 @@ module ForwardingSimulation (G : Topology) = struct
     Printf.printf "switch state:\n";
     AdjGraph.VertexMap.iter
       (fun i ps ->
-        Printf.printf "%d : %s\n" i
-          (Collections.printList (fun _ -> "p") ps "[" ";" "]"))
+         Printf.printf "%d : %s\n" i
+           (Collections.printList (fun _ -> "p") ps "[" ";" "]"))
       s.switches;
     Printf.printf "worklist:\n%s"
       (Collections.printList
@@ -229,19 +235,19 @@ module ForwardingSimulation (G : Topology) = struct
     let switches, nodeHistory, worklist =
       AdjGraph.fold_vertex
         (fun n (accSt, accH, wklist) ->
-          let p = initSwitch n in
-          let accSt, wklist =
-            if p = bot then (AdjGraph.VertexMap.add n [] accSt, wklist)
-            else (AdjGraph.VertexMap.add n [ p ] accSt, n :: wklist)
-          in
-          (accSt, AdjGraph.VertexMap.add n (hinitV n) accH, wklist))
+           let p = initSwitch n in
+           let accSt, wklist =
+             if p = bot then (AdjGraph.VertexMap.add n [] accSt, wklist)
+             else (AdjGraph.VertexMap.add n [ p ] accSt, n :: wklist)
+           in
+           (accSt, AdjGraph.VertexMap.add n (hinitV n) accH, wklist))
         g
         (AdjGraph.VertexMap.empty, AdjGraph.VertexMap.empty, [])
     in
     let edgeHistory =
       AdjGraph.fold_edges_e
         (fun e accH ->
-          AdjGraph.EdgeMap.add e (hinitE (AdjGraph.Edge.label e)) accH)
+           AdjGraph.EdgeMap.add e (hinitE (AdjGraph.Edge.label e)) accH)
         g AdjGraph.EdgeMap.empty
     in
     let s = { switches; nodeHistory; edgeHistory; worklist } in
@@ -313,9 +319,9 @@ module ForwardingSimulation (G : Topology) = struct
     let s' =
       BatList.fold_left
         (fun s v ->
-          List.fold_left
-            (fun s packet -> process_packet packet origin v s)
-            s packets)
+           List.fold_left
+             (fun s packet -> process_packet packet origin v s)
+             s packets)
         s neighbors
     in
     (* Printf.printf "Resulted in state:\n";
@@ -326,8 +332,8 @@ module ForwardingSimulation (G : Topology) = struct
     match s.worklist with
     | [] -> (s.nodeHistory, s.edgeHistory)
     | _ ->
-        let s' = simulate_forward_step fwdIn fwdOut logV logE bot s in
-        simulate_forward_init fwdIn fwdOut logV logE bot s'
+      let s' = simulate_forward_step fwdIn fwdOut logV logE bot s in
+      simulate_forward_init fwdIn fwdOut logV logE bot s'
 
   let forwarding_solutions = ref []
 
@@ -351,13 +357,16 @@ module ForwardingSimulation (G : Topology) = struct
           logE e p he)
     in
     (* Cudd.Man.flush BddUtils.mgr;
-    Gc.major (); *)
-    (* BddUtils.set_reordering (Some 8); *)
+       Gc.major (); *)
     let hv, he = simulate_forward_init fwdIn fwdOut logV logE bot s in
 
     ForwardingStats.logSimulationStats (Printf.sprintf "%s/%s" hvName heName);
 
-    Gc.full_major ();
+    (* BddUtils.set_reordering (Some 8); *)
+    if Gc.((quick_stat ()).heap_words) > 231072000 then
+      (
+        Cudd.Man.flush BddUtils.mgr;
+        Gc.major ());
 
 
     let _, defaultV = AdjGraph.VertexMap.choose hv in
@@ -380,34 +389,41 @@ module ForwardingSimulation (G : Topology) = struct
     let bdd_full_V =
       AdjGraph.VertexMap.fold
         (fun n v acc ->
-          BddMap.update (Obj.magic record_fns) acc (Obj.magic n) (Obj.magic v))
+           BddMap.update (Obj.magic record_fns) acc (Obj.magic n) (Obj.magic v))
         hv bdd_base_V
     in
     let bdd_full_E =
       AdjGraph.EdgeMap.fold
         (fun e v acc ->
-          BddMap.update (Obj.magic record_fns) acc
-            (Obj.magic (AdjGraph.Edge.label e))
-            (Obj.magic v))
+           BddMap.update (Obj.magic record_fns) acc
+             (Obj.magic (AdjGraph.Edge.label e))
+             (Obj.magic v))
         he bdd_base_E
     in
 
     (* storing the histories for printing *)
     (let open Solution in
-    forwarding_solutions :=
-      {
-        hvName;
-        heName;
-        historyV_ty =
-          Collections.TypeIds.get_elt CompileBDDs.type_store hv_ty_id;
-        historyE_ty =
-          Collections.TypeIds.get_elt CompileBDDs.type_store he_ty_id;
-        historyV = hv;
-        historyE = he;
-      }
-      :: !forwarding_solutions);
+     forwarding_solutions :=
+       {
+         hvName;
+         heName;
+         historyV_ty =
+           Collections.TypeIds.get_elt CompileBDDs.type_store hv_ty_id;
+         historyE_ty =
+           Collections.TypeIds.get_elt CompileBDDs.type_store he_ty_id;
+         historyV = hv;
+         historyE = he;
+       }
+       :: !forwarding_solutions);
 
     (bdd_full_V, bdd_full_E)
+
+  let simulate_forwarding record_fns hvName heName hv_ty_id he_ty_id
+      (initSwitch : switchInitFunction) (fwdOut : forwardOutFunction)
+      (fwdIn : forwardInFunction) hinitV hinitE logV logE bot =
+    Profile.time_profile_total ForwardingStats.dataplane_computation_time 
+      (fun () -> simulate_forwarding record_fns hvName heName hv_ty_id he_ty_id initSwitch fwdOut fwdIn hinitV hinitE logV logE bot)
+
 end
 
 (* Route simulation statistics *)
@@ -416,6 +432,8 @@ module RouteComputationStats = struct
   let transfer_time = ref 0.0
 
   let merge_time = ref 0.0
+
+  let total_route_computation_time = ref 0.0
 
   let merges = ref 0
 
@@ -429,10 +447,11 @@ module RouteComputationStats = struct
     mergeNumber : int;
     incrMergeNumber : int;
     transferNumber : int;
+    totalRouteComputationTime : float;
   }
 
   let perSimulationStats : simulationStats PrimitiveCollections.StringMap.t ref
-      =
+    =
     ref StringMap.empty
 
   let clearSimulationStats () =
@@ -440,7 +459,8 @@ module RouteComputationStats = struct
     merges := 0;
     transfers := 0;
     transfer_time := 0.0;
-    merge_time := 0.0
+    merge_time := 0.0;
+    total_route_computation_time := 0.0
 
   let logSimulationStats name =
     perSimulationStats :=
@@ -448,6 +468,7 @@ module RouteComputationStats = struct
         {
           transTime = !transfer_time;
           mergeTime = !merge_time;
+          totalRouteComputationTime = !total_route_computation_time;
           transferNumber = !transfers;
           mergeNumber = !merges;
           incrMergeNumber = !incr_merges;
@@ -462,29 +483,32 @@ module RouteComputationStats = struct
     Printf.printf "Number of calls to merge: %d\n" stats.mergeNumber;
     Printf.printf "Number of transfers: %d\n" stats.transferNumber;
     Printf.printf "Transfer time: %f\n" stats.transTime;
-    Printf.printf "Merge time: %f\n" stats.mergeTime
+    Printf.printf "Merge time: %f\n" stats.mergeTime;
+    Printf.printf "Total Route Computation time: %f\n" stats.totalRouteComputationTime
 
   let printTotalSimulationStats () =
     let total =
       StringMap.fold
         (fun _ v acc ->
-          {
-            transTime = v.transTime +. acc.transTime;
-            mergeTime = v.mergeTime +. acc.mergeTime;
-            transferNumber = v.transferNumber + acc.transferNumber;
-            mergeNumber = v.mergeNumber + acc.mergeNumber;
-            incrMergeNumber = v.incrMergeNumber + acc.incrMergeNumber;
-          })
+           {
+             transTime = v.transTime +. acc.transTime;
+             mergeTime = v.mergeTime +. acc.mergeTime;
+             totalRouteComputationTime = v.totalRouteComputationTime +. acc.totalRouteComputationTime;
+             transferNumber = v.transferNumber + acc.transferNumber;
+             mergeNumber = v.mergeNumber + acc.mergeNumber;
+             incrMergeNumber = v.incrMergeNumber + acc.incrMergeNumber;
+           })
         !perSimulationStats
         {
           transTime = 0.0;
           mergeTime = 0.0;
+          totalRouteComputationTime = 0.0;
           transferNumber = 0;
           mergeNumber = 0;
           incrMergeNumber = 0;
         }
     in
-    printSimulationStats "all simulations" total
+    printSimulationStats "All simulations" total
 end
 
 module SrpSimulation (G : Topology) : SrpSimulationSig = struct
@@ -542,14 +566,49 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
       let n_received, n_old_attribute = get_attribute neighbor s in
       match AdjGraph.VertexMap.Exceptionless.find origin n_received with
       | None ->
-          (* If this is the first message from this node then add it to the received messages of n*)
-          let new_entry =
-            AdjGraph.VertexMap.add origin n_incoming_attribute n_received
-          in
-          (*compute new merge and decide whether best route changed and it needs to be propagated*)
+        (* If this is the first message from this node then add it to the received messages of n*)
+        let new_entry =
+          AdjGraph.VertexMap.add origin n_incoming_attribute n_received
+        in
+        (*compute new merge and decide whether best route changed and it needs to be propagated*)
+        let n_new_attribute =
+          merge neighbor n_old_attribute n_incoming_attribute
+        in
+        if
+          Mtbddc.is_equal
+            (Obj.magic n_old_attribute)
+            (Obj.magic n_new_attribute)
+        then
+          ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
+            todo )
+        else
+          ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
+            neighbor :: todo )
+      | Some old_attribute_from_x ->
+        (* if n had already received a message from origin then we may need to recompute everything*)
+        (* Withdraw route received from origin *)
+        let n_received = AdjGraph.VertexMap.remove origin n_received in
+        (* Merge the old route from with the new route from origin *)
+        let compare_routes =
+          merge neighbor old_attribute_from_x n_incoming_attribute
+        in
+        (* This is a hack because merge may not be selective *)
+        let dummy_new =
+          (* n_incoming_attribute *)
+          merge neighbor n_incoming_attribute n_incoming_attribute
+        in
+        (*if the merge between new and old route from origin is equal to the new route from origin*)
+        if Mtbddc.is_equal (Obj.magic compare_routes) (Obj.magic dummy_new)
+        then
+          (* incr incr_merges; *)
+          (*we can incrementally compute in this case*)
           let n_new_attribute =
             merge neighbor n_old_attribute n_incoming_attribute
           in
+          let new_entry =
+            AdjGraph.VertexMap.add origin n_incoming_attribute n_received
+          in
+          (*update the todo list if the node's solution changed.*)
           if
             Mtbddc.is_equal
               (Obj.magic n_old_attribute)
@@ -560,58 +619,23 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
           else
             ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
               neighbor :: todo )
-      | Some old_attribute_from_x ->
-          (* if n had already received a message from origin then we may need to recompute everything*)
-          (* Withdraw route received from origin *)
-          let n_received = AdjGraph.VertexMap.remove origin n_received in
-          (* Merge the old route from with the new route from origin *)
-          let compare_routes =
-            merge neighbor old_attribute_from_x n_incoming_attribute
+        else
+          (* In this case, we need to do a full merge of all received routes *)
+          let best =
+            AdjGraph.VertexMap.fold
+              (fun _ v acc -> merge neighbor v acc)
+              n_received n_incoming_attribute
           in
-          (* This is a hack because merge may not be selective *)
-          let dummy_new =
-            (* n_incoming_attribute *)
-            merge neighbor n_incoming_attribute n_incoming_attribute
+          let newTodo =
+            if Mtbddc.is_equal (Obj.magic n_old_attribute) (Obj.magic best)
+            then todo
+            else neighbor :: todo
           in
-          (*if the merge between new and old route from origin is equal to the new route from origin*)
-          if Mtbddc.is_equal (Obj.magic compare_routes) (Obj.magic dummy_new)
-          then
-            (* incr incr_merges; *)
-            (*we can incrementally compute in this case*)
-            let n_new_attribute =
-              merge neighbor n_old_attribute n_incoming_attribute
-            in
-            let new_entry =
-              AdjGraph.VertexMap.add origin n_incoming_attribute n_received
-            in
-            (*update the todo list if the node's solution changed.*)
-            if
-              Mtbddc.is_equal
-                (Obj.magic n_old_attribute)
-                (Obj.magic n_new_attribute)
-            then
-              ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
-                todo )
-            else
-              ( AdjGraph.VertexMap.add neighbor (new_entry, n_new_attribute) s,
-                neighbor :: todo )
-          else
-            (* In this case, we need to do a full merge of all received routes *)
-            let best =
-              AdjGraph.VertexMap.fold
-                (fun _ v acc -> merge neighbor v acc)
-                n_received n_incoming_attribute
-            in
-            let newTodo =
-              if Mtbddc.is_equal (Obj.magic n_old_attribute) (Obj.magic best)
-              then todo
-              else neighbor :: todo
-            in
-            (*add the new received route for n from origin*)
-            let n_received =
-              AdjGraph.VertexMap.add origin n_incoming_attribute n_received
-            in
-            (AdjGraph.VertexMap.add neighbor (n_received, best) s, newTodo)
+          (*add the new received route for n from origin*)
+          let n_received =
+            AdjGraph.VertexMap.add origin n_incoming_attribute n_received
+          in
+          (AdjGraph.VertexMap.add neighbor (n_received, best) s, newTodo)
     in
     let initial_attribute = get_attribute origin s in
     let neighbors = AdjGraph.succ G.graph origin in
@@ -622,10 +646,10 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
     match QueueSet.pop q with
     | None -> s
     | Some (next, rest) ->
-        (* (if (Cudd.Man.get_node_count BddUtils.mgr > 1000000) then
-           BddUtils.set_reordering (Cmdline.get_cfg ()).reordering); *)
-        let s', more = simulate_step trans merge s next in
-        simulate_init trans merge (s', QueueSet.add_all rest more)
+      (* (if (Cudd.Man.get_node_count BddUtils.mgr > 1000000) then
+         BddUtils.set_reordering (Cmdline.get_cfg ()).reordering); *)
+      let s', more = simulate_step trans merge s next in
+      simulate_init trans merge (s', QueueSet.add_all rest more)
 
   (* simulate for at most k steps *)
   let simulate_init_bound trans merge ((s, q) : 'a state) k =
@@ -635,8 +659,8 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
         match QueueSet.pop q with
         | None -> (s, q)
         | Some (next, rest) ->
-            let s', more = simulate_step trans merge s next in
-            loop s' (QueueSet.add_all rest more) (k - 1)
+          let s', more = simulate_step trans merge s next in
+          loop s' (QueueSet.add_all rest more) (k - 1)
     in
     loop s q k
 
@@ -661,18 +685,15 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
     let vals =
       match (Cmdline.get_cfg ()).bound with
       | None ->
-          simulate_init trans merge s
-          |> AdjGraph.VertexMap.map (fun (_, v) -> v)
+        simulate_init trans merge s
+        |> AdjGraph.VertexMap.map (fun (_, v) -> v)
       | Some b ->
-          fst @@ simulate_init_bound trans merge s b
-          |> AdjGraph.VertexMap.map (fun (_, v) -> v)
+        fst @@ simulate_init_bound trans merge s b
+        |> AdjGraph.VertexMap.map (fun (_, v) -> v)
     in
 
     RouteComputationStats.logSimulationStats name;
 
-    (* Gc.full_major();
-    Cudd.Man.flush BddUtils.mgr; *)
-    Gc.full_major();
 
     let default = AdjGraph.VertexMap.choose vals |> snd in
     (* Constructing a function from the solutions *)
@@ -686,7 +707,7 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
     let bdd_full =
       AdjGraph.VertexMap.fold
         (fun n v acc ->
-          BddMap.update (Obj.magic record_fns) acc (Obj.magic n) (Obj.magic v))
+           BddMap.update (Obj.magic record_fns) acc (Obj.magic n) (Obj.magic v))
         vals bdd_base
     in
 
@@ -729,7 +750,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
   }
 
   type 'a state = 'a nodeState AdjGraph.VertexMap.t * globalState
- let assertionTime = ref 0.0
+  let assertionTime = ref 0.0
 
   let create_initial_state (n : int) initArr : 'a state =
     let q = BatQueue.create () in
@@ -738,18 +759,18 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     let qMap =
       BatArray.fold_lefti
         (fun acc i route ->
-          BatMap.update_stdlib route
-            (fun is ->
-              match is with None -> Some [ i ] | Some is -> Some (i :: is))
-            acc)
+           BatMap.update_stdlib route
+             (fun is ->
+                match is with None -> Some [ i ] | Some is -> Some (i :: is))
+             acc)
         BatMap.empty initArr
     in
     let _, maxElts = BatMap.max_binding qMap in
     let qSet =
       List.fold_left
         (fun acc i ->
-          BatQueue.add i q;
-          AdjGraph.VertexSet.add i acc)
+           BatQueue.add i q;
+           AdjGraph.VertexSet.add i acc)
         AdjGraph.VertexSet.empty maxElts
     in
 
@@ -779,10 +800,10 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     let neighbors = AdjGraph.succ G.graph u in
     BatList.iter
       (fun v ->
-        if not (AdjGraph.VertexSet.mem v global.queueSet) then
-          BatQueueExt.add v global.queue;
-        global.queueSet <- AdjGraph.VertexSet.add v global.queueSet;
-        global.worklist.(v) <- AdjGraph.VertexSet.add u global.worklist.(v))
+         if not (AdjGraph.VertexSet.mem v global.queueSet) then
+           BatQueueExt.add v global.queue;
+         global.queueSet <- AdjGraph.VertexSet.add v global.queueSet;
+         global.worklist.(v) <- AdjGraph.VertexSet.add u global.worklist.(v))
       neighbors
 
   (* Performs the sending of message from every node [v] in [todoSet] to [u].*)
@@ -803,17 +824,17 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
 
       match AdjGraph.VertexMap.Exceptionless.find u local with
       | None ->
-          (* If we haven't processed node u before *)
-          (* Create an inbox for u, with a message from v *)
-          let inbox_u = AdjGraph.VertexMap.singleton v n_incoming_attribute in
-          (* Create a label for u *)
-          let local' =
-            AdjGraph.VertexMap.add u
-              { labels = n_incoming_attribute; received = inbox_u }
-              local
-          in
-          (* The attribute changed, so log that to update u's neighbors *)
-          (Some true, local')
+        (* If we haven't processed node u before *)
+        (* Create an inbox for u, with a message from v *)
+        let inbox_u = AdjGraph.VertexMap.singleton v n_incoming_attribute in
+        (* Create a label for u *)
+        let local' =
+          AdjGraph.VertexMap.add u
+            { labels = n_incoming_attribute; received = inbox_u }
+            local
+        in
+        (* The attribute changed, so log that to update u's neighbors *)
+        (Some true, local')
       | Some { labels = labu; received = inbox_u } -> (
           (* If we have processed node u before *)
 
@@ -830,85 +851,85 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
               (*compute the merge and decide whether best route changed and it needs to be propagated - but only do it if there is no full merge awaiting.*)
               match change_bit with
               | None ->
-                  ( change_bit,
-                    AdjGraph.VertexMap.add u
-                      { labels = labu; received = inbox_u' }
-                      local )
-              | Some _ ->
-                  let n_new_attribute = merge u labu n_incoming_attribute in
-                  ( Some
-                      (not
-                         (Mtbddc.is_equal (Obj.magic labu)
-                            (Obj.magic n_new_attribute))),
-                    AdjGraph.VertexMap.add u
-                      { labels = n_new_attribute; received = inbox_u' }
-                      local ) )
-          | Some (old_attribute_from_v, inbox_u') ->
-              (* if u had already received a message from v then we may need to recompute everything*)
-
-              (* But first check if we anyway have to remerge everything.. *)
-              if change_bit = None then
-                (* add the new message from v to u's inbox *)
-                let inbox_u' =
-                  AdjGraph.VertexMap.add v n_incoming_attribute inbox_u'
-                in
                 ( change_bit,
                   AdjGraph.VertexMap.add u
                     { labels = labu; received = inbox_u' }
                     local )
-              else
-                (* Check for incremental merging *)
-                (* Merge the old route from v with the new route from v *)
-                let compare_routes =
-                  merge u old_attribute_from_v n_incoming_attribute
-                in
-                (* This is a hack because merge may not be selective *)
-                let dummy_new =
-                  (* n_incoming_attribute *)
-                  merge u n_incoming_attribute n_incoming_attribute
-                in
-                (*if the merge between new and old route from origin is equal to the new route from v*)
-                if
-                  Mtbddc.is_equal (Obj.magic compare_routes)
-                    (Obj.magic dummy_new)
-                then (
-                  incr RouteComputationStats.incr_merges;
-                  (*we can incrementally compute in this case*)
-                  let u_new_attribute = merge u labu n_incoming_attribute in
-                  (* add the new message from v to u's inbox *)
-                  let inbox_u' =
-                    AdjGraph.VertexMap.add v n_incoming_attribute inbox_u'
-                  in
-                  (*update the todo bit if the node's solution changed.*)
-                  ( Some
-                      (not
-                         (Mtbddc.is_equal (Obj.magic labu)
-                            (Obj.magic u_new_attribute))),
-                    AdjGraph.VertexMap.add u
-                      { labels = u_new_attribute; received = inbox_u' }
-                      local ) )
-                else
-                  (* In this case, we need to do a full merge of all received routes -
-                     which we defer for once we have processed all incoming messages *)
+              | Some _ ->
+                let n_new_attribute = merge u labu n_incoming_attribute in
+                ( Some
+                    (not
+                       (Mtbddc.is_equal (Obj.magic labu)
+                          (Obj.magic n_new_attribute))),
+                  AdjGraph.VertexMap.add u
+                    { labels = n_new_attribute; received = inbox_u' }
+                    local ) )
+          | Some (old_attribute_from_v, inbox_u') ->
+            (* if u had already received a message from v then we may need to recompute everything*)
 
-                  (* add the new message from v to u's inbox *)
-                  let inbox_u' =
-                    AdjGraph.VertexMap.add v n_incoming_attribute inbox_u'
-                  in
-                  ( None,
-                    AdjGraph.VertexMap.add u
-                      { labels = labu; received = inbox_u' }
-                      local ) )
+            (* But first check if we anyway have to remerge everything.. *)
+            if change_bit = None then
+              (* add the new message from v to u's inbox *)
+              let inbox_u' =
+                AdjGraph.VertexMap.add v n_incoming_attribute inbox_u'
+              in
+              ( change_bit,
+                AdjGraph.VertexMap.add u
+                  { labels = labu; received = inbox_u' }
+                  local )
+            else
+              (* Check for incremental merging *)
+              (* Merge the old route from v with the new route from v *)
+              let compare_routes =
+                merge u old_attribute_from_v n_incoming_attribute
+              in
+              (* This is a hack because merge may not be selective *)
+              let dummy_new =
+                (* n_incoming_attribute *)
+                merge u n_incoming_attribute n_incoming_attribute
+              in
+              (*if the merge between new and old route from origin is equal to the new route from v*)
+              if
+                Mtbddc.is_equal (Obj.magic compare_routes)
+                  (Obj.magic dummy_new)
+              then (
+                incr RouteComputationStats.incr_merges;
+                (*we can incrementally compute in this case*)
+                let u_new_attribute = merge u labu n_incoming_attribute in
+                (* add the new message from v to u's inbox *)
+                let inbox_u' =
+                  AdjGraph.VertexMap.add v n_incoming_attribute inbox_u'
+                in
+                (*update the todo bit if the node's solution changed.*)
+                ( Some
+                    (not
+                       (Mtbddc.is_equal (Obj.magic labu)
+                          (Obj.magic u_new_attribute))),
+                  AdjGraph.VertexMap.add u
+                    { labels = u_new_attribute; received = inbox_u' }
+                    local ) )
+              else
+                (* In this case, we need to do a full merge of all received routes -
+                   which we defer for once we have processed all incoming messages *)
+
+                (* add the new message from v to u's inbox *)
+                let inbox_u' =
+                  AdjGraph.VertexMap.add v n_incoming_attribute inbox_u'
+                in
+                ( None,
+                  AdjGraph.VertexMap.add u
+                    { labels = labu; received = inbox_u' }
+                    local ) )
     in
     (* Printf.printf "Processing node: %d\n" u; *)
     let change, local' =
       AdjGraph.VertexSet.fold
         (fun v (changed, local) ->
-          (* Send message from v to u *)
-          match (changed, do_neighbor changed v local) with
-          | _, (None, local') -> (None, local')
-          | None, (_, local') -> (None, local')
-          | Some b, (Some b', local') -> (Some (b || b'), local'))
+           (* Send message from v to u *)
+           match (changed, do_neighbor changed v local) with
+           | _, (None, local') -> (None, local')
+           | None, (_, local') -> (None, local')
+           | Some b, (Some b', local') -> (Some (b || b'), local'))
         todoSet (Some false, local)
     in
 
@@ -923,23 +944,23 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
        the queue and to the worklist with a dependency from u*)
     match change with
     | None ->
-        (* Do the full merge for u  *)
-        let state_u = AdjGraph.VertexMap.find u local' in
-        let old_route = state_u.labels in
-        let (_, message), u_rest = AdjGraph.VertexMap.pop state_u.received in
-        let u_new_label =
-          AdjGraph.VertexMap.fold
-            (fun _ route acc -> merge u route acc)
-            u_rest message
-        in
-        if not (Mtbddc.is_equal (Obj.magic old_route) (Obj.magic u_new_label))
-        then updateNeighbors u global;
-        AdjGraph.VertexMap.add u
-          { labels = u_new_label; received = state_u.received }
-          local'
-    | Some b ->
-        if b then updateNeighbors u global;
+      (* Do the full merge for u  *)
+      let state_u = AdjGraph.VertexMap.find u local' in
+      let old_route = state_u.labels in
+      let (_, message), u_rest = AdjGraph.VertexMap.pop state_u.received in
+      let u_new_label =
+        AdjGraph.VertexMap.fold
+          (fun _ route acc -> merge u route acc)
+          u_rest message
+      in
+      if not (Mtbddc.is_equal (Obj.magic old_route) (Obj.magic u_new_label))
+      then updateNeighbors u global;
+      AdjGraph.VertexMap.add u
+        { labels = u_new_label; received = state_u.received }
         local'
+    | Some b ->
+      if b then updateNeighbors u global;
+      local'
 
   (** ** Different types of heuristics to pick the next node to process *)
 
@@ -955,31 +976,31 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     match try Some (AdjGraph.VertexSet.pop s) with Not_found -> None with
     | None -> []
     | Some (x, s) ->
-        if pred x then x :: findMinAll pred s else findMinAll pred s
+      if pred x then x :: findMinAll pred s else findMinAll pred s
 
   let rec findMinMost wklist pred (s : AdjGraph.VertexSet.t) acc :
-      AdjGraph.Vertex.t option =
+    AdjGraph.Vertex.t option =
     match try Some (AdjGraph.VertexSet.pop s) with Not_found -> None with
     | None -> acc
     | Some (x, s) ->
-        if pred x then
-          match acc with
-          | None -> Some x
-          | Some y ->
-              if
-                AdjGraph.VertexSet.cardinal wklist.(y)
-                > AdjGraph.VertexSet.cardinal wklist.(x)
-              then Some x
-              else Some y
-        else findMinMost wklist pred s acc
+      if pred x then
+        match acc with
+        | None -> Some x
+        | Some y ->
+          if
+            AdjGraph.VertexSet.cardinal wklist.(y)
+            > AdjGraph.VertexSet.cardinal wklist.(x)
+          then Some x
+          else Some y
+      else findMinMost wklist pred s acc
 
   (* Find the node in the worklist with the most incoming messages *)
   let rec findMost u wklist (s : AdjGraph.VertexSet.t) : AdjGraph.Vertex.t =
     let x, _ =
       AdjGraph.VertexSet.fold
         (fun x (accx, accsz) ->
-          let sz = AdjGraph.VertexSet.cardinal wklist.(x) in
-          if x <> u && sz > accsz then (x, sz) else (accx, accsz))
+           let sz = AdjGraph.VertexSet.cardinal wklist.(x) in
+           if x <> u && sz > accsz then (x, sz) else (accx, accsz))
         s (u, 0)
     in
     x
@@ -1021,24 +1042,22 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
              processNode x init trans merge local global (i + 1) *)
       match findMinAll pred todoSet with
       | [] ->
-          (* If all elements satisfy pred, i.e. they have no outstanding deps, continue processing next *)
-          simulate_step init trans merge local global next todoSet
+        (* If all elements satisfy pred, i.e. they have no outstanding deps, continue processing next *)
+        simulate_step init trans merge local global next todoSet
       | xs ->
-          (* If next depends on x and x needs to be processed too, then skip
-              the queue and process x *)
-          List.fold_left
-            (fun acc x -> processNode x init trans merge acc global (i + 1))
-            local xs
+        (* If next depends on x and x needs to be processed too, then skip
+            the queue and process x *)
+        List.fold_left
+          (fun acc x -> processNode x init trans merge acc global (i + 1))
+          local xs
 
   (* simulate_init s q simulates srp starting with initial state (s,q) *)
   let rec simulate_init init trans merge global local =
     match BatQueue.Exceptionless.peek global.queue with
-    (* match BatQueue.take_opt global.queue with *)
     | None -> local
     | Some next ->
-        (* Printf.printf "Queue top: %d," next; *)
-        simulate_init init trans merge global
-          (processNode next init trans merge local global 0)
+      simulate_init init trans merge global
+        (processNode next init trans merge local global 0)
 
   (* List holding the solutions of solved SRPs*)
   let solved : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list ref =
@@ -1080,16 +1099,15 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
     let bdd_full =
       AdjGraph.VertexMap.fold
         (fun n v acc ->
-          BddMap.update (Obj.magic record_fns) acc (Obj.magic n) (Obj.magic v))
+           BddMap.update (Obj.magic record_fns) acc (Obj.magic n) (Obj.magic v))
         vals bdd_base
     in
 
-    (* Printf.printf "BDD operations: %f\n" !BddFunc.bddOps;
-       BddFunc.bddOps := 0.0; *)
-    Cudd.Man.flush BddUtils.mgr;
-    Gc.major ();
+    if Gc.((quick_stat ()).heap_words) > 231072000 then
+      (
+        Cudd.Man.flush BddUtils.mgr;
+        Gc.major ());
 
-    (* Gc.print_stat stdout; *)
     (* Storing the AdjGraph.VertexMap in the solved list, but returning
        the total map to the ProbNV program *)
     solved :=
@@ -1098,6 +1116,10 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
           Collections.TypeIds.get_elt CompileBDDs.type_store attr_ty_id ) )
       :: !solved;
     bdd_full
+
+  let simulate_solve record_fns attr_ty_id name init trans merge =
+    Profile.time_profile_total RouteComputationStats.total_route_computation_time 
+      (fun () -> simulate_solve record_fns attr_ty_id name init trans merge)
 
   let assertions : (string * bool Mtbddc.t * BddFunc.t option) list ref = ref []
 
@@ -1177,7 +1199,7 @@ let build_solutions nodes topology record_fns (fwd : unit Solution.forwardSoluti
   let assertions = List.rev assertions in
   (* let arr = Array.init (Cudd.Man.get_bddvar_nb BddUtils.mgr) (fun i -> i) in
      Cudd.Man.shuffle_heap BddUtils.mgr arr;
-  Cudd.Man.disable_autodyn BddUtils.mgr; *)
+     Cudd.Man.disable_autodyn BddUtils.mgr; *)
 
   let symbolic_bounds = List.rev !BddUtils.vars_list in
   let distrs = BddUtils.createDistributionMap symbolic_bounds in
@@ -1187,14 +1209,14 @@ let build_solutions nodes topology record_fns (fwd : unit Solution.forwardSoluti
       Profile.time_profile "Checking assertions and computing counterexamples" (fun () ->
           List.map
             (fun a ->
-              (* TODO: generateSat when a counterexample is required *)
-              check_assertion a topology distrs cfg.counterexample)
+               (* TODO: generateSat when a counterexample is required *)
+               check_assertion a topology distrs cfg.counterexample)
             assertions);
     solves =
       List.map
         (fun (name, sol) ->
-          ( Var.create name,
-            { sol_val = build_solution record_fns sol; attr_ty = snd sol } ))
+           ( Var.create name,
+             { sol_val = build_solution record_fns sol; attr_ty = snd sol } ))
         sols;
     forwarding = List.map (fun f -> build_forwarding record_fns f) fwd;
     values = build_let_values record_fns letVals;
