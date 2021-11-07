@@ -363,7 +363,7 @@ let rec expand (vars : Man.tbool list) sz : Man.tbool list list =
 let pick_default_value map =
   let count = ref (-1) in
   let value = ref None in
-  Mtbdd.iter_cube
+  Mtbddc.iter_cube
     (fun vars v ->
       let c = count_tops vars in
       if c > !count then count := c;

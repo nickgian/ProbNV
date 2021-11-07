@@ -42,9 +42,6 @@ let wrap_mtbdd bdd =
       Mtbddc.ite bdd tru fal
   | _ -> failwith "Expected a boolean BDD"
 
-(* given a boolean MTBDD converts it to a BDD*)
-let bdd_of_mtbdd (map : bool Cudd.Mtbddc.unique Cudd.Vdd.t) =
-  Mtbddc.guard_of_leaf B.tbl map true
 
 (*Gets i-th bit of the integer n *)
 let get_bit (n : int) (i : int) : bool =

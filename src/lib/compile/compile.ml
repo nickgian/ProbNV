@@ -54,20 +54,20 @@ let build_record_types () =
   match lst with
   | [] -> ""
   | _ ->
-      Collections.printList
-        (fun n -> build_record_type n)
-        lst "type " "\n and " "\n"
+    Collections.printList
+      (fun n -> build_record_type n)
+      lst "type " "\n and " "\n"
 
 let build_proj_func n =
   let lst = BatList.init n (fun i -> i) in
   Collections.printList
     (* (fun i -> Printf.sprintf "| \"p%d__%d\" -> Obj.magic (fun x -> x.p%d__%d)" i n i n) *)
-      (fun i ->
-      Printf.sprintf "| (%d,%d) -> Obj.magic (fun x -> x.p%d__%d)" i n i n)
+    (fun i ->
+       Printf.sprintf "| (%d,%d) -> Obj.magic (fun x -> x.p%d__%d)" i n i n)
     lst "" "\n" "\n"
 
 (** Builds a table (function) that maps record projector names to the respective
-   functions *)
+    functions *)
 let build_proj_funcs () =
   let branches =
     IntSet.fold
@@ -93,7 +93,7 @@ let build_constructor n =
   Printf.sprintf "| %d -> Obj.magic (%s%s)\n" n fun_args fun_body
 
 (** Builds a table (function) that maps each record to a function that takes as
-   arguments a value for each of its fields and creates the record*)
+    arguments a value for each of its fields and creates the record*)
 let build_constructors () =
   let branches =
     IntSet.fold
@@ -108,10 +108,10 @@ let is_prefix_op op =
   match op with
   | BddAnd | BddOr | BddAdd _ | BddUAnd _ | BddNot | BddLess _ | BddLeq _ | BddEq | MGet
   | MCreate | MSet | MSize | TGet _ | MMerge ->
-      true
+    true
   | And | Or | Not | UAdd _ | UAnd _ | Eq | ULess _ | ULeq _ | NLess | NLeq | ELess
   | FLess | FLeq | ELeq | FAdd | FDiv | FMul ->
-      false
+    false
 
 let is_commutative_op op =
   match op with
@@ -130,7 +130,7 @@ let rec is_commutative_expr exp =
   in
   match exp.e with
   | EOp (op, es) ->
-  (is_commutative_op op) && (List.for_all aux es)
+    (is_commutative_op op) && (List.for_all aux es)
   | EFun b -> is_commutative_expr b.body
   | _ -> false 
 
@@ -154,8 +154,8 @@ let op_to_ocaml_string op =
   | NLeq | ELeq -> "<="
   | BddAnd | BddOr | BddNot | BddEq | BddAdd _ | BddUAnd _ | BddLess _ | BddLeq _ | MGet
   | MSet | MCreate | TGet _ | MMerge | MSize ->
-      failwith
-        ( "Operation: " ^ Printing.op_to_string op
+    failwith
+      ( "Operation: " ^ Printing.op_to_string op
         ^ ", prefix operations are handled elsewhere" )
 
 (** Translating patterns to OCaml patterns*)
@@ -169,11 +169,11 @@ let rec pattern_to_ocaml_string pattern =
   | PInt i -> string_of_int (Integer.to_int i)
   | PFloat i -> string_of_float i
   | PTuple ps ->
-      let n = BatList.length ps in
-      Collections.printListi
-        (fun i p ->
-          Printf.sprintf "%s = %s" (proj_rec i n) (pattern_to_ocaml_string p))
-        ps "{" "; " "}"
+    let n = BatList.length ps in
+    Collections.printListi
+      (fun i p ->
+         Printf.sprintf "%s = %s" (proj_rec i n) (pattern_to_ocaml_string p))
+      ps "{" "; " "}"
   | POption None -> "None"
   | POption (Some p) -> Printf.sprintf "Some %s" (pattern_to_ocaml_string p)
   | PRecord _ -> failwith "Records should have been unrolled"
@@ -197,22 +197,22 @@ let rec ty_to_ocaml_string t =
   | TNode -> "int"
   | TEdge -> "(int * int)"
   | TArrow (t1, t2) ->
-      Printf.sprintf "%s -> %s" (ty_to_ocaml_string t1) (ty_to_ocaml_string t2)
+    Printf.sprintf "%s -> %s" (ty_to_ocaml_string t1) (ty_to_ocaml_string t2)
   | TTuple ts ->
-      let n = BatList.length ts in
-      record_table := IntSet.add n !record_table;
-      (*add type to record table*)
-      let tup_typ = Printf.sprintf ") tup__%d" n in
-      Collections.printList
-        (fun ty -> Printf.sprintf "%s" (ty_to_ocaml_string ty))
-        ts "(" "," tup_typ
+    let n = BatList.length ts in
+    record_table := IntSet.add n !record_table;
+    (*add type to record table*)
+    let tup_typ = Printf.sprintf ") tup__%d" n in
+    Collections.printList
+      (fun ty -> Printf.sprintf "%s" (ty_to_ocaml_string ty))
+      ts "(" "," tup_typ
   | TOption t -> Printf.sprintf "(%s) option" (ty_to_ocaml_string t)
   | TMap (kty, vty) ->
-      ignore (ty_to_ocaml_string kty);
-      (* NOTE: doing this for the side effect in the case of TTuple, i.e. adding to record_table *)
-      ignore (ty_to_ocaml_string vty);
-      let vty = ty_to_ocaml_string vty in
-      Printf.sprintf "(%s) CompileBDDs.t" vty
+    ignore (ty_to_ocaml_string kty);
+    (* NOTE: doing this for the side effect in the case of TTuple, i.e. adding to record_table *)
+    ignore (ty_to_ocaml_string vty);
+    let vty = ty_to_ocaml_string vty in
+    Printf.sprintf "(%s) CompileBDDs.t" vty
   | TRecord _ -> failwith "Records should have been unrolled"
 
 (* 
@@ -221,61 +221,61 @@ let rec ty_to_ocaml_string t =
 let rec pattern_vars p =
   match p with
   | PWild | PBool _ | PInt _ | POption None | PNode _ | PEdgeId _ | PFloat _ ->
-      BatSet.PSet.create Var.compare
+    BatSet.PSet.create Var.compare
   | PVar v -> BatSet.PSet.singleton ~cmp:Var.compare v
   | PEdge (p1, p2) -> pattern_vars (PTuple [ p1; p2 ])
   | PTuple ps ->
-      List.fold_left
-        (fun set p -> BatSet.PSet.union set (pattern_vars p))
-        (BatSet.PSet.create Var.compare)
-        ps
+    List.fold_left
+      (fun set p -> BatSet.PSet.union set (pattern_vars p))
+      (BatSet.PSet.create Var.compare)
+      ps
   | POption (Some p) -> pattern_vars p
   | PRecord _ -> failwith "Records should have been unrolled"
 
 let rec free (seen : Var.t BatSet.PSet.t) (e : exp) : Var.t BatSet.PSet.t =
   match e.e with
   | EVar v ->
-      if BatSet.PSet.mem v seen then BatSet.PSet.create Var.compare
-      else BatSet.PSet.singleton ~cmp:Var.compare v
+    if BatSet.PSet.mem v seen then BatSet.PSet.create Var.compare
+    else BatSet.PSet.singleton ~cmp:Var.compare v
   | EVal _ -> BatSet.PSet.create Var.compare
   | EOp (_, es) | ETuple es ->
-      List.fold_left
-        (fun set e -> BatSet.PSet.union set (free seen e))
-        (BatSet.PSet.create Var.compare)
-        es
+    List.fold_left
+      (fun set e -> BatSet.PSet.union set (free seen e))
+      (BatSet.PSet.create Var.compare)
+      es
   | EFun f -> free (BatSet.PSet.add f.arg seen) f.body
   | EApp (e1, e2) -> BatSet.PSet.union (free seen e1) (free seen e2)
   | EIf (e1, e2, e3) ->
-      BatSet.PSet.union (free seen e1)
-        (BatSet.PSet.union (free seen e2) (free seen e3))
+    BatSet.PSet.union (free seen e1)
+      (BatSet.PSet.union (free seen e2) (free seen e3))
   | ELet (x, e1, e2) ->
-      let seen = BatSet.PSet.add x seen in
-      BatSet.PSet.union (free seen e1) (free seen e2)
+    let seen = BatSet.PSet.add x seen in
+    BatSet.PSet.union (free seen e1) (free seen e2)
   | ESome e -> free seen e
   | EMatch (e, bs) ->
-      let bs1 =
-        PatMap.fold
-          (fun p e set ->
-            let seen = BatSet.PSet.union seen (pattern_vars p) in
-            BatSet.PSet.union set (free seen e))
-          bs.pmap
-          (BatSet.PSet.create Var.compare)
-      in
-      let bs =
-        BatList.fold_left
-          (fun set (p, e) ->
-            let seen = BatSet.PSet.union seen (pattern_vars p) in
-            BatSet.PSet.union set (free seen e))
-          bs1 bs.plist
-      in
-      BatSet.PSet.union (free seen e) bs
+    let bs1 =
+      PatMap.fold
+        (fun p e set ->
+           let seen = BatSet.PSet.union seen (pattern_vars p) in
+           BatSet.PSet.union set (free seen e))
+        bs.pmap
+        (BatSet.PSet.create Var.compare)
+    in
+    let bs =
+      BatList.fold_left
+        (fun set (p, e) ->
+           let seen = BatSet.PSet.union seen (pattern_vars p) in
+           BatSet.PSet.union set (free seen e))
+        bs1 bs.plist
+    in
+    BatSet.PSet.union (free seen e) bs
   | ERecord _ | EProject _ -> failwith "records should have been unrolled"
   | EBddIf _ | EToBdd _ | EToMap _ | EApplyN _ ->
-      failwith "Does not apply to non-concrete expressions"
+    failwith "Does not apply to non-concrete expressions"
 
 (** Returns an OCaml string that contains the hashconsed int of the function
-   body and a tuple with the free variables that appear in the function. Used
-   for caching BDD operations.
+    body and a tuple with the free variables that appear in the function. Used
+    for caching BDD operations.
     NOTE: In general this is sound only if you inline function calls that capture free (global) variables, because we do not capture the environment
     of any function that is called and may have free variables.
 *)
@@ -283,8 +283,8 @@ let rec free (seen : Var.t BatSet.PSet.t) (e : exp) : Var.t BatSet.PSet.t =
 let rec mask e maskVars = 
   match e.e with
   | EVar v ->
-      if List.mem v maskVars then (evar (Var.create "placeholder"))
-      else e
+    if List.mem v maskVars then (evar (Var.create "placeholder"))
+    else e
   | EVal v -> e_val (value v.v)
   | EOp (op, es) ->
     eop op (List.map (fun e -> mask e maskVars) es)
@@ -294,15 +294,15 @@ let rec mask e maskVars =
     efun {f with body = mask f.body maskVars}
   | EApp (e1, e2) -> eapp (mask e1 maskVars) (mask e2 maskVars)
   | EIf (e1, e2, e3) ->
-      eif (mask e1 maskVars) (mask e2 maskVars) (mask e3 maskVars)
+    eif (mask e1 maskVars) (mask e2 maskVars) (mask e3 maskVars)
   | ELet (x, e1, e2) ->
-      elet x (mask e1 maskVars) (mask e2 maskVars)
+    elet x (mask e1 maskVars) (mask e2 maskVars)
   | ESome e -> esome (mask e maskVars)
   | EMatch (e, bs) ->
-     ematch (mask e maskVars) (mapBranches (fun (p, e) -> (p, mask e maskVars)) bs)
+    ematch (mask e maskVars) (mapBranches (fun (p, e) -> (p, mask e maskVars)) bs)
   | ERecord _ | EProject _ -> failwith "records should have been unrolled"
   | EBddIf _ | EToBdd _ | EToMap _ | EApplyN _ ->
-      failwith "Does not apply to non-concrete expressions"
+    failwith "Does not apply to non-concrete expressions"
 
 let rec funcArgs e = 
   match e.e with
@@ -312,26 +312,26 @@ let rec funcArgs e =
 let getFuncCache (e : exp) : string =
   match e.e with
   | EFun f ->
-      let seen = BatSet.PSet.singleton ~cmp:Var.compare f.arg in
-      let free = free seen f.body in
-      let freeList = BatSet.PSet.to_list free in
-      let closure =
-        Collections.printList (fun x -> varname x) freeList "(" "," ")"
-      in
-      (* Used to remove the free variables from the body of - this expression is now only good for hashing,
-         do not directly interpret *)
-      let seenVars = funcArgs f.body in
-      let maskedBody = mask f.body (f.arg :: seenVars) in
-      Printf.sprintf "(%d, %s)" (Collections.ExpIds.fresh_id exp_store maskedBody)
-        closure
+    let seen = BatSet.PSet.singleton ~cmp:Var.compare f.arg in
+    let free = free seen f.body in
+    let freeList = BatSet.PSet.to_list free in
+    let closure =
+      Collections.printList (fun x -> varname x) freeList "(" "," ")"
+    in
+    (* Used to remove the free variables from the body of - this expression is now only good for hashing,
+       do not directly interpret *)
+    let seenVars = funcArgs f.body in
+    let maskedBody = mask f.body (f.arg :: seenVars) in
+    Printf.sprintf "(%d, %s)" (Collections.ExpIds.fresh_id exp_store maskedBody)
+      closure
   | _ ->
-      (*assume there are no free variables, but this needs to be fixed: always inline*)
-      Printf.sprintf "(%d, ())" (Collections.ExpIds.fresh_id exp_store e)
+    (*assume there are no free variables, but this needs to be fixed: always inline*)
+    Printf.sprintf "(%d, ())" (Collections.ExpIds.fresh_id exp_store e)
 
 (** Function walking through an expression to record tuple types.
     This is done by the compiler on the go, but not for
     operations like mapIte because these expressions are never translated to OCaml, so we manually have to do it.
-   Expect this function to be called somewhere in the MapIte case.*)
+    Expect this function to be called somewhere in the MapIte case.*)
 
 (* 
 let rec track_tuples_exp e =
@@ -376,11 +376,11 @@ let rec value_to_ocaml_string v =
   | VInt i -> string_of_int (Integer.to_int i)
   | VFloat f -> string_of_float f
   | VTuple vs ->
-      let n = BatList.length vs in
-      Collections.printListi
-        (fun i v ->
-          Printf.sprintf "%s = %s" (proj_rec i n) (value_to_ocaml_string v))
-        vs "{" "; " "}"
+    let n = BatList.length vs in
+    Collections.printListi
+      (fun i v ->
+         Printf.sprintf "%s = %s" (proj_rec i n) (value_to_ocaml_string v))
+      vs "{" "; " "}"
   | VOption None -> "None"
   | VOption (Some v) -> Printf.sprintf "(Some %s)" (value_to_ocaml_string v)
   | VRecord _ -> failwith "Records should have been unrolled"
@@ -389,8 +389,8 @@ let rec value_to_ocaml_string v =
   | VEdge (Raw _) -> failwith "Edges should have been converted to ids"
   | VClosure _ -> failwith "Closures shouldn't appear here."
   | VTotalMap _ ->
-      failwith
-        "Total maps do not have a syntactic value and should not appear here."
+    failwith
+      "Total maps do not have a syntactic value and should not appear here."
 
 and exp_to_ocaml_string ?(distr = false) e =
   let exp_to_ocaml_string = exp_to_ocaml_string ~distr in
@@ -398,38 +398,38 @@ and exp_to_ocaml_string ?(distr = false) e =
   | EVar x -> varname x
   | EVal v -> value_to_ocaml_string v
   | EOp (op, es) when is_prefix_op op ->
-      prefix_op_to_ocaml_string op es (OCamlUtils.oget e.ety)
+    prefix_op_to_ocaml_string op es (OCamlUtils.oget e.ety)
   | EOp (op, es) -> op_args_to_ocaml_string op es
   | EFun f -> func_to_ocaml_string f
   | EApp (e1, e2) ->
-      Printf.sprintf "((%s) (%s))" (exp_to_ocaml_string e1)
-        (exp_to_ocaml_string e2)
+    Printf.sprintf "((%s) (%s))" (exp_to_ocaml_string e1)
+      (exp_to_ocaml_string e2)
   | EIf (e1, e2, e3) ->
-      Printf.sprintf "(if %s then\n %s else\n %s)" (exp_to_ocaml_string e1)
-        (exp_to_ocaml_string e2) (exp_to_ocaml_string e3)
+    Printf.sprintf "(if %s then\n %s else\n %s)" (exp_to_ocaml_string e1)
+      (exp_to_ocaml_string e2) (exp_to_ocaml_string e3)
   | ELet (x, e1, e2) ->
-      Printf.sprintf "(let %s = %s in\n %s)" (varname x)
-        (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
+    Printf.sprintf "(let %s = %s in\n %s)" (varname x)
+      (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
   | EBddIf (e1, e2, e3) ->
-      Printf.sprintf "(BddFunc.ite %s %s %s)" (exp_to_ocaml_string e1)
-        (exp_to_ocaml_string e2) (exp_to_ocaml_string e3)
+    Printf.sprintf "(BddFunc.ite %s %s %s)" (exp_to_ocaml_string e1)
+      (exp_to_ocaml_string e2) (exp_to_ocaml_string e3)
   | EToBdd e1 ->
-      Printf.sprintf "(BddFunc.toBdd record_fns ~vty_id:%d %s)"
-        (get_fresh_type_id type_store (OCamlUtils.oget e1.ety))
-        (exp_to_ocaml_string e1)
+    Printf.sprintf "(BddFunc.toBdd record_fns ~vty_id:%d %s)"
+      (get_fresh_type_id type_store (OCamlUtils.oget e1.ety))
+      (exp_to_ocaml_string e1)
   | EToMap e1 ->
-      Printf.sprintf "(BddFunc.toMap ~distr:%b ~value:%s)" distr
-        (exp_to_ocaml_string e1)
+    Printf.sprintf "(BddFunc.toMap ~distr:%b ~value:%s)" distr
+      (exp_to_ocaml_string e1)
   | EApplyN (e1, es) -> (
       let el1 = exp_to_ocaml_string e1 in
       let esl =
         List.map
           (fun e ->
-            if get_mode (OCamlUtils.oget e.ety) = Some Symbolic then
-              magic
-              @@ Printf.sprintf "(BddFunc.wrap_mtbdd (%s))"
-                   (exp_to_ocaml_string e)
-            else magic @@ exp_to_ocaml_string e)
+             if get_mode (OCamlUtils.oget e.ety) = Some Symbolic then
+               magic
+               @@ Printf.sprintf "(BddFunc.wrap_mtbdd (%s))"
+                 (exp_to_ocaml_string e)
+             else magic @@ exp_to_ocaml_string e)
           es
       in
       ignore (get_fresh_type_id type_store (OCamlUtils.oget e.ety));
@@ -443,39 +443,39 @@ and exp_to_ocaml_string ?(distr = false) e =
       (* special cases *)
       match esl with
       | [ v1 ] ->
-          Printf.sprintf
-            "(Obj.magic (let %s = %s in \n\
-            \ BddFunc.apply1 ~distr:%b ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s))"
-            op_key_var op_key distr op_key_var el1 v1
+        Printf.sprintf
+          "(Obj.magic (let %s = %s in \n\
+          \ BddFunc.apply1 ~distr:%b ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s))"
+          op_key_var op_key distr op_key_var el1 v1
       | [ v1; v2 ] ->
-          let comm = is_commutative_expr e1 in
-          Printf.sprintf
-            "(Obj.magic (let %s = %s in \n\
-            \ BddFunc.apply2 ~isLogE:%b ~comm:%b ~distr:%b ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s \
-             ~arg2:%s))"
-            op_key_var op_key !isLogE comm distr op_key_var el1 v1 v2
+        let comm = is_commutative_expr e1 in
+        Printf.sprintf
+          "(Obj.magic (let %s = %s in \n\
+          \ BddFunc.apply2 ~isLogE:%b ~comm:%b ~distr:%b ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s \
+           ~arg2:%s))"
+          op_key_var op_key !isLogE comm distr op_key_var el1 v1 v2
       | [ v1; v2; v3 ] ->
-          Printf.sprintf
-            "(Obj.magic (let %s = %s in \n\
-            \ BddFunc.apply3 ~distr:%b ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s \
-             ~arg2:%s ~arg3:%s))"
-            op_key_var op_key distr op_key_var el1 v1 v2 v3
+        Printf.sprintf
+          "(Obj.magic (let %s = %s in \n\
+          \ BddFunc.apply3 ~distr:%b ~op_key:(Obj.magic %s) ~f:%s ~arg1:%s \
+           ~arg2:%s ~arg3:%s))"
+          op_key_var op_key distr op_key_var el1 v1 v2 v3
       | _ ->
-          let esl_array =
-            Collections.printList (fun el -> el) esl "[|" "; " "|]"
-          in
-          Printf.sprintf "(BddFunc.applyN ~distr:%b ~f:%s ~args:(%s))" distr el1
-            esl_array )
+        let esl_array =
+          Collections.printList (fun el -> el) esl "[|" "; " "|]"
+        in
+        Printf.sprintf "(BddFunc.applyN ~distr:%b ~f:%s ~args:(%s))" distr el1
+          esl_array )
   | ETuple es ->
-      let n = BatList.length es in
-      Collections.printListi
-        (fun i e ->
-          Printf.sprintf "%s = %s" (proj_rec i n) (exp_to_ocaml_string e))
-        es "{" "; " "}"
+    let n = BatList.length es in
+    Collections.printListi
+      (fun i e ->
+         Printf.sprintf "%s = %s" (proj_rec i n) (exp_to_ocaml_string e))
+      es "{" "; " "}"
   | EMatch (e1, bs) ->
-      Printf.sprintf "(match %s with \n %s)" (exp_to_ocaml_string e1)
-        (Collections.printList branch_to_ocaml_string (branchToList bs) "" ""
-           "")
+    Printf.sprintf "(match %s with \n %s)" (exp_to_ocaml_string e1)
+      (Collections.printList branch_to_ocaml_string (branchToList bs) "" ""
+         "")
   | ESome e -> Printf.sprintf "Some (%s)" (exp_to_ocaml_string e)
   | ERecord _ | EProject _ -> failwith "Records should have been unrolled"
 
@@ -483,10 +483,10 @@ and op_args_to_ocaml_string op es =
   match es with
   | [] -> failwith "Empty operand list"
   | [ e1 ] ->
-      Printf.sprintf "(%s %s)" (op_to_ocaml_string op) (exp_to_ocaml_string e1)
+    Printf.sprintf "(%s %s)" (op_to_ocaml_string op) (exp_to_ocaml_string e1)
   | [ e1; e2 ] ->
-      Printf.sprintf "(%s %s %s)" (exp_to_ocaml_string e1)
-        (op_to_ocaml_string op) (exp_to_ocaml_string e2)
+    Printf.sprintf "(%s %s %s)" (exp_to_ocaml_string e1)
+      (op_to_ocaml_string op) (exp_to_ocaml_string e2)
   | _ -> failwith "Should be a keyword op"
 
 and prefix_op_to_ocaml_string op es ty =
@@ -498,75 +498,75 @@ and prefix_op_to_ocaml_string op es ty =
       | MCreate -> (
           match ty.typ with
           | TMap (kty, vty) ->
-              Printf.sprintf
-                "(Obj.magic (BddMap.create ~key_ty_id:(%d) ~val_ty_id:(%d) \
-                 (Obj.magic (%s))))"
-                (get_fresh_type_id type_store kty)
-                (get_fresh_type_id type_store vty)
-                (exp_to_ocaml_string (BatList.hd es))
+            Printf.sprintf
+              "(Obj.magic (BddMap.create ~key_ty_id:(%d) ~val_ty_id:(%d) \
+               (Obj.magic (%s))))"
+              (get_fresh_type_id type_store kty)
+              (get_fresh_type_id type_store vty)
+              (exp_to_ocaml_string (BatList.hd es))
           | _ -> failwith "Wrong type for map operation" )
       | TGet (idx, sz) ->
-          let proj = proj_rec idx sz in
-          Printf.sprintf "(%s).%s" (exp_to_ocaml_string e) proj
+        let proj = proj_rec idx sz in
+        Printf.sprintf "(%s).%s" (exp_to_ocaml_string e) proj
       | _ -> failwith "Wrong number of arguments" )
   | [ e1; e2 ] -> (
       match op with
       | BddAnd ->
-          Printf.sprintf "(BddFunc.band (%s) (%s))" (exp_to_ocaml_string e1)
-            (exp_to_ocaml_string e2)
+        Printf.sprintf "(BddFunc.band (%s) (%s))" (exp_to_ocaml_string e1)
+          (exp_to_ocaml_string e2)
       | BddOr ->
-          Printf.sprintf "(BddFunc.bor (%s) (%s))" (exp_to_ocaml_string e1)
-            (exp_to_ocaml_string e2)
+        Printf.sprintf "(BddFunc.bor (%s) (%s))" (exp_to_ocaml_string e1)
+          (exp_to_ocaml_string e2)
       | BddAdd _ ->
-          Printf.sprintf "(BddFunc.add (%s) (%s))" (exp_to_ocaml_string e1)
-            (exp_to_ocaml_string e2)
+        Printf.sprintf "(BddFunc.add (%s) (%s))" (exp_to_ocaml_string e1)
+          (exp_to_ocaml_string e2)
       | BddUAnd _ ->
-          Printf.sprintf "(BddFunc.uand (%s) (%s))" (exp_to_ocaml_string e1)
-            (exp_to_ocaml_string e2)
+        Printf.sprintf "(BddFunc.uand (%s) (%s))" (exp_to_ocaml_string e1)
+          (exp_to_ocaml_string e2)
       | BddLess _ ->
-          Printf.sprintf "(BddFunc.lt (%s) (%s))" (exp_to_ocaml_string e1)
-            (exp_to_ocaml_string e2)
+        Printf.sprintf "(BddFunc.lt (%s) (%s))" (exp_to_ocaml_string e1)
+          (exp_to_ocaml_string e2)
       | BddLeq _ ->
-          Printf.sprintf "(BddFunc.leq (%s) (%s))" (exp_to_ocaml_string e1)
-            (exp_to_ocaml_string e2)
+        Printf.sprintf "(BddFunc.leq (%s) (%s))" (exp_to_ocaml_string e1)
+          (exp_to_ocaml_string e2)
       | BddEq ->
-          Printf.sprintf "(BddFunc.eq (%s) (%s))" (exp_to_ocaml_string e1)
-            (exp_to_ocaml_string e2)
+        Printf.sprintf "(BddFunc.eq (%s) (%s))" (exp_to_ocaml_string e1)
+          (exp_to_ocaml_string e2)
       | MGet ->
-          Printf.sprintf
-            "(Obj.magic (BddMap.find record_fns (%s) (Obj.magic (%s))))"
-            (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
+        Printf.sprintf
+          "(Obj.magic (BddMap.find record_fns (%s) (Obj.magic (%s))))"
+          (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
       | MSize ->
-          Printf.sprintf
-            "(Obj.magic (BddMap.cardinality (%s) (Obj.magic (%s))))"
-            (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
+        Printf.sprintf
+          "(Obj.magic (BddMap.cardinality (%s) (Obj.magic (%s))))"
+          (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
       | MSet | MCreate | MMerge ->
-          failwith "Wrong number of arguments to MSet/MCreate/MMerge operation"
+        failwith "Wrong number of arguments to MSet/MCreate/MMerge operation"
       | Eq | UAdd _ | UAnd _ | ULess _ | NLess | ULeq _ | NLeq | ELess | ELeq | And | Or
       | Not | BddNot | TGet _ | FAdd | FDiv | FMul | FLess | FLeq ->
-          failwith "not applicable" )
+        failwith "not applicable" )
   | [ e1; e2; e3 ] -> (
       match op with
       | MSet ->
-          Printf.sprintf
-            "(Obj.magic (BddMap.update record_fns (%s) (Obj.magic (%s)) \
-             (Obj.magic (%s))))"
-            (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
-            (exp_to_ocaml_string e3)
+        Printf.sprintf
+          "(Obj.magic (BddMap.update record_fns (%s) (Obj.magic (%s)) \
+           (Obj.magic (%s))))"
+          (exp_to_ocaml_string e1) (exp_to_ocaml_string e2)
+          (exp_to_ocaml_string e3)
       | MMerge ->
-          let op_key = getFuncCache e1 in
-          let op_key_var = "op_key" in
-          Printf.sprintf
-            "(Obj.magic (let %s = %s in \n\
-             BddMap.merge %s (Obj.magic (%s)) (Obj.magic (%s)) (Obj.magic \
-             (%s))))"
-            op_key_var op_key op_key_var (exp_to_ocaml_string e1)
-            (exp_to_ocaml_string e2) (exp_to_ocaml_string e3)
+        let op_key = getFuncCache e1 in
+        let op_key_var = "op_key" in
+        Printf.sprintf
+          "(Obj.magic (let %s = %s in \n\
+           BddMap.merge %s (Obj.magic (%s)) (Obj.magic (%s)) (Obj.magic \
+           (%s))))"
+          op_key_var op_key op_key_var (exp_to_ocaml_string e1)
+          (exp_to_ocaml_string e2) (exp_to_ocaml_string e3)
       | And | Or | Not | Eq | NLess | NLeq | ELess | ELeq | MGet | MCreate
       | MSize | BddAnd | BddOr | BddNot | BddEq | UAdd _ | UAnd _ | ULess _ | ULeq _
       | BddAdd _ | BddLess _ | BddLeq _ | BddUAnd _ | TGet _ | FAdd | FDiv | FMul | FLess 
       | FLeq ->
-          failwith "Wrong number of arguments to operation." )
+        failwith "Wrong number of arguments to operation." )
   | _ -> failwith "too many arguments to operation"
 
 and func_to_ocaml_string f =
@@ -583,23 +583,23 @@ let rec attr_ty_to_equality ty x y =
   | TBool | TInt _ | TNode | TEdge | TFloat -> Printf.sprintf "%s = %s" x y
   | TMap _ -> Printf.sprintf "Cudd.Mtbddc.is_equal (%s) (%s)" x y
   | TTuple ts ->
-      let n = List.length ts in
-      let recEq =
-        List.mapi
-          (fun i ty ->
-            attr_ty_to_equality ty
-              (Printf.sprintf "((%s).%s)" x (proj_rec i n))
-              (Printf.sprintf "((%s).%s)" y (proj_rec i n)))
-          ts
-      in
-      Collections.printList (fun s -> s) recEq "(" " && " ")"
+    let n = List.length ts in
+    let recEq =
+      List.mapi
+        (fun i ty ->
+           attr_ty_to_equality ty
+             (Printf.sprintf "((%s).%s)" x (proj_rec i n))
+             (Printf.sprintf "((%s).%s)" y (proj_rec i n)))
+        ts
+    in
+    Collections.printList (fun s -> s) recEq "(" " && " ")"
   | TOption ty ->
-      let recEq = attr_ty_to_equality ty "x" "y" in
-      Printf.sprintf
-        "(match %s, %s with\n\
-         | None, None -> true\n\
-         | Some x, Some y -> %s\n\
-         | _, _ -> false)" x y recEq
+    let recEq = attr_ty_to_equality ty "x" "y" in
+    Printf.sprintf
+      "(match %s, %s with\n\
+       | None, None -> true\n\
+       | Some x, Some y -> %s\n\
+       | _, _ -> false)" x y recEq
   | TArrow _ | TRecord _ -> failwith "Cannot be in attribute type"
 
 let doCollect = ref 0
@@ -609,67 +609,71 @@ let compile_decl decl =
   match decl with
   | DUserTy _ -> ""
   | DSymbolic (xs, ty, Expr exp) ->
-      let () =
-        match ty.typ with
-        | TTuple ts -> record_table := IntSet.add (List.length ts) !record_table
-        | _ -> ()
-      in
-      let ty_id = get_fresh_type_id type_store ty in
-      let distr = exp_to_ocaml_string ~distr:true exp in
-      Printf.sprintf
-        "let distr_fun %s = %s \n\
-        \ let %s = BddFunc.create_value_expr \"%s\" distr_fun %d SIM.graph\n"
-        (varnames xs) distr (varnames xs) (varnamesPretty xs) ty_id
+    let () =
+      match ty.typ with
+      | TTuple ts -> record_table := IntSet.add (List.length ts) !record_table
+      | _ -> ()
+    in
+    let ty_id = get_fresh_type_id type_store ty in
+    let distr = exp_to_ocaml_string ~distr:true exp in
+    Printf.sprintf
+      "let distr_fun %s = %s \n\
+      \ let %s = BddFunc.create_value_expr \"%s\" distr_fun %d SIM.graph\n"
+      (varnames xs) distr (varnames xs) (varnamesPretty xs) ty_id
   | DSymbolic (xs, ty, dist) ->
-      ( match ty.typ with
+    ( match ty.typ with
       | TTuple ts -> record_table := IntSet.add (List.length ts) !record_table
       | _ -> () );
-      let ty_id = get_fresh_type_id type_store ty in
-      let dist_id = Collections.DistrIds.fresh_id distr_store dist in
-      Printf.sprintf "let %s = BddFunc.create_value \"%s\" %d %d SIM.graph\n"
-        (varnames xs) (varnames xs) dist_id ty_id
+    let ty_id = get_fresh_type_id type_store ty in
+    let dist_id = Collections.DistrIds.fresh_id distr_store dist in
+    Printf.sprintf "let %s = BddFunc.create_value \"%s\" %d %d SIM.graph\n"
+      (varnames xs) (varnames xs) dist_id ty_id
   | DLet (x, e, options) ->
-      let dlet = Printf.sprintf "let %s = %s" (varname x) (exp_to_ocaml_string e) in
-      if hasOption "log" options then (
-        let ty_id = get_fresh_type_id type_store (OCamlUtils.oget e.ety) in
-        let s = Printf.sprintf "let () = SIM.pushLetVal \"%s\" (Obj.magic %s) %d" (Var.name x) (varname x) ty_id in
-          Printf.sprintf "%s\n%s" dlet s
-      )
-      else
-        dlet
+    let dlet = Printf.sprintf "let %s = %s" (varname x) (exp_to_ocaml_string e) in
+    if hasOption "log" options then (
+      let ty_id = get_fresh_type_id type_store (OCamlUtils.oget e.ety) in
+      let s = Printf.sprintf "let () = SIM.pushLetVal \"%s\" (Obj.magic %s) %d" (Var.name x) (varname x) ty_id in
+      Printf.sprintf "%s\n%s" dlet s
+    )
+    else
+      dlet
   | DInfer (name, e, cond) ->
-      let cond' =
-        match cond with
-        | None -> "None"
-        | Some c -> Printf.sprintf "Some (%s)" (exp_to_ocaml_string c)
-      in
-      (* let flush = "" in *)
-      let flush = if !doCollect = 1 then " Cudd.Man.flush BddUtils.mgr; Gc.full_major (); " else "" in
-      doCollect := 2;
-      Printf.sprintf
-        "let () = %s SIM.assertions := (%s, Profile.time_profile_total SIM.assertionTime (fun () -> %s), %s) :: !SIM.assertions\n" flush name
-        (exp_to_ocaml_string e) cond'
+    let cond' =
+      match cond with
+      | None -> "None"
+      | Some c -> Printf.sprintf "Some (%s)" (exp_to_ocaml_string c)
+    in
+    (* let flush = "" in *)
+    let flush = if !doCollect = 1 then " Cudd.Man.flush BddUtils.mgr; Gc.full_major (); " else 
+      if !doCollect = 2 then 
+        " let _ = Cudd.Man.flush BddUtils.mgr; Gc.major_slice 0 in "
+      else
+        "" in
+    doCollect := 2;
+    Printf.sprintf
+      "let () = %s SIM.assertions := (%s, Profile.time_profile_total SIM.assertionTime (fun () -> %s), %s) :: !SIM.assertions\n" flush name
+      (exp_to_ocaml_string e) cond'
   | DSolve solve -> (
       match solve.var_names.e with
       | EVar x -> (
           match solve.aty with
           | None -> failwith "cannot solve without an attribute type"
           | Some attr ->
-              (*NOTE: this is just the attribute type, not including the map from nodes to attributes *)
-              (*need to register node types manually! *)
-              ignore (get_fresh_type_id type_store (concrete TNode));
-              (* Printf.printf "Solution type: %s\n" (Printing.ty_to_string attr); *)
-              let attr_id = get_fresh_type_id type_store attr in
-              Printf.sprintf
-                "let %s = SIM.simulate_solve record_fns (%d) (\"%s\") (%s) \
-                 (%s) (%s)"
-                (varname x) attr_id (Var.name x)
-                (exp_to_ocaml_string solve.init)
-                (exp_to_ocaml_string solve.trans)
-                (exp_to_ocaml_string solve.merge) )
+            (*NOTE: this is just the attribute type, not including the map from nodes to attributes *)
+            (*need to register node types manually! *)
+            ignore (get_fresh_type_id type_store (concrete TNode));
+            (* Printf.printf "Solution type: %s\n" (Printing.ty_to_string attr); *)
+            let attr_id = get_fresh_type_id type_store attr in
+            Printf.sprintf
+              "let %s = SIM.simulate_solve record_fns (%d) (\"%s\") (%s) \
+               (%s) (%s)"
+              (varname x) attr_id (Var.name x)
+              (exp_to_ocaml_string solve.init)
+              (exp_to_ocaml_string solve.trans)
+              (exp_to_ocaml_string solve.merge) )
       | _ ->
-          failwith "Not implemented" (* Only happens if we did map unrolling *)
-      )
+        failwith "Not implemented" (* Only happens if we did map unrolling *)
+    )
   | DForward
       {
         names_V;
@@ -690,35 +694,35 @@ let compile_decl decl =
       | EVar v, EVar e -> (
           match (pty, hvty, hety) with
           | Some _, Some hvty, Some hety ->
-              (*NOTE: this is just the attribute type, not including the map from nodes to attributes *)
-              (*need to register node and edge types manually just to be safe *)
-              ignore (get_fresh_type_id type_store (concrete TNode));
-              ignore (get_fresh_type_id type_store (concrete TEdge));
-              let hvty_id = get_fresh_type_id type_store hvty in
-              let hety_id = get_fresh_type_id type_store hety in
-              isLogE := true;
-              let logE' = (magic @@ exp_to_ocaml_string logE) in
-              isLogE := false;
-              let flush = if !doCollect = 0 then " let _ = Gc.full_major (); Cudd.Man.flush BddUtils.mgr " else "" in
-              doCollect := 1;
-              Printf.sprintf
-                "%s\n\nlet (%s, %s) = SIM.simulate_forwarding record_fns (\"%s\") \
-                 (\"%s\") (%d) (%d) (%s) (%s) (%s) (%s) (%s) (%s) (%s) (%s)" flush
-                (varname v) (varname e) (Var.name v) (Var.name e) hvty_id
-                hety_id
-                (magic @@ exp_to_ocaml_string fwdInit)
-                (magic @@ exp_to_ocaml_string fwdOut)
-                (magic @@ exp_to_ocaml_string fwdIn)
-                (magic @@ exp_to_ocaml_string hinitV)
-                (magic @@ exp_to_ocaml_string hinitE)
-                (magic @@ exp_to_ocaml_string logV)
-                logE'
-                (magic @@ exp_to_ocaml_string bot)
+            (*NOTE: this is just the attribute type, not including the map from nodes to attributes *)
+            (*need to register node and edge types manually just to be safe *)
+            ignore (get_fresh_type_id type_store (concrete TNode));
+            ignore (get_fresh_type_id type_store (concrete TEdge));
+            let hvty_id = get_fresh_type_id type_store hvty in
+            let hety_id = get_fresh_type_id type_store hety in
+            isLogE := true;
+            let logE' = (magic @@ exp_to_ocaml_string logE) in
+            isLogE := false;
+            let flush = if !doCollect = 0 then " let _ = Cudd.Man.flush BddUtils.mgr; Gc.full_major () " else "" in
+            doCollect := 1;
+            Printf.sprintf
+              "%s\n\nlet (%s, %s) = SIM.simulate_forwarding record_fns (\"%s\") \
+               (\"%s\") (%d) (%d) (%s) (%s) (%s) (%s) (%s) (%s) (%s) (%s)" flush
+              (varname v) (varname e) (Var.name v) (Var.name e) hvty_id
+              hety_id
+              (magic @@ exp_to_ocaml_string fwdInit)
+              (magic @@ exp_to_ocaml_string fwdOut)
+              (magic @@ exp_to_ocaml_string fwdIn)
+              (magic @@ exp_to_ocaml_string hinitV)
+              (magic @@ exp_to_ocaml_string hinitE)
+              (magic @@ exp_to_ocaml_string logV)
+              logE'
+              (magic @@ exp_to_ocaml_string bot)
           | _, _, _ -> failwith "cannot simulate forwarding without types" )
       | _, _ -> failwith "Expected variables" )
   | DNodes (_, _) | DEdges _ ->
-      (*nodes and edges are not emmited in the OCaml program *)
-      ""
+    (*nodes and edges are not emmited in the OCaml program *)
+    ""
 
 let compile_decls decls =
   let s = Collections.printList compile_decl decls "" "\n\n" "\n" in
@@ -739,7 +743,7 @@ let generate_ocaml (name : string) decls =
   let header =
     Printf.sprintf
       "open ProbNv_datastructures\n\
-      open ProbNv_utils\n\
+       open ProbNv_utils\n\
       \ open ProbNv_lang\n\
        open Syntax\n\
        open ProbNv_compile\n\n\

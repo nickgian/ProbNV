@@ -62,3 +62,6 @@ val computeTrueProbability :
   bool Cudd.Mtbddc.t -> float Cudd.Mtbddc.t BatMap.Int.t -> float *)
 
 val get_statistics : unit -> unit
+
+val generateSatFastTime : float ref
+val toSvaluesTime : float ref

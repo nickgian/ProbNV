@@ -362,12 +362,16 @@ module ForwardingSimulation (G : Topology) = struct
 
     ForwardingStats.logSimulationStats (Printf.sprintf "%s/%s" hvName heName);
 
-    (* BddUtils.set_reordering (Some 8); *)
+    if (Cudd.Man.get_node_count BddUtils.mgr > 3500000) && (Cmdline.get_cfg ()).reordering = Some 8 then
+      BddUtils.set_reordering (Some 8);
+    (* 
     if Gc.((quick_stat ()).heap_words) > 231072000 then
       (
         Cudd.Man.flush BddUtils.mgr;
-        Gc.major ());
+        Gc.major ()); *)
 
+    Cudd.Man.flush BddUtils.mgr;
+    Gc.major_slice 0;
 
     let _, defaultV = AdjGraph.VertexMap.choose hv in
     let _, defaultE = AdjGraph.EdgeMap.choose he in
@@ -1066,6 +1070,11 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
   let simulate_solve record_fns attr_ty_id name init trans merge =
     let mgr = BddUtils.mgr in
     Cudd.Man.group mgr 0 !BddMap.svars Cudd.Man.MTR_DEFAULT;
+
+
+    Cudd.Man.flush BddUtils.mgr;
+    Gc.full_major ();
+
     let n = AdjGraph.nb_vertex G.graph in
     let initArr = Array.init n (fun i -> init i) in
     let local, global = create_initial_state n initArr in
@@ -1103,10 +1112,10 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
         vals bdd_base
     in
 
-    if Gc.((quick_stat ()).heap_words) > 231072000 then
-      (
+    (* if Gc.((quick_stat ()).heap_words) > 231072000 then
+       (
         Cudd.Man.flush BddUtils.mgr;
-        Gc.major ());
+        Gc.major ()); *)
 
     (* Storing the AdjGraph.VertexMap in the solved list, but returning
        the total map to the ProbNV program *)
@@ -1115,6 +1124,7 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
         ( Obj.magic vals,
           Collections.TypeIds.get_elt CompileBDDs.type_store attr_ty_id ) )
       :: !solved;
+
     bdd_full
 
   let simulate_solve record_fns attr_ty_id name init trans merge =
@@ -1197,9 +1207,9 @@ let build_solutions nodes topology record_fns (fwd : unit Solution.forwardSoluti
     (letVals : (string * unit * Syntax.ty) list) =
   let open Solution in
   let assertions = List.rev assertions in
-  (* let arr = Array.init (Cudd.Man.get_bddvar_nb BddUtils.mgr) (fun i -> i) in
-     Cudd.Man.shuffle_heap BddUtils.mgr arr;
-     Cudd.Man.disable_autodyn BddUtils.mgr; *)
+  let arr = Array.init (Cudd.Man.get_bddvar_nb BddUtils.mgr) (fun i -> i) in
+  Cudd.Man.shuffle_heap BddUtils.mgr arr;
+  Cudd.Man.disable_autodyn BddUtils.mgr;
 
   let symbolic_bounds = List.rev !BddUtils.vars_list in
   let distrs = BddUtils.createDistributionMap symbolic_bounds in

@@ -32,9 +32,9 @@ let simulate nodeNames topology name decls =
 
   (* Build a simulator for SRPs *)
   let module SrpSimulator = ( val if (Cmdline.get_cfg ()).new_sim then
-                                    (module SrpLazySimulation (G))
-                                  else (module SrpSimulation (G))
-                                : SrpSimulationSig )
+                                (module SrpLazySimulation (G))
+                              else (module SrpSimulation (G))
+                              : SrpSimulationSig )
   in
   (* Load compiled NV program*)
   let module CompleteSRP = (val get_srp ()) in
@@ -51,9 +51,13 @@ let simulate nodeNames topology name decls =
     Printf.printf "Time to compute the assertions: %f\n" !SrpSimulator.assertionTime;
     BddUtils.get_statistics () );
   (* Get the computed solutions *)
-  build_solutions
-    nodeNames
-    topology
-    Srp.record_fns
-    !SrpSimulator.forwarding_solutions
-    !SrpSimulator.solved !SrpSimulator.assertions !SrpSimulator.letValues
+  let sol = build_solutions
+      nodeNames
+      topology
+      Srp.record_fns
+      !SrpSimulator.forwarding_solutions
+      !SrpSimulator.solved !SrpSimulator.assertions !SrpSimulator.letValues
+  in 
+  Printf.printf "Time to generate assignments: %f\n" !BddUtils.generateSatFastTime;
+  Printf.printf "Time to convert assignments: %f\n" !BddUtils.toSvaluesTime;
+  sol
