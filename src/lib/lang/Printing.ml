@@ -428,7 +428,7 @@ and value_to_string_p ~show_types prec v =
   | VBool true -> "true"
   | VBool false -> "false"
   | VInt i -> Integer.to_string i
-  | VFloat f -> Printf.sprintf "%.10f" f
+  | VFloat f -> Printf.sprintf "%.15f" f
   | VTotalMap (m, meta) -> (
       match meta with
       | None -> multivalue_to_string ~show_types "," m
