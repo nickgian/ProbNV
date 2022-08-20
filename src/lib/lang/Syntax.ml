@@ -258,11 +258,14 @@ type distrExpr = (distrPattern * probability) list
 type solve = {
   aty : ty option;
   var_names : exp;
+  fib_names : exp;
   init : exp;
   trans : exp;
   merge : exp;
+  generate: exp; (* fib generation function *)
 }
 
+(* Forwarding declaration *)
 type forward = {
   pty : ty option;
   hvty : ty option;

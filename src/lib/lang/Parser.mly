@@ -55,8 +55,8 @@
         |> ProbNv_datastructures.Integer.of_int
     | _ -> failwith "Invalid ip address"
 
-  let make_dsolve ?ty:(ty=None) x init trans merge =
-    DSolve ({aty = ty; var_names = evar x; init; trans; merge})
+  let make_dsolve ?ty:(ty=None) x f init trans merge generate =
+    DSolve ({aty = ty; var_names = evar x; fib_names = evar f; init; trans; merge; generate})
 
   let make_dfwd x y init fwdOut fwdIn hinitV hinitE logV logE bot =
     DForward { 
@@ -346,7 +346,7 @@ assertion:
 | expr                      { ($1, None)}
 
 component:
-    | SOLUTION ID EQ LPAREN expr COMMA expr COMMA expr RPAREN     { make_dsolve (snd $2) $5 $7 $9 }
+    | SOLUTION ID COMMA ID EQ LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN     { make_dsolve (snd $2) (snd $4) $7 $9 $11 $13}
     | FORWARD LPAREN ID COMMA ID RPAREN EQ LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN     { make_dfwd (evar (snd $3)) (evar (snd $5)) $9 $11 $13 $15 $17 $19 $21 $23 }
     | LET letvars EQ expr                      { global_let [] $2 $4 $4.espan (Span.extend $1 $4.espan) }
     | options LET letvars EQ expr              { global_let $1 $3 $5 $5.espan (Span.extend $2 $5.espan) }

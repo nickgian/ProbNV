@@ -190,14 +190,17 @@ let transform_decl ~(name : string) (transformers : transformers)
   | DInfer (name, e, None) -> DInfer (name, transform_exp e, None)
   | DInfer (name, e, Some c) ->
       DInfer (name, transform_exp e, Some (transform_exp c))
-  | DSolve { aty; var_names; init; trans; merge } ->
-      let var_names, init, trans, merge =
+  | DSolve { aty; var_names; fib_names; init; trans; merge; generate } ->
+      let var_names, fib_names, init, trans, merge, generate =
         ( transform_exp var_names,
+          transform_exp fib_names,
           transform_exp init,
           transform_exp trans,
-          transform_exp merge )
+          transform_exp merge,
+          transform_exp generate
+           )
       in
-      DSolve { aty = omap transform_ty aty; var_names; init; trans; merge }
+      DSolve { aty = omap transform_ty aty; var_names; fib_names; init; trans; merge; generate }
   | DForward
       {
         names_V;

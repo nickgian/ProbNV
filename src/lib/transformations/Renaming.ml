@@ -120,14 +120,16 @@ let alpha_convert_declaration bmap (env : Var.t Env.t) (d : declaration) =
         match p with Expr e -> Expr (alpha_convert_exp env e) | _ -> p
       in
       (env, DSymbolic (List.rev ys, ty, p'))
-  | DSolve { aty; var_names; init; trans; merge } ->
-      let init, trans, merge =
+  | DSolve { aty; var_names; fib_names; init; trans; merge; generate } ->
+      let init, trans, merge, generate =
         ( alpha_convert_exp env init,
           alpha_convert_exp env trans,
-          alpha_convert_exp env merge )
+          alpha_convert_exp env merge,
+          alpha_convert_exp env generate )
       in
       let env, y = rename_solve_vars bmap env var_names in
-      (env, DSolve { aty; var_names = y; init; trans; merge })
+      let env, z = rename_solve_vars bmap env fib_names in
+      (env, DSolve { aty; var_names = y; fib_names = z; init; trans; merge; generate })
   | DForward
       {
         names_V;

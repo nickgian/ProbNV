@@ -95,6 +95,12 @@ let merge_ty aty =
     (TArrow
        (concrete node_ty, concrete (TArrow (aty, concrete (TArrow (aty, aty))))))
 
+(* generate takes as arguments an edge, the route from that edge and an acc*)
+let generate_ty aty =
+  concrete
+    (TArrow
+       (concrete edge_ty, concrete (TArrow (aty, concrete (TArrow (aty, aty))))))
+
 let trans_ty aty =
   concrete (TArrow (concrete edge_ty, concrete (TArrow (aty, aty))))
 
@@ -221,11 +227,13 @@ let rec check_annot (e : exp) =
 let check_annot_decl (d : declaration) =
   match d with
   | DLet (_, e, _) | DInfer (_, e, _) -> check_annot e
-  | DSolve { var_names; init; trans; merge; _ } ->
+  | DSolve { var_names; fib_names; init; trans; merge; generate; _ } ->
       check_annot var_names;
+      check_annot fib_names;
       check_annot init;
       check_annot trans;
-      check_annot merge
+      check_annot merge;
+      check_annot generate;
   | DUserTy _ | DNodes _ | DEdges _ | DSymbolic _ | DForward _ -> ()
 
 let rec check_annot_decls (ds : declarations) =
@@ -777,12 +785,18 @@ and infer_declaration isHLL infer_exp i info env record_types d :
       | Some Concrete | Some Multivalue -> (env, DInfer (name, e', cond'))
       | None | Some Symbolic ->
           Console.error_position info e.espan "Wrong mode for assertion" )
-  | DSolve { aty; var_names; init; trans; merge } -> (
+  | DSolve { aty; var_names; fib_names; init; trans; merge; generate; } -> (
       let init' = infer_exp init in
       let trans' = infer_exp trans in
       let merge' = infer_exp merge in
+      let generate' = infer_exp generate in
       let var =
         match var_names.e with
+        | EVar x -> x
+        | _ -> Console.error_position info init.espan "Bad Solution Declaration"
+      in
+      let fib_var =
+        match fib_names.e with
         | EVar x -> x
         | _ -> Console.error_position info init.espan "Bad Solution Declaration"
       in
@@ -815,6 +829,7 @@ and infer_declaration isHLL infer_exp i info env record_types d :
       unify isHLL info init (oget init'.ety) (init_ty solve_aty);
       unify isHLL info trans (oget trans'.ety) (trans_ty solve_aty);
       unify isHLL info merge (oget merge'.ety) (merge_ty solve_aty);
+      unify isHLL info generate (oget generate'.ety) (generate_ty solve_aty);
 
       match m with
       | Symbolic ->
@@ -824,14 +839,16 @@ and infer_declaration isHLL infer_exp i info env record_types d :
           let ety =
             { typ = TMap (concrete TNode, solve_aty); mode = Some Concrete }
           in
-          ( Env.update env var ety,
+          ( Env.update (Env.update env fib_var ety) var ety,
             DSolve
               {
                 aty = Some solve_aty;
                 var_names = aexp (evar var, Some ety, var_names.espan);
+                fib_names = aexp (evar fib_var, Some ety, var_names.espan);
                 init = init';
                 trans = trans';
                 merge = merge';
+                generate = generate';
               } ) )
   | DForward
       {

@@ -191,12 +191,12 @@ let inline_declaration (cond : ty -> bool) (env : exp Env.t) (d : declaration) =
       (env, Some (DInfer (name, inline_exp' env e, None)))
   | DInfer (name, e, Some c) ->
       (env, Some (DInfer (name, inline_exp' env e, Some (inline_exp' env c))))
-  | DSolve { aty; var_names; init; trans; merge } ->
+  | DSolve { aty; var_names; fib_names; init; trans; merge; generate } ->
       (* Inline within the functions but don't inline e in future expressions *)
-      let init, trans, merge =
-        (inline_exp' env init, inline_exp' env trans, inline_exp' env merge)
+      let init, trans, merge, generate =
+        (inline_exp' env init, inline_exp' env trans, inline_exp' env merge, inline_exp' env generate)
       in
-      (env, Some (DSolve { aty; var_names; init; trans; merge }))
+      (env, Some (DSolve { aty; var_names; fib_names; init; trans; merge; generate }))
   | DForward
       {
         names_V;

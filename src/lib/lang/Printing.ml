@@ -611,12 +611,13 @@ let rec declaration_to_string ?(show_types = false) d =
         | Some cond -> Printf.sprintf " | %s" (exp_to_string cond)
       in
       Printf.sprintf "assert(%s, %s%s)" name (exp_to_string e) condString
-  | DSolve { aty; var_names; init; trans; merge } ->
+  | DSolve { aty; var_names; fib_names; init; trans; merge; generate} ->
       Printf.sprintf
-        "let %s = solution<%s> {init = %s; trans = %s; merge = %s}\n"
+        "let %s, %s = solution<%s> {init = %s; trans = %s; merge = %s; generate = %s}\n"
         (exp_to_string var_names)
+        (exp_to_string fib_names)
         (match aty with None -> "None" | Some ty -> ty_to_string ty)
-        (exp_to_string init) (exp_to_string trans) (exp_to_string merge)
+        (exp_to_string init) (exp_to_string trans) (exp_to_string merge) (exp_to_string generate)
   | DForward
       { names_V; names_E; fwdInit; fwdOut; fwdIn; hinitV; hinitE; logE; logV }
     ->

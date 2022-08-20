@@ -25,16 +25,20 @@ module type SrpSimulationSig = sig
     (* attribute type id *)
     string ->
     (* name of solution variable *)
+    string ->
+    (* name of fib variable *)
     (int -> 'a) ->
     (* init function *)
     (int -> 'a -> 'a) ->
     (*transfer function, int argument is the edge id *)
     (int -> 'a -> 'a -> 'a) ->
     (* merge function *)
-    'a CompileBDDs.t
+    (int -> 'a -> 'a -> 'a) ->
+    (* generate function, int argument is the edge id *)
+    'a CompileBDDs.t * 'a CompileBDDs.t
   (** Takes as input record_fns, the attribute type id, the name of the
-      variable storing the solutions, the init trans and merge functions and
-      computes the solutions.*)
+      variable storing the solutions, the init trans, merge, and generate functions and
+      computes the solutions. Returns RIB and FIB. *)
 
   type packet
 
@@ -437,6 +441,8 @@ module RouteComputationStats = struct
 
   let merge_time = ref 0.0
 
+  let generate_time = ref 0.0
+
   let total_route_computation_time = ref 0.0
 
   let merges = ref 0
@@ -448,6 +454,7 @@ module RouteComputationStats = struct
   type simulationStats = {
     transTime : float;
     mergeTime : float;
+    generateTime : float;
     mergeNumber : int;
     incrMergeNumber : int;
     transferNumber : int;
@@ -464,6 +471,7 @@ module RouteComputationStats = struct
     transfers := 0;
     transfer_time := 0.0;
     merge_time := 0.0;
+    generate_time := 0.0;
     total_route_computation_time := 0.0
 
   let logSimulationStats name =
@@ -472,6 +480,7 @@ module RouteComputationStats = struct
         {
           transTime = !transfer_time;
           mergeTime = !merge_time;
+          generateTime = !generate_time;
           totalRouteComputationTime = !total_route_computation_time;
           transferNumber = !transfers;
           mergeNumber = !merges;
@@ -488,6 +497,7 @@ module RouteComputationStats = struct
     Printf.printf "Number of transfers: %d\n" stats.transferNumber;
     Printf.printf "Transfer time: %f\n" stats.transTime;
     Printf.printf "Merge time: %f\n" stats.mergeTime;
+    Printf.printf "FIB generation time: %f\n" stats.generateTime;
     Printf.printf "Total Route Computation time: %f\n" stats.totalRouteComputationTime
 
   let printTotalSimulationStats () =
@@ -497,6 +507,7 @@ module RouteComputationStats = struct
            {
              transTime = v.transTime +. acc.transTime;
              mergeTime = v.mergeTime +. acc.mergeTime;
+             generateTime = v.generateTime +. acc.generateTime;
              totalRouteComputationTime = v.totalRouteComputationTime +. acc.totalRouteComputationTime;
              transferNumber = v.transferNumber + acc.transferNumber;
              mergeNumber = v.mergeNumber + acc.mergeNumber;
@@ -506,6 +517,7 @@ module RouteComputationStats = struct
         {
           transTime = 0.0;
           mergeTime = 0.0;
+          generateTime = 0.0;
           totalRouteComputationTime = 0.0;
           transferNumber = 0;
           mergeNumber = 0;
@@ -529,6 +541,10 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
   type queue = AdjGraph.Vertex.t QueueSet.queue
 
   type 'a state = 'a extendedSolution * queue
+
+
+  (* The fib state, i.e., a map from nodes to a fib *)
+  type 'a fibState = 'a AdjGraph.VertexMap.t
 
   let assertionTime = ref 0.0
 
@@ -668,11 +684,29 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
     in
     loop s q k
 
+  
+  (* Generate fib for the given node u *)
+  let generate_fib (node_u : int) (messages : 'a AdjGraph.VertexMap.t) (rib_u: 'a) generate : 'a =
+    (* For every neighbor that sent a message to node_u *)
+    AdjGraph.VertexMap.fold(fun node_v msg_from_v fib ->
+      (* find the edge from v to u. *)
+      let edge_id =
+        AdjGraph.E.label @@ AdjGraph.find_edge graph node_v node_u
+      in
+       (*compute the new fib *)
+       generate edge_id msg_from_v fib
+     ) messages rib_u
+    
+    
+  (* Generate fibs for all nodes *)
+  let generate_fibs (messages: ('a AdjGraph.VertexMap.t) AdjGraph.VertexMap.t) (ribs : 'a AdjGraph.VertexMap.t) generate : 'a fibState =
+  AdjGraph.VertexMap.mapi(fun u rib -> generate_fib u (AdjGraph.VertexMap.find u messages) rib generate) ribs
+    
   (* List holding the solutions of solved SRPs*)
   let solved : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list ref =
     ref []
 
-  let simulate_solve record_fns attr_ty_id name init trans merge =
+  let simulate_solve record_fns attr_ty_id name fib_name init trans merge generate =
     let mgr = BddUtils.mgr in
     Cudd.Man.group mgr 0 !BddMap.svars Cudd.Man.MTR_DEFAULT;
     let s = create_state (AdjGraph.nb_vertex G.graph) init in
@@ -686,18 +720,26 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
       Profile.time_profile_total RouteComputationStats.merge_time (fun () ->
           merge u x y)
     in
-    let vals =
+    let generate e x y =
+      Profile.time_profile_total RouteComputationStats.generate_time (fun () ->
+          generate e x y)
+    in
+
+    (* returing a map from nodes to a map from nodes to routes 
+      (e.g., u -> v -> route_received_at_u_from_v) and a solution for u *)
+    let messages, vals =
       match (Cmdline.get_cfg ()).bound with
       | None ->
-        simulate_init trans merge s
-        |> AdjGraph.VertexMap.map (fun (_, v) -> v)
+        let st = simulate_init trans merge s in
+        (AdjGraph.VertexMap.map (fun (msgs, _) -> msgs) st, AdjGraph.VertexMap.map (fun (_, v) -> v) st)
       | Some b ->
-        fst @@ simulate_init_bound trans merge s b
-        |> AdjGraph.VertexMap.map (fun (_, v) -> v)
+        let st = fst @@ simulate_init_bound trans merge s b in
+        (AdjGraph.VertexMap.map (fun (msgs, _) -> msgs) st, AdjGraph.VertexMap.map (fun (_, v) -> v) st)
     in
 
     RouteComputationStats.logSimulationStats name;
 
+    let fibs = generate_fibs messages vals generate in
 
     let default = AdjGraph.VertexMap.choose vals |> snd in
     (* Constructing a function from the solutions *)
@@ -715,14 +757,29 @@ module SrpSimulation (G : Topology) : SrpSimulationSig = struct
         vals bdd_base
     in
 
+    (* Constructing a function from the fibs *)
+    let bdd_base_fib =
+      BddMap.create
+        ~key_ty_id:
+          (Collections.TypeIds.get_id CompileBDDs.type_store
+             Syntax.(concrete TNode))
+        ~val_ty_id:attr_ty_id (AdjGraph.VertexMap.choose fibs |> snd)
+    in
+    let bdd_full_fib =
+      AdjGraph.VertexMap.fold
+        (fun n v acc ->
+           BddMap.update (Obj.magic record_fns) acc (Obj.magic n) (Obj.magic v))
+        fibs bdd_base_fib
+    in
+
     (* Storing the AdjGraph.VertexMap in the solved list, but returning
        the function to the ProbNV program *)
     solved :=
       ( name,
         ( Obj.magic vals,
-          Collections.TypeIds.get_elt CompileBDDs.type_store attr_ty_id ) )
+          Collections.TypeIds.get_elt CompileBDDs.type_store attr_ty_id ))
       :: !solved;
-    bdd_full
+    (bdd_full, bdd_full_fib)
 
   let assertions : (string * bool Mtbddc.t * BddFunc.t option) list ref = ref []
 
@@ -754,6 +811,11 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
   }
 
   type 'a state = 'a nodeState AdjGraph.VertexMap.t * globalState
+  
+  
+  (* The fib state, i.e., a map from nodes to a fib *)
+  type 'a fibState = 'a AdjGraph.VertexMap.t
+
   let assertionTime = ref 0.0
 
   let create_initial_state (n : int) initArr : 'a state =
@@ -1056,18 +1118,39 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
           local xs
 
   (* simulate_init s q simulates srp starting with initial state (s,q) *)
-  let rec simulate_init init trans merge global local =
+  let rec simulate_init init trans merge global local : 'a nodeState AdjGraph.VertexMap.t =
     match BatQueue.Exceptionless.peek global.queue with
     | None -> local
     | Some next ->
       simulate_init init trans merge global
         (processNode next init trans merge local global 0)
 
+  (* Generate fib for the given node u *)
+  let generate_fib (node_u : int) (messages : 'a AdjGraph.VertexMap.t) (rib_u: 'a) generate : 'a =
+    (* For every neighbor that sent a message to node_u *)
+    let incoming_edges = AdjGraph.pred graph node_u in
+    List.fold_left(fun fib node_v ->
+      (* find the edge from v to u. *)
+      let msg_from_v = AdjGraph.VertexMap.find node_v messages in
+      (* Printf.printf ("%d %d") node_v node_u; *)
+      let edge_id =
+        AdjGraph.E.label @@ AdjGraph.find_edge graph node_v node_u
+      in
+       (*compute the new fib *)
+       generate edge_id msg_from_v fib
+     ) rib_u incoming_edges
+    
+    
+  (* Generate fibs for all nodes *)
+  let generate_fibs (messages: ('a AdjGraph.VertexMap.t) AdjGraph.VertexMap.t) (ribs : 'a AdjGraph.VertexMap.t) generate : 'a fibState =
+  AdjGraph.VertexMap.mapi(fun u rib -> generate_fib u (AdjGraph.VertexMap.find u messages) rib generate) ribs
+    
+
   (* List holding the solutions of solved SRPs*)
   let solved : (string * (unit AdjGraph.VertexMap.t * Syntax.ty)) list ref =
     ref []
 
-  let simulate_solve record_fns attr_ty_id name init trans merge =
+  let simulate_solve record_fns attr_ty_id name fib_name init trans merge generate =
     let mgr = BddUtils.mgr in
     Cudd.Man.group mgr 0 !BddMap.svars Cudd.Man.MTR_DEFAULT;
 
@@ -1088,12 +1171,20 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
       Profile.time_profile_total RouteComputationStats.merge_time (fun () ->
           merge u x y)
     in
+
+    let generate e x y =
+      Profile.time_profile_total RouteComputationStats.generate_time (fun () ->
+          generate e x y)
+    in
+
     skips := (Cmdline.get_cfg ()).sim_skip;
 
-    let vals =
-      simulate_init initArr trans merge global local
-      |> AdjGraph.VertexMap.map (fun v -> v.labels)
+    let vals, messages =
+      let st = simulate_init initArr trans merge global local in
+      AdjGraph.VertexMap.map (fun v -> v.labels) st, AdjGraph.VertexMap.map (fun v -> v.received) st
     in
+    let fibs = generate_fibs messages vals generate in
+    
     RouteComputationStats.logSimulationStats name;
 
     let default = AdjGraph.VertexMap.choose vals |> snd in
@@ -1112,6 +1203,21 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
         vals bdd_base
     in
 
+    (* Constructing a function from the fibs *)
+    let bdd_base_fib =
+      BddMap.create
+        ~key_ty_id:
+          (Collections.TypeIds.get_id CompileBDDs.type_store
+             Syntax.(concrete TNode))
+        ~val_ty_id:attr_ty_id (AdjGraph.VertexMap.choose fibs |> snd)
+    in
+    let bdd_full_fib =
+      AdjGraph.VertexMap.fold
+        (fun n v acc ->
+           BddMap.update (Obj.magic record_fns) acc (Obj.magic n) (Obj.magic v))
+        fibs bdd_base_fib
+    in
+
     (* if Gc.((quick_stat ()).heap_words) > 231072000 then
        (
         Cudd.Man.flush BddUtils.mgr;
@@ -1125,11 +1231,11 @@ module SrpLazySimulation (G : Topology) : SrpSimulationSig = struct
           Collections.TypeIds.get_elt CompileBDDs.type_store attr_ty_id ) )
       :: !solved;
 
-    bdd_full
+    bdd_full, bdd_full_fib
 
-  let simulate_solve record_fns attr_ty_id name init trans merge =
+  let simulate_solve record_fns attr_ty_id name fib_name init trans merge generate =
     Profile.time_profile_total RouteComputationStats.total_route_computation_time 
-      (fun () -> simulate_solve record_fns attr_ty_id name init trans merge)
+      (fun () -> simulate_solve record_fns attr_ty_id name fib_name init trans merge generate)
 
   let assertions : (string * bool Mtbddc.t * BddFunc.t option) list ref = ref []
 

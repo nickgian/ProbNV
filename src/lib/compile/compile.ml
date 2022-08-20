@@ -654,23 +654,25 @@ let compile_decl decl =
       "let () = %s SIM.assertions := (%s, Profile.time_profile_total SIM.assertionTime (fun () -> %s), %s) :: !SIM.assertions\n" flush name
       (exp_to_ocaml_string e) cond'
   | DSolve solve -> (
-      match solve.var_names.e with
-      | EVar x -> (
+      match solve.var_names.e, solve.fib_names.e with
+      | EVar x, EVar f-> (
           match solve.aty with
           | None -> failwith "cannot solve without an attribute type"
           | Some attr ->
             (*NOTE: this is just the attribute type, not including the map from nodes to attributes *)
             (*need to register node types manually! *)
             ignore (get_fresh_type_id type_store (concrete TNode));
-            (* Printf.printf "Solution type: %s\n" (Printing.ty_to_string attr); *)
             let attr_id = get_fresh_type_id type_store attr in
             Printf.sprintf
-              "let %s = SIM.simulate_solve record_fns (%d) (\"%s\") (%s) \
-               (%s) (%s)"
-              (varname x) attr_id (Var.name x)
+              "let (%s, %s) = SIM.simulate_solve record_fns (%d) (\"%s\") (\"%s\") (%s) \
+               (%s) (%s) (%s)"
+              (varname x) 
+              (varname f) 
+              attr_id (Var.name x) (Var.name f)
               (exp_to_ocaml_string solve.init)
               (exp_to_ocaml_string solve.trans)
-              (exp_to_ocaml_string solve.merge) )
+              (exp_to_ocaml_string solve.merge)
+              (exp_to_ocaml_string solve.generate))
       | _ ->
         failwith "Not implemented" (* Only happens if we did map unrolling *)
     )

@@ -1086,7 +1086,7 @@ let translateDecl info d =
         let rho = BddBinds.union r fv in
         if BddBinds.isEmpty rho then DLet (x, e', options)
         else DLet (x, buildApply e' rho, options))
-  | DSolve { aty; var_names; init; trans; merge } ->
+  | DSolve { aty; var_names; fib_names; init; trans; merge; generate } ->
       let route_ty = OCamlUtils.oget aty in
       BddBinds.clearStore ();
       let init' = translateOne info init route_ty in
@@ -1094,7 +1094,9 @@ let translateDecl info d =
       let trans' = translateTwo info trans route_ty in
       BddBinds.clearStore ();
       let merge' = translateThree info merge route_ty route_ty in
-      DSolve { aty; var_names; init = init'; trans = trans'; merge = merge' }
+      BddBinds.clearStore ();
+      let generate' = translateThree info generate route_ty route_ty in
+      DSolve { aty; var_names; fib_names; init = init'; trans = trans'; merge = merge'; generate = generate' }
   | DForward
       {
         names_V;
