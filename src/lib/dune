@@ -10,6 +10,7 @@
     probNv_translate
     probNv_compile
     integers
+    clap
     str
     batteries
     zarith)

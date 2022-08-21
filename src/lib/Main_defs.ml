@@ -33,11 +33,9 @@ let run_compiled file cfg _ decls topology fs =
     Solution.print_solution solution
 
 let parse_input (args : string array) =
-  let cfg, rest = argparse default "probNV" args in
-  Cmdline.set_cfg cfg;
   let cfg = Cmdline.get_cfg () in
   if cfg.debug then Printexc.record_backtrace true;
-  let file = rest.(0) in
+  let file = cfg.input in
   let ds, info = Input.parse file in
   (* Parse probNV file *)
   let decls = ds in

@@ -1,8 +1,8 @@
 type t = {
-  debug : bool; [@short "-d"]  (** enable a debugging backtrace            *)
-  verbose : int; [@short "-v"]  (** verbosity level, 0 prints only the assertion result(default), 1 additionally prints let-bound values annotated with "@log", 2 additionally prints SRP and forwarding solutions  *)
+  debug : bool;  (** enable a debugging backtrace            *)
+  verbose : int;  (** verbosity level, 0 prints only the assertion result(default), 1 additionally prints let-bound values annotated with "@log", 2 additionally prints SRP and forwarding solutions  *)
   bound : int option;  (** bound the number of simulation steps    *)
-  memoize : bool; [@short "-z"]  (** memoizes the interpreter for reuse      *)
+  memoize : bool;  (** memoizes the interpreter for reuse      *)
   no_caching : bool;  (** disables mtbdd operation caching        *)
   no_cutoff : bool;  (** disables mtbdd early termination        *)
   inline : bool;  (** inline all expressions                  *)
@@ -14,15 +14,16 @@ type t = {
   counterexample : bool;
       (** generate counterexamples for non-true assertions. *)
   nostats : bool;  (** Do not print computation time statistics *)
-  csv : bool; [@short "-c"] (*generate output in CSV files instead of printing on stdout.*) 
+  csv : bool; (*generate output in CSV files instead of printing on stdout.*)
+  input: string;
 }
-[@@deriving
+(* [@@deriving
   show,
     argparse
       {
         positional = [ ("file", "probNV file") ];
         description = "nv: a network verification framework";
-      }]
+      }] *)
 
 let default =
   {
@@ -39,9 +40,25 @@ let default =
     counterexample = false;
     nostats = false;
     csv = false;
+    input = "";
   }
 
 let cfg = ref default
+
+let () =
+  Clap.description "nv: a network verification framework";
+
+  let verbose = Clap.default_int ~long: "verbose" ~short:'v' 0 in
+  let debug = Clap.flag ~set_long: "debug" ~set_short: 'd' false in
+  let new_sim = Clap.flag ~set_long: "new-sim" false in
+  let sim_skip = Clap.default_int ~long: "sim-skip" 0 in
+  let counterexample = Clap.flag ~set_long: "counterexample" false in 
+  let nostats = Clap.flag ~set_long: "nostats" false in 
+  let csv = Clap.flag ~set_long: "csv" ~set_short: 'c' false in 
+  let input_file = Clap.mandatory_string ~placeholder: "input" () in
+  Clap.close();
+  cfg := {!cfg with debug; verbose; new_sim; sim_skip; counterexample; nostats; csv; input=input_file}
+
 
 let get_cfg () = !cfg
 

@@ -7,10 +7,11 @@
     ANSITerminal
     cudd
     integers
+    clap
     probNv_datastructures
     probNv_utils)
   (preprocess
-    (pps ppx_deriving.std ppx_deriving_argparse))
+    (pps ppx_deriving.std))
 )
 
 (menhir
